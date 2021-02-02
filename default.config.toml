@@ -1,0 +1,32 @@
+# MerMer Default Config
+
+title = "TideWallet-Backend"
+
+[base]
+folder = "TideWallet-Backend"
+static = "./build/frontend/"
+debug = false
+
+[blockchain]
+type = "ethereum"
+
+[database]
+protocol = "postgres"
+host = "postgres"
+port = ""
+user = ""
+password = ""
+dbName = ""
+logging = false
+autoReconnect = true
+ormEnable = true
+  [database.dialectOptions]
+  connectTimeout = 3000
+
+  [database.pool]
+  max = 100
+
+[api]
+pathname = [
+  "get | /,/version | Static.Utils.readPackageInfo"
+]
