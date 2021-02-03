@@ -37,6 +37,41 @@ module.exports = env;
         db[file.replace(/\.js/g, '')] = myModel;
       });
 
+    // Account
+    db.User.hasMany(db.Account, { foreignKey: 'User_id' });
+    db.Blockchain.hasOne(db.Account, { foreignKey: 'Blockchain_id' });
+    // AccountCurrency
+    db.Account.hasMany(db.AccountCurrency, { foreignKey: 'Account_id' });
+    db.Currency.hasOne(db.AccountCurrency, { foreignKey: 'Currency_id' });
+    // AccountAddress
+    db.Account.hasMany(db.AccountAddress, { foreignKey: 'Account_id' });
+    // BlockScanned
+    db.Blockchain.hasMany(db.BlockScanned, { foreignKey: 'Blockchain_id' });
+    // Currency
+    db.Blockchain.hasOne(db.Currency, { foreignKey: 'Blockchain_id' });
+    // Device
+    db.User.hasMany(db.Device, { foreignKey: 'User_id' });
+    // ThirdPartyLink
+    db.User.hasMany(db.ThirdPartyLink, { foreignKey: 'User_id' });
+    // Transaction
+    db.Currency.hasMany(db.Transaction, { foreignKey: 'Currency_id' });
+    // AddressTransaction
+    db.Currency.hasMany(db.AddressTransaction, { foreignKey: 'Currency_id' });
+    db.AccountAddress.hasMany(db.AddressTransaction, { foreignKey: 'AccountAddress_id' });
+    db.Transaction.hasMany(db.AddressTransaction, { foreignKey: 'Transaction_id' });
+    // TokenTransaction
+    db.Currency.hasMany(db.TokenTransaction, { foreignKey: 'Currency_id' });
+    db.Transaction.hasMany(db.TokenTransaction, { foreignKey: 'Transaction_id' });
+    // AddressTokenTransaction
+    db.Currency.hasMany(db.AddressTokenTransaction, { foreignKey: 'Currency_id' });
+    db.AccountAddress.hasMany(db.AddressTokenTransaction, { foreignKey: 'AccountAddress_id' });
+    db.TokenTransaction.hasMany(db.AddressTokenTransaction, { foreignKey: 'TokenTransaction_id' });
+    // UTXO
+    db.Currency.hasMany(db.UTXO, { foreignKey: 'Currency_id' });
+    db.AccountAddress.hasMany(db.UTXO, { foreignKey: 'AccountAddress_id' });
+    db.Transaction.hasMany(db.UTXO, { foreignKey: 'Transaction_id' });
+    db.Transaction.hasMany(db.UTXO, { foreignKey: 'to_tx' });
+
     db.sequelize = sequelize;
     db.Sequelize = Sequelize;
 
