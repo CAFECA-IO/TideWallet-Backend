@@ -7,6 +7,8 @@ const Koa = require('koa');
 const Router = require('koa-router');
 const bodyParser = require('koa-body');
 const staticServe = require('koa-static');
+const ResponseFormat = require('./ResponseFormat');
+const Codes = require('./Codes');
 
 // eslint-disable-next-line import/no-dynamic-require
 const Bot = require(path.resolve(__dirname, 'Bot.js'));
@@ -98,6 +100,11 @@ class Receptor extends Bot {
       return operation(inputs)
         .then((rs) => {
           ctx.body = rs;
+          next();
+        })
+        .catch((e) => {
+          // unhandled error
+          ctx.body = new ResponseFormat({ message: e.message, code: Codes.UNKNOWN_ERROR });
           next();
         });
     });

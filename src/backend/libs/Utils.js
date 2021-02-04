@@ -7,7 +7,7 @@ const toml = require('toml');
 const i18n = require('i18n');
 const dvalue = require('dvalue');
 const ecRequest = require('ecrequest');
-const initialORM = require('../database/models');
+const initialORM = require('../../database/models');
 
 class Utils {
   static waterfallPromise(jobs) {
@@ -179,20 +179,16 @@ class Utils {
       })
       .then((config) => Promise.all([
         config,
-        this.initialLevel(config),
         initialORM(config),
         this.initialLogger(config),
-        this.initiali18n(config),
         this.initialProcess(config),
       ]))
       .then((rs) => Promise.resolve({
         config: rs[0],
         database: {
-          leveldb: rs[1],
-          mongodb: rs[2],
+          db: rs[1],
         },
-        logger: rs[3],
-        i18n: rs[4],
+        logger: rs[2],
       }))
       .catch(console.trace);
   }

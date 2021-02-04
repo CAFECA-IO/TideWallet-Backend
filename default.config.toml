@@ -28,5 +28,9 @@ ormEnable = true
 
 [api]
 pathname = [
-  "get | /,/version | Static.Utils.readPackageInfo"
+  "get | /,/version | Static.Utils.readPackageInfo",
+  "get | /api/v1/blockchain | Bot.Blockchain.BlockchainList",
+  "get | /api/v1/blockchain/:blockchain_id | Bot.Blockchain.BlockchainDetail",
+  "get | /api/v1/currency | Bot.Blockchain.CurrencyList",
+  "get | /api/v1/currency/:currency_id | Bot.Blockchain.CurrencyDetail"
 ]

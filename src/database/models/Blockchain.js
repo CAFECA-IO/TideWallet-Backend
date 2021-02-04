@@ -25,7 +25,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Blockchain', {
     type: DataTypes.TEXT,
   },
   block: {
-    type: DataTypes.STRING,
+    type: DataTypes.INTEGER,
     allowNull: false,
   },
 }, {

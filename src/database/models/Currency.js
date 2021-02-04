@@ -24,7 +24,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Currency', {
   description: {
     type: DataTypes.TEXT,
   },
-  publish_time: {
+  publish: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
@@ -42,6 +42,9 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Currency', {
   },
   contract: {
     type: DataTypes.TEXT,
+  },
+  icon: {
+    type: DataTypes.STRING,
   },
 }, {
   timestamps: false,
