@@ -43,7 +43,6 @@ class Blockchain extends Bot {
   }
 
   async BlockchainDetail({ params }) {
-    // eslint-disable-next-line camelcase
     const { blockchain_id } = params;
     try {
       const payload = await this.blockchainModel.findOne({
@@ -83,7 +82,6 @@ class Blockchain extends Bot {
   }
 
   async CurrencyDetail({ params }) {
-    // eslint-disable-next-line camelcase
     const { currency_id } = params;
     try {
       const payload = await this.currencyModel.findOne({
@@ -94,6 +92,49 @@ class Blockchain extends Bot {
       });
 
       if (!payload) return new ResponseFormat({ message: 'currency_id Not Found', code: Codes.CURRENCY_ID_NOT_FOUND });
+      return new ResponseFormat({ message: 'Get Currency Detail', payload });
+    } catch (e) {
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async TokenList({ params }) {
+    const { blockchain_id } = params;
+    try {
+      let payload = await this.currencyModel.findAll({
+        where: { Blockchain_id: blockchain_id, type: 2 },
+      });
+      if (payload) {
+        payload = payload.map((item) => ({
+          Currency_id: item.Currency_id,
+          name: item.name,
+          symbol: item.symbol,
+          type: item.type,
+          publish: item.publish,
+          decimals: item.decimals,
+          exchange_rate: item.exchange_rate,
+          icon: item.icon,
+        }));
+      } else {
+        payload = [];
+      }
+      return new ResponseFormat({ message: 'List Supported Currencies', payload });
+    } catch (e) {
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async TokenDetail({ params }) {
+    const { blockchain_id, token_id } = params;
+    try {
+      const payload = await this.currencyModel.findOne({
+        where: {
+          Currency_id: token_id, type: 2,
+        },
+      });
+
+      if (!payload) return new ResponseFormat({ message: 'currency_id Not Found', code: Codes.CURRENCY_ID_NOT_FOUND });
+      if (payload.Blockchain_id !== blockchain_id) return new ResponseFormat({ message: 'currency_id Not Found', code: Codes.CURRENCY_ID_NOT_FOUND });
       return new ResponseFormat({ message: 'Get Currency Detail', payload });
     } catch (e) {
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });

@@ -32,5 +32,7 @@ pathname = [
   "get | /api/v1/blockchain | Bot.Blockchain.BlockchainList",
   "get | /api/v1/blockchain/:blockchain_id | Bot.Blockchain.BlockchainDetail",
   "get | /api/v1/currency | Bot.Blockchain.CurrencyList",
-  "get | /api/v1/currency/:currency_id | Bot.Blockchain.CurrencyDetail"
+  "get | /api/v1/currency/:currency_id | Bot.Blockchain.CurrencyDetail",
+  "get | /api/v1/blockchain/:blockchain_id/token | Bot.Blockchain.TokenList",
+  "get | /api/v1/blockchain/:blockchain_id/token/:token_id | Bot.Blockchain.TokenDetail",
 ]
