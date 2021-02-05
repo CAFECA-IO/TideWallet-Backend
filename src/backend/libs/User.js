@@ -79,8 +79,23 @@ class User extends Bot {
     }
   }
 
-  AccessTokenVerify({ query }) {
+  async AccessTokenVerify({ query }) {
     const { token } = query;
+    if (!token) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+
+    try {
+      const data = await Utils.verifyToken(token);
+
+      return new ResponseFormat({
+        message: 'User Regist',
+        payload: {
+          user_id: data.userID,
+          wallet_name: data.user.wallet_name,
+        },
+      });
+    } catch (e) {
+      return e;
+    }
   }
 }
 

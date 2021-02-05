@@ -9,6 +9,8 @@ const JWT = require('jsonwebtoken');
 const i18n = require('i18n');
 const dvalue = require('dvalue');
 const ecRequest = require('ecrequest');
+const Codes = require('./Codes');
+const ResponseFormat = require('./ResponseFormat');
 const initialORM = require('../../database/models');
 
 class Utils {
@@ -582,8 +584,6 @@ class Utils {
       console.log('e:', e);
     }
 
-    // console.log('findOne:', findOne);
-
     if (!findOne[1]) {
       // update
       await this.database.db.OAuthRefreshToken.update({
@@ -601,6 +601,25 @@ class Utils {
       tokenSecret: refreshToken,
       user_id: userID,
     };
+  }
+
+  static async verifyToken(token) {
+    try {
+      const data = JWT.verify(token, this.config.jwt.secret, {});
+
+      const { userID } = data;
+      const findUser = await this.database.db.User.findOne({
+        where: { User_id: userID },
+      });
+
+      if (!findUser) return new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
+
+      data.user = findUser;
+      return data;
+    } catch (err) {
+      if (err.message === 'jwt expired') throw new ResponseFormat({ message: 'expired access token', code: Codes.EXPIRED_ACCESS_TOKEN });
+      throw new ResponseFormat({ message: `server error(${err.message})`, code: Codes.SERVER_ERROR });
+    }
   }
 }
 
