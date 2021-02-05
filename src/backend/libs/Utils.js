@@ -162,6 +162,22 @@ class Utils {
     return result;
   }
 
+  static BTCRPC({
+    // eslint-disable-next-line no-shadow
+    protocol, port, hostname, path, data, user, password
+  }) {
+    const basicAuth = this.base64Encode(`${user}:${password}`)
+    const opt = {
+      protocol,
+      port,
+      hostname,
+      path,
+      headers: { 'content-type': 'application/json', 'Authorization': `Basic ${basicAuth}` },
+      data,
+    };
+    return ecRequest.post(opt).then((rs) => Promise.resolve(JSON.parse(rs.data)));
+  }
+
   static ETHRPC({
     // eslint-disable-next-line no-shadow
     protocol, port, hostname, path, data,
@@ -601,6 +617,11 @@ class Utils {
       tokenSecret: refreshToken,
       user_id: userID,
     };
+  }
+  
+  static base64Encode(string) {
+    const buf = Buffer.from(string);
+    return buf.toString('base64');
   }
 }
 
