@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) => sequelize.define('User', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  wallet_name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
 }, {
   timestamps: false,
   tableName: 'User',

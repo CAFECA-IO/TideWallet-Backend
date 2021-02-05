@@ -39,5 +39,6 @@ pathname = [
   "get | /api/v1/currency/:currency_id | Bot.Blockchain.CurrencyDetail",
   "get | /api/v1/blockchain/:blockchain_id/token | Bot.Blockchain.TokenList",
   "get | /api/v1/blockchain/:blockchain_id/token/:token_id | Bot.Blockchain.TokenDetail",
-  "post | /api/v1/user | Bot.User.UserRegist"
+  "post | /api/v1/user | Bot.User.UserRegist",
+  "get | /api/v1/token/verify | Bot.User.AccessTokenVerify"
 ]

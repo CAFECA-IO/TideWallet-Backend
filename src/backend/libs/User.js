@@ -44,6 +44,7 @@ class User extends Bot {
       const userID = await this.sequelize.transaction(async (transaction) => {
         const insertUser = await this.userModel.create({
           User_id: uuidv4(),
+          wallet_name,
           last_login_timestamp: Math.floor(Date.now() / 1000),
         }, { transaction });
 
@@ -76,6 +77,10 @@ class User extends Bot {
     } catch (error) {
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
+  }
+
+  AccessTokenVerify({ query }) {
+    const { token } = query;
   }
 }
 
