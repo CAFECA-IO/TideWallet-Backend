@@ -7,15 +7,9 @@ module.exports = (sequelize, DataTypes) => sequelize.define('User', {
   },
   keystore: {
     type: DataTypes.TEXT,
-    allowNull: false,
   },
-  seed_hash: {
+  private_key: {
     type: DataTypes.STRING,
-    allowNull: false,
-  },
-  seed_salt: {
-    type: DataTypes.STRING,
-    allowNull: false,
   },
   last_login_timestamp: {
     type: DataTypes.INTEGER,

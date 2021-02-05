@@ -7,7 +7,7 @@ class ResponseFormat extends Error {
 
     return {
       powerby: `TideWallet API ${pjson.version}`,
-      success: true,
+      success: code === Codes.SUCCESS,
       code,
       message,
       payload,

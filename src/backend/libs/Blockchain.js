@@ -1,6 +1,5 @@
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
-const Utils = require('./Utils');
 const Codes = require('./Codes');
 
 class Blockchain extends Bot {

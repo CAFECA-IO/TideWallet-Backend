@@ -5,6 +5,7 @@ title = "TideWallet-Backend"
 [base]
 folder = "TideWallet-Backend"
 static = "./build/frontend/"
+token_secret_expire_time = 31536000 # 365 * 24 * 60 * 60 (expires in 365 day)
 debug = false
 
 [blockchain]
@@ -26,6 +27,9 @@ ormEnable = true
   [database.pool]
   max = 100
 
+[jwt]
+secret = ""
+
 [api]
 pathname = [
   "get | /,/version | Static.Utils.readPackageInfo",
@@ -35,4 +39,5 @@ pathname = [
   "get | /api/v1/currency/:currency_id | Bot.Blockchain.CurrencyDetail",
   "get | /api/v1/blockchain/:blockchain_id/token | Bot.Blockchain.TokenList",
   "get | /api/v1/blockchain/:blockchain_id/token/:token_id | Bot.Blockchain.TokenDetail",
+  "post | /api/v1/user | Bot.User.UserRegist"
 ]

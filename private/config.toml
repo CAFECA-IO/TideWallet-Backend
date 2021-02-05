@@ -13,3 +13,6 @@ ormEnable = true
 
   [database.pool]
   max = 100
+
+[jwt]
+secret = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"

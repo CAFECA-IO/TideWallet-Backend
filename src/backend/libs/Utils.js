@@ -4,12 +4,22 @@ const path = require('path');
 
 const level = require('level');
 const toml = require('toml');
+const randToken = require('rand-token');
+const JWT = require('jsonwebtoken');
 const i18n = require('i18n');
 const dvalue = require('dvalue');
 const ecRequest = require('ecrequest');
 const initialORM = require('../../database/models');
 
 class Utils {
+  constructor() {
+    // assign by readConfig
+    this.config = {};
+    this.logger = {};
+    this.database = {};
+    this.redis = {};
+  }
+
   static waterfallPromise(jobs) {
     return jobs.reduce((prev, curr) => prev.then(() => curr()), Promise.resolve());
   }
@@ -441,6 +451,9 @@ class Utils {
     // eslint-disable-next-line no-shadow
     config, database, logger, i18n,
   }) {
+    this.config = config;
+    this.logger = logger;
+    this.database = database;
     const interfaceFN = 'Bot.js';
     // const interfaceBot = require(path.resolve(__dirname, interfaceFN));
     return this.scanFolder({ folder: __dirname })
@@ -546,6 +559,47 @@ class Utils {
 
         await next();
       }
+    };
+  }
+
+  static validateString(str) {
+    return !(!str || typeof str !== 'string' || str.length <= 0);
+  }
+
+  static async generateToken({ userID, data = {} }) {
+    const refreshToken = randToken.uid(256);
+    const expireTime = new Date().getTime() + (Number(this.config.base.token_secret_expire_time) * 1000);
+
+    let findOne = '';
+    try {
+      findOne = await this.database.db.OAuthRefreshToken.findOrCreate({
+        where: { User_id: userID },
+        defaults: {
+          User_id: userID, Refresh_token: refreshToken, expire_time: expireTime,
+        },
+      });
+    } catch (e) {
+      console.log('e:', e);
+    }
+
+    // console.log('findOne:', findOne);
+
+    if (!findOne[1]) {
+      // update
+      await this.database.db.OAuthRefreshToken.update({
+        User_id: userID, Refresh_token: refreshToken, expire_time: expireTime,
+      },
+      {
+        where: { User_id: userID },
+      });
+    }
+
+    return {
+      token: JWT.sign({ userID, ...data }, this.config.jwt.secret, {
+        expiresIn: this.config.base.token_secret_expire_time,
+      }),
+      tokenSecret: refreshToken,
+      user_id: userID,
     };
   }
 }
