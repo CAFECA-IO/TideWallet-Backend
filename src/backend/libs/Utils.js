@@ -19,7 +19,6 @@ class Utils {
     this.config = {};
     this.logger = {};
     this.database = {};
-    this.redis = {};
   }
 
   static waterfallPromise(jobs) {
@@ -570,19 +569,14 @@ class Utils {
 
   static async generateToken({ userID, data = {} }) {
     const refreshToken = randToken.uid(256);
-    const expireTime = new Date().getTime() + (Number(this.config.base.token_secret_expire_time) * 1000);
+    const expireTime = new Date(new Date().getTime() + (Number(this.config.base.token_secret_expire_time) * 1000));
 
-    let findOne = '';
-    try {
-      findOne = await this.database.db.OAuthRefreshToken.findOrCreate({
-        where: { User_id: userID },
-        defaults: {
-          User_id: userID, Refresh_token: refreshToken, expire_time: expireTime,
-        },
-      });
-    } catch (e) {
-      console.log('e:', e);
-    }
+    const findOne = await this.database.db.OAuthRefreshToken.findOrCreate({
+      where: { User_id: userID },
+      defaults: {
+        User_id: userID, Refresh_token: refreshToken, expire_time: expireTime,
+      },
+    });
 
     if (!findOne[1]) {
       // update
@@ -603,9 +597,10 @@ class Utils {
     };
   }
 
-  static async verifyToken(token) {
+  static async verifyToken(token, ignoreExpiration = false) {
     try {
-      const data = JWT.verify(token, this.config.jwt.secret, {});
+      const option = { ignoreExpiration };
+      const data = JWT.verify(token, this.config.jwt.secret, option);
 
       const { userID } = data;
       const findUser = await this.database.db.User.findOne({

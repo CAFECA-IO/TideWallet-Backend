@@ -104,7 +104,7 @@ class Receptor extends Bot {
         })
         .catch((e) => {
           // unhandled error
-          ctx.body = new ResponseFormat({ message: e.message, code: Codes.UNKNOWN_ERROR });
+          ctx.body = new ResponseFormat({ message: `unknown error(${e.message})`, code: Codes.UNKNOWN_ERROR });
           next();
         });
     });

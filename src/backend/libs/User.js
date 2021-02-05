@@ -19,6 +19,7 @@ class User extends Bot {
     }).then(() => {
       this.userModel = this.database.db.User;
       this.blockchainModel = this.database.db.Blockchain;
+      this.oauthRefreshTokenModel = this.database.db.OAuthRefreshToken;
       this.currencyModel = this.database.db.Currency;
       this.accountModel = this.database.db.Account;
       this.deviceModel = this.database.db.Device;
@@ -87,7 +88,7 @@ class User extends Bot {
       const data = await Utils.verifyToken(token);
 
       return new ResponseFormat({
-        message: 'User Regist',
+        message: 'Token Verify',
         payload: {
           user_id: data.userID,
           wallet_name: data.user.wallet_name,
@@ -95,6 +96,30 @@ class User extends Bot {
       });
     } catch (e) {
       return e;
+    }
+  }
+
+  async AccessTokenRenew({ body }) {
+    const { token, tokenSecret } = body;
+    if (!Utils.validateString(token) || !Utils.validateString(tokenSecret)) {
+      return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+    }
+    try {
+      const data = await Utils.verifyToken(token, true);
+      const findTokenSecret = await this.oauthRefreshTokenModel.findOne({
+        where: {
+          Refresh_token: tokenSecret, User_id: data.userID,
+        },
+      });
+
+      if (!findTokenSecret) return new ResponseFormat({ message: 'invalid access token secret', code: Codes.INVALID_ACCESS_TOKEN_SECRET });
+      if (new Date() > (findTokenSecret.expire_time)) return new ResponseFormat({ message: 'expired access token secret', code: Codes.EXPIRED_ACCESS_TOKEN_SECRET });
+
+      const payload = await Utils.generateToken({ userID: data.user_id });
+      return new ResponseFormat({ message: 'Token Renew', payload });
+    } catch (e) {
+      if (e.code) return e;
+      throw e;
     }
   }
 }
