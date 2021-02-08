@@ -19,7 +19,7 @@ class User extends Bot {
     }).then(() => {
       this.userModel = this.database.db.User;
       this.blockchainModel = this.database.db.Blockchain;
-      this.oauthRefreshTokenModel = this.database.db.OAuthRefreshToken;
+      this.tokenSecretModel = this.database.db.TokenSecret;
       this.currencyModel = this.database.db.Currency;
       this.accountModel = this.database.db.Account;
       this.deviceModel = this.database.db.Device;
@@ -106,16 +106,27 @@ class User extends Bot {
     }
     try {
       const data = await Utils.verifyToken(token, true);
-      const findTokenSecret = await this.oauthRefreshTokenModel.findOne({
+      const findTokenSecret = await this.tokenSecretModel.findOne({
         where: {
-          Refresh_token: tokenSecret, User_id: data.userID,
+          TokenSecret: tokenSecret, User_id: data.userID,
         },
       });
 
       if (!findTokenSecret) return new ResponseFormat({ message: 'invalid access token secret', code: Codes.INVALID_ACCESS_TOKEN_SECRET });
       if (new Date() > (findTokenSecret.expire_time)) return new ResponseFormat({ message: 'expired access token secret', code: Codes.EXPIRED_ACCESS_TOKEN_SECRET });
 
-      const payload = await Utils.generateToken({ userID: data.user_id });
+      const payload = await this.sequelize.transaction(async (transaction) => {
+        const tokenObj = await Utils.generateToken({ userID: data.userID });
+
+        // if generateToken success, delete old tokenSecret
+        await this.tokenSecretModel.destroy({
+          where: {
+            TokenSecret: findTokenSecret.TokenSecret, User_id: findTokenSecret.User_id,
+          },
+        }, { transaction });
+
+        return tokenObj;
+      });
       return new ResponseFormat({ message: 'Token Renew', payload });
     } catch (e) {
       if (e.code) return e;

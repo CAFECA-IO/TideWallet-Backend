@@ -105,9 +105,9 @@ module.exports = env;
     db.UTXO.belongsTo(db.Transaction, { foreignKey: 'to_tx' });
     db.Transaction.hasMany(db.UTXO, { foreignKey: 'to_tx' });
 
-    // OAuthRefreshToken
-    db.OAuthRefreshToken.belongsTo(db.User, { foreignKey: 'User_id' });
-    db.User.hasMany(db.OAuthRefreshToken, { foreignKey: 'User_id' });
+    // TokenSecret
+    db.TokenSecret.belongsTo(db.User, { foreignKey: 'User_id' });
+    db.User.hasMany(db.TokenSecret, { foreignKey: 'User_id' });
 
     db.sequelize = sequelize;
     db.Sequelize = Sequelize;

@@ -568,20 +568,20 @@ class Utils {
   }
 
   static async generateToken({ userID, data = {} }) {
-    const refreshToken = randToken.uid(256);
+    const TokenSecret = randToken.uid(256);
     const expireTime = new Date(new Date().getTime() + (Number(this.config.base.token_secret_expire_time) * 1000));
 
-    const findOne = await this.database.db.OAuthRefreshToken.findOrCreate({
+    const findOne = await this.database.db.TokenSecret.findOrCreate({
       where: { User_id: userID },
       defaults: {
-        User_id: userID, Refresh_token: refreshToken, expire_time: expireTime,
+        TokenSecret, User_id: userID, expire_time: expireTime,
       },
     });
 
     if (!findOne[1]) {
       // update
-      await this.database.db.OAuthRefreshToken.update({
-        User_id: userID, Refresh_token: refreshToken, expire_time: expireTime,
+      await this.database.db.TokenSecret.update({
+        TokenSecret, User_id: userID, expire_time: expireTime,
       },
       {
         where: { User_id: userID },
@@ -592,7 +592,7 @@ class Utils {
       token: JWT.sign({ userID, ...data }, this.config.jwt.secret, {
         expiresIn: this.config.base.token_secret_expire_time,
       }),
-      tokenSecret: refreshToken,
+      tokenSecret: TokenSecret,
       user_id: userID,
     };
   }
