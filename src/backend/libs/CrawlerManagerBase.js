@@ -23,6 +23,12 @@ class CrawlerManagerBase {
     return Promise.resolve();
   }
 
+  async blockInfo() {
+    // TODO
+    // get blockchain_id, start block
+    return Promise.resolve();
+  }
+
   async blockchainId() {
     this.logger.log('blockchainId')
     const result = await this.blockchainModel.findOne({
