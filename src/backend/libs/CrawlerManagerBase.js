@@ -17,6 +17,11 @@ class CrawlerManagerBase {
     return this;
   }
 
+  async assignParser() {
+    // need override
+    return Promise.resolve();
+  }
+
   async blockchainId() {
     this.logger.log('blockchainId')
     const result = await this.blockchainModel.findOne({
@@ -29,11 +34,11 @@ class CrawlerManagerBase {
     this.logger.log('blockNumberFromDB');
     try {
       const result = await this.blockchainModel.findOne({
-        where: { blockchainId: this.bcid },
+        where: { Blockchain_id: this.bcid },
       });
       return result.block;
     } catch (error) {
-      this.logger.log(error);
+      this.logger.log('blockNumberFromDB error', error);
       return 0;
     }
   }
@@ -41,9 +46,45 @@ class CrawlerManagerBase {
   async blockHashFromDB(block) {
     this.logger.log(`blockHashFromDB(${block})`);
     const result = await this.blockScannedModel.findOne({
-      where: { blockchainId: this.bcid, block },
+      where: { Blockchain_id: this.bcid, block },
     });
     return result.block_hash;
+  }
+
+  async blockNumberFromPeer() {
+    // need override
+    return Promise.resolve();
+  }
+
+  async blockDataFromPeer(blockHash) {
+    // need override
+    return Promise.resolve();
+  }
+
+  async blockHashFromPeer(block) {
+    // need override
+    return Promise.resolve();
+  }
+
+  async checkBlockNumberLess() {
+    this.logger.log('checkBlockNumberLess');
+    const dbBlockNumber = await this.blockNumberFromDB();
+    const currentBlockNumber = await this.blockNumberFromPeer();
+    if (typeof dbBlockNumber !== 'number' || typeof currentBlockNumber !== 'number') {
+      return false;
+    }
+    return dbBlockNumber < currentBlockNumber;
+  }
+
+  async checkBlockHash(block) {
+    this.logger.log(`checkBlockHash(${block})`);
+    const dbBlockHash = await this.blockHashFromDB(block);
+    const peerBlockHash = await this.blockHashFromPeer(block);
+    if (typeof dbBlockHash !== 'string' || typeof peerBlockHash !== 'string') {
+      return false;
+    }
+
+    return dbBlockHash === peerBlockHash;
   }
 
   async insertBlock(blockData) {
@@ -65,6 +106,27 @@ class CrawlerManagerBase {
     return insertResult;
   }
 
+  async oneCycle() {
+    // need override
+    return Promise.resolve();
+  }
+
+  async rollbackBlock() {
+    // TODO
+    this.logger.log(`rollbackBlock()`);
+    return Promise.resolve();
+  };
+  
+  async syncBlock(block) {
+    // need override
+    return Promise.resolve();
+  }
+
+  async updateBalance(){
+    // need override
+    return Promise.resolve();
+  }
+  
   async updateBlockHeight(block) {
     this.logger.log(`updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(
@@ -72,35 +134,6 @@ class CrawlerManagerBase {
       { where: { Blockchain_id: this.bcid } }
     );
     return insertResult;
-  }
-
-  async rollbackBlock() {
-    this.logger.log(`rollbackBlock()`);
-    return Promise.resolve();
-  };
-
-  blockNumberFromPeer() {
-    return Promise.resolve();
-  }
-
-  blockDataFromPeer(blockHash) {
-    return Promise.resolve();
-  }
-
-  blockhashFromPeer(block) {
-    return Promise.resolve();
-  }
-
-  async checkBlockNumber() {
-    return true;
-  }
-
-  async checkBlockHash(block) {
-    return true;
-  }
-  
-  async syncNextBlock(block) {
-    return Promise.resolve();
   }
 }
 

@@ -12,91 +12,78 @@ class BtcCrawlerManager extends CrawlerManagerBase {
   async init() {
     this.options = this.config.bitcoin;
     this.peerBlock = 0;
+    this.syncInterval = this.config.syncInterval.bitcoin ? this.config.syncInterval.bitcoin : 900000;
     this.bcid = await this.blockchainId();
     //**** for test function ****
-    this.blockNumberFromPeer()
-    .then(bNum => {this.logger.log(`blockNumberFromPeer: ${bNum}`); return bNum})
-    .then(bNum => this.blockhashFromPeer(bNum))
-    .then(bHash => {this.logger.log(`blockhashFromPeer: ${bHash}`); return bHash})
-    .then(bHash => this.blockDataFromPeer(bHash))
-    // .then(bData => {this.logger.log(`blockDataFromPeer: ${JSON.stringify(bData)}`); return bData})
-    .then(bData => this.insertBlock(bData))
-    // .then(saveResult => {this.logger.log(`save result:`, JSON.stringify(saveResult)); return saveResult})
-    .then(r => this.updateBlockHeight(20))
-    .catch(e => this.logger.log(`something wrong, error: ${e}`))
+    // this.blockNumberFromPeer()
+    // .then(bNum => {this.logger.log(`blockNumberFromPeer: ${bNum}`); return bNum})
+    // .then(bNum => this.blockHashFromPeer(bNum))
+    // .then(bHash => {this.logger.log(`blockHashFromPeer: ${bHash}`); return bHash})
+    // .then(bHash => this.blockDataFromPeer(bHash))
+    // // .then(bData => {this.logger.log(`blockDataFromPeer: ${JSON.stringify(bData)}`); return bData})
+    // .then(bData => this.insertBlock(bData))
+    // // .then(saveResult => {this.logger.log(`save result:`, JSON.stringify(saveResult)); return saveResult})
+    // .then(r => this.updateBlockHeight(1934803))
+    // .catch(e => this.logger.log(`something wrong, error: ${e}`))
+    try {
+      await this.oneCycle();
+      setInterval(async () => {
+        await this.oneCycle();
+      }, this.syncInterval);
+    } catch (error) {
+      this.logger.log(error);
+    }
     //**** for test function done ****
   }
 
-  blockNumberFromPeer() {
+  async assignParser() {
+    // TODO
+    return Promise.resolve();
+  }
+
+  async blockNumberFromPeer() {
     this.logger.log('blockNumberFromPeer');
     const type = 'getblockcount';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type });
     const checkId = options.data.id;
-    return Utils.BTCRPC(options)
-      .then((data) => {
-        if (data instanceof Object) {
-          if (data.id !== checkId) return Promise.reject();
-          return Promise.resolve(data.result);
-        }
-        this.logger.log(`\x1b[1m\x1b[90mbtc block number not found\x1b[0m\x1b[21m`);
-        return Promise.reject();
-      })
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) return Promise.reject();
+      return Promise.resolve(data.result);
+    }
+    this.logger.log(`\x1b[1m\x1b[90mbtc block number not found\x1b[0m\x1b[21m`);
+    return Promise.reject();
   }
 
-  blockDataFromPeer(blockHash) {
+  async blockDataFromPeer(blockHash) {
     this.logger.log(`blockDataFromPeer(${blockHash})`);
     const type = 'getblock';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, blockHash });
     const checkId = options.data.id;
-    return Utils.BTCRPC(options)
-      .then((data) => {
-        if (data instanceof Object) {
-          if (data.id !== checkId) return Promise.reject();
-          return Promise.resolve(data.result);
-        }
-        this.logger.log(`\x1b[1m\x1b[90mbtc block hash not found\x1b[0m\x1b[21m`);
-        return Promise.reject();
-      })
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) return Promise.reject();
+      return Promise.resolve(data.result);
+    }
+    this.logger.log(`\x1b[1m\x1b[90mbtc block data not found\x1b[0m\x1b[21m`);
+    return Promise.reject();
   }
 
-  blockhashFromPeer(block) {
+  async blockHashFromPeer(block) {
     this.logger.log(`blockhashFromPeer(${block})`);
     const type = 'getblockhash';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, block });
     const checkId = options.data.id;
-    return Utils.BTCRPC(options)
-      .then((data) => {
-        if (data instanceof Object) {
-          if (data.id !== checkId) return Promise.reject();
-          return Promise.resolve(data.result);
-        }
-        this.logger.log(`\x1b[1m\x1b[90mbtc block hash not found\x1b[0m\x1b[21m`);
-        return Promise.reject();
-      })
-  }
-
-  async checkBlockNumber() {
-    this.logger.log('checkBlockNumber');
-    const dbBlockNumber = await this.blockNumberFromDB();
-    const currentBlockNumber = this.blockNumberFromPeer();
-    if (typeof dbBlockNumber !== 'number' || typeof currentBlockNumber !== 'number') {
-      return Promise.reject();
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) return Promise.reject();
+      return Promise.resolve(data.result);
     }
-    return dbBlockNumber <= currentBlockNumber;
-  }
-
-  async checkBlockHash(block) {
-    this.logger.log(`checkBlockHash(${block})`);
-    const dbBlockHash = await this.blockHashFromDB(block);
-    const peerBlockHash = await this.blockHashFromPeer(block);
-    if (typeof block !== 'string' || typeof peerBlockHash !== 'string') {
-      return Promise.reject();
-    }
-
-    return dbBlockHash === peerBlockHash;
+    this.logger.log(`\x1b[1m\x1b[90mbtc block hash not found\x1b[0m\x1b[21m`);
+    return Promise.reject();
   }
 
   async insertBlock(blockData) {
@@ -118,8 +105,44 @@ class BtcCrawlerManager extends CrawlerManagerBase {
     return insertResult;
   }
 
-  async syncNextBlock(block) {
-    this.logger.log(`syncNextBlock(current_block = ${block})`);
+  async oneCycle() {
+    try {
+      //step
+      //1. blockNumberFromDB
+      //2. blockNumberFromPeer
+      //3. checkBlockNumber
+      //4. if equal wait to next cycle
+      //5. blockHashFromDB
+      //6. blockHashFromPeer
+      //7. checkBlockHash
+      //7-1 if not equal rollbackBlock
+      //8. syncNextBlock
+      //9. updateBalance
+      //10. wait to next cycle
+  
+      let dbBlock = await this.blockNumberFromDB();
+      this.peerBlock = await this.blockNumberFromPeer();
+      if (!await this.checkBlockNumberLess()) {
+        this.logger.log(`[BtcCrawlerManager] block height ${dbBlock} is top now.`);
+        return Promise.resolve();
+      }
+
+      if (!await this.checkBlockHash(dbBlock)) {
+        this.logger.log(`[BtcCrawlerManager] block ${dbBlock} in db not the same as peer.`);
+        // TODO
+        // dbBlock = await this.rollbackBlock();
+      }
+
+      await this.syncBlock(dbBlock);
+
+      await this.updateBalance();
+      return Promise.resolve();
+    } catch (error) {
+      return Promise.reject();
+    }
+  }
+
+  async syncBlock(block) {
     // step
     // 1. sync block +1
     // 2. save block data into db
@@ -130,38 +153,41 @@ class BtcCrawlerManager extends CrawlerManagerBase {
     // 7. if no, recursive
 
     try {
-      // 1. sync block +1
-      const syncBlock = block + 1;
-      const syncBlockHash = await this.blockhashFromPeer(syncBlock);
-      const syncResult = await this.blockDataFromPeer(syncBlockHash);
-      if (!syncBlockHash || !syncResult) {
-        //block hash or data not found
-        //maybe network error or block doesn't exist
-        //end this recursive
-        return Promise.resolve();
-      }
-
-      // 2. save block data into db
-      // must success
-      const BlockScanned_id = await this.insertBlock(syncResult);
-
-      // 3. assign parser
-      // must success
-
-      // 4. after parse done update blockchain table block column
-      const updateResult = await this.updateBlockHeight(syncBlock);
-
-      // 5. check block in db is large than or equal to this.peerBlock
-      if (syncBlock >= this.peerBlock) {
-        // 6. if yes return
-        return Promise.resolve();
-      }
-      // 7. if no, recursive
-      return this.syncNextBlock(syncBlock);
+      let syncBlock = block;
+      do {
+        // 1. sync block +1
+        this.logger.log(`syncBlock(${block})`);
+        syncBlock += 1;
+        const syncBlockHash = await this.blockHashFromPeer(syncBlock);
+        const syncResult = await this.blockDataFromPeer(syncBlockHash);
+        if (!syncBlockHash || !syncResult) {
+          //block hash or data not found
+          //maybe network error or block doesn't exist
+          //end this recursive
+          return Promise.resolve(syncBlock - 1);
+        }
+  
+        // 2. save block data into db
+        // must success
+        const BlockScanned_id = await this.insertBlock(syncResult);
+  
+        // 3. assign parser
+        // must success
+  
+        // 4. after parse done update blockchain table block column
+        const updateResult = await this.updateBlockHeight(syncBlock);
+  
+      } while (syncBlock < this.peerBlock);
+      return Promise.resolve(syncBlock);
     } catch (error) {
       this.logger.error(error);
       return Promise.reject();
     }
+  }
+
+  async updateBalance(){
+    // TODO
+    return Promise.resolve();
   }
 
   async updateBlockHeight(block) {
@@ -199,7 +225,7 @@ class BtcCrawlerManager extends CrawlerManagerBase {
           result = {
             jsonrpc: '1.0',
             method: 'getblock',
-            params: [blockHash],
+            params: [blockHash, 2],
             id: dvalue.randomID(),
           };
           break;
