@@ -14,18 +14,6 @@ class BtcCrawlerManager extends CrawlerManagerBase {
     this.peerBlock = 0;
     this.syncInterval = this.config.syncInterval.bitcoin ? this.config.syncInterval.bitcoin : 900000;
     this.bcid = await this.blockchainId();
-    //**** for test function ****
-    // this.blockNumberFromPeer()
-    // .then(bNum => {this.logger.log(`blockNumberFromPeer: ${bNum}`); return bNum})
-    // .then(bNum => this.blockHashFromPeer(bNum))
-    // .then(bHash => {this.logger.log(`blockHashFromPeer: ${bHash}`); return bHash})
-    // .then(bHash => this.blockDataFromPeer(bHash))
-    // // .then(bData => {this.logger.log(`blockDataFromPeer: ${JSON.stringify(bData)}`); return bData})
-    // .then(bData => this.insertBlock(bData))
-    // // .then(saveResult => {this.logger.log(`save result:`, JSON.stringify(saveResult)); return saveResult})
-    // .then(r => this.updateBlockHeight(1934803))
-    // .catch(e => this.logger.log(`something wrong, error: ${e}`))
-    //**** for test function done ****
     try {
       this.oneCycle();
     } catch (error) {
