@@ -14,6 +14,7 @@ class CrawlerManagerBase {
   }
 
   async init() {
+    this.isSyncing = false;
     return this;
   }
 

@@ -25,15 +25,19 @@ class BtcCrawlerManager extends CrawlerManagerBase {
     // // .then(saveResult => {this.logger.log(`save result:`, JSON.stringify(saveResult)); return saveResult})
     // .then(r => this.updateBlockHeight(1934803))
     // .catch(e => this.logger.log(`something wrong, error: ${e}`))
+    //**** for test function done ****
     try {
-      await this.oneCycle();
-      setInterval(async () => {
-        await this.oneCycle();
-      }, this.syncInterval);
+      this.oneCycle();
     } catch (error) {
       this.logger.log(error);
     }
-    //**** for test function done ****
+    setInterval(async () => {
+      try {
+        this.oneCycle();
+      } catch (error) {
+        this.logger.log(error);
+      }
+    }, this.syncInterval);
   }
 
   async assignParser() {
@@ -107,6 +111,8 @@ class BtcCrawlerManager extends CrawlerManagerBase {
 
   async oneCycle() {
     try {
+      if (this.isSyncing) return Promise.reject('BtcCrawlerManager is sycning');
+      this.isSyncing = true;
       //step
       //1. blockNumberFromDB
       //2. blockNumberFromPeer
@@ -136,8 +142,11 @@ class BtcCrawlerManager extends CrawlerManagerBase {
       await this.syncBlock(dbBlock);
 
       await this.updateBalance();
+
+      this.isSyncing = false;
       return Promise.resolve();
     } catch (error) {
+      this.isSyncing = false;
       return Promise.reject();
     }
   }
