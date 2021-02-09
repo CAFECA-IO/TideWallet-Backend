@@ -28,6 +28,26 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Blockchain', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  bip32_public: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  bip32_private: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  pubKeyHash: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  scriptHash: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  wif: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
 }, {
   timestamps: false,
   tableName: 'Blockchain',

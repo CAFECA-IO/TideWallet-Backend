@@ -1,14 +1,20 @@
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-
 const level = require('level');
+const bs58check = require('bs58check');
+const EthUtils = require('ethereumjs-util');
+const crypto = require('crypto');
+
+const { BN } = EthUtils;
 const toml = require('toml');
 const randToken = require('rand-token');
 const JWT = require('jsonwebtoken');
 const i18n = require('i18n');
 const dvalue = require('dvalue');
 const ecRequest = require('ecrequest');
+const blockchainNetworks = require('./data/blockchainNetworks');
+
 const Codes = require('./Codes');
 const ResponseFormat = require('./ResponseFormat');
 const initialORM = require('../../database/models');
@@ -452,14 +458,13 @@ class Utils {
     // eslint-disable-next-line no-shadow
     config, database, logger, i18n,
   }) {
-    this.config = config;
-    this.logger = logger;
-    this.database = database;
     const interfaceFN = 'Bot.js';
-    // const interfaceBot = require(path.resolve(__dirname, interfaceFN));
+    this.config = config;
+    this.database = database;
+    this.logger = logger;
     return this.scanFolder({ folder: __dirname })
-      .then((list) => list.filter((v) => path.parse(v).name !== path.parse(interfaceFN).name))
-      // eslint-disable-next-line global-require, import/no-dynamic-require
+      .then((list) => list.filter((v) => (path.parse(v).name !== path.parse(interfaceFN).name) && v.indexOf('.js') !== -1))
+      // eslint-disable-next-line import/no-dynamic-require, global-require
       .then((list) => list.map((v) => require(v)))
       .then((list) => list.filter((v) => v.isBot))
       // eslint-disable-next-line new-cap
@@ -614,6 +619,56 @@ class Utils {
     } catch (err) {
       if (err.message === 'jwt expired') throw new ResponseFormat({ message: 'expired access token', code: Codes.EXPIRED_ACCESS_TOKEN });
       throw new ResponseFormat({ message: `server error(${err.message})`, code: Codes.SERVER_ERROR });
+    }
+  }
+
+  static ripemd160(data) {
+    const hash = crypto.createHash('ripemd160');
+    hash.update(data);
+    return hash.digest();
+  }
+
+  static sha256(message) {
+    const hash = crypto.createHash('sha256');
+    hash.update(message);
+    return hash.digest();
+  }
+
+  static compressedPublicKey(uncomperedPublicKey) {
+    if (typeof uncomperedPublicKey === 'string') uncomperedPublicKey = Buffer.from(uncomperedPublicKey, 'hex');
+    if (uncomperedPublicKey.length % 2 === 1) {
+      uncomperedPublicKey = uncomperedPublicKey.slice(1, uncomperedPublicKey.length);
+    }
+
+    const x = uncomperedPublicKey.slice(0, 32);
+    const y = uncomperedPublicKey.slice(32, 64);
+
+    const bnP = new BN('fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f', 16);
+
+    const bnX = new BN(x.toString('hex'), 16);
+    const bnY = new BN(y.toString('hex'), 16);
+
+    const check = bnX.pow(new BN(3)).add(new BN(7)).sub((bnY.pow(new BN(2)))).mod(bnP);
+
+    if (!check.isZero()) return 'Error';
+    const prefix = bnY.isEven() ? '02' : '03';
+    const compressed = Buffer.concat([Buffer.from(prefix, 'hex'), x]);
+
+    return compressed;
+  }
+
+  static toP2pkhAddress(blockchainID, pubkey) {
+    try {
+      const _pubkey = pubkey.replace('0x', '');
+      const fingerprint = this.ripemd160(this.sha256(_pubkey.length > 33 ? this.compressedPublicKey(_pubkey) : _pubkey));
+      const findNetwork = Object.values(blockchainNetworks).find((value) => value.Blockchain_id === blockchainID);
+      const prefix = Buffer.from((findNetwork.pubKeyHash).toString(16).padStart(2, '0'), 'hex');
+      const hashPubKey = Buffer.concat([prefix, fingerprint]);
+      const address = bs58check.encode(hashPubKey);
+      return address;
+    } catch (e) {
+      console.log('e', e);
+      return e;
     }
   }
 }
