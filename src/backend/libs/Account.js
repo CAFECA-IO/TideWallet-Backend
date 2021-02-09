@@ -3,6 +3,7 @@ const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Utils = require('./Utils');
 const Codes = require('./Codes');
+const HDWallet = require('./HDWallet');
 
 class Account extends Bot {
   constructor() {
@@ -100,7 +101,6 @@ class Account extends Bot {
 
           return new ResponseFormat({ message: 'Account Token Regist', payload });
         } catch (e) {
-          console.log(e);
           return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
         }
       }
@@ -144,7 +144,7 @@ class Account extends Bot {
         for (let j = 0; j < findAccountCurrencies.length; j++) {
           const accountCurrency = findAccountCurrencies[j];
           payload.push({
-            account_id: account.Account_id,
+            account_id: findAccountCurrencies.AccountCurrency_id,
             blockchain_id: account.Blockchain_id,
             currency_id: accountCurrency.Currency_id,
             balance: accountCurrency.balance,
@@ -154,7 +154,6 @@ class Account extends Bot {
       }
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
-      console.log(e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
@@ -198,7 +197,7 @@ class Account extends Bot {
             payload.push({
               blockchain_id: account.Blockchain_id,
               currency_id: accountCurrency.Currency_id,
-              account_id: account.Account_id,
+              account_id: accountCurrency.AccountCurrency_id,
               purpose: account.purpose,
               account_index: '0',
               curve_type: account.curve_type,
@@ -230,7 +229,152 @@ class Account extends Bot {
       });
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
-      console.log(e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
+  }
+
+  async AccountReceive({ params, token }) {
+    const { account_id } = params;
+    if (!Utils.validateString(account_id)) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+
+    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+    const tokenInfo = await Utils.verifyToken(token);
+
+    try {
+      const findAccountCurrency = await this.accountCurrencyModel.findOne({
+        where: { AccountCurrency_id: account_id },
+        include: [
+          {
+            model: this.accountModel,
+            attributes: ['Account_id', 'User_id', 'extend_public_key'],
+            where: {
+              User_id: tokenInfo.userID,
+            },
+            include: [
+              {
+                model: this.blockchainModel,
+                attributes: ['Blockchain_id', 'block', 'coin_type'],
+              },
+            ],
+          },
+        ],
+      });
+      if (!findAccountCurrency) return new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
+
+      const findReceiveAddress = await this.accountAddressModel.findOne({
+        where: {
+          Account_id: findAccountCurrency.Account.Account_id,
+          chain_index: 0,
+          key_index: findAccountCurrency.number_of_external_key,
+        },
+      });
+
+      const hdWallet = new HDWallet({ extendPublicKey: findAccountCurrency.Account.extend_public_key });
+      // if index address not found
+      let { address } = findReceiveAddress || {};
+      if (!findReceiveAddress) {
+        const coinType = findAccountCurrency.Account.Blockchain.coin_type;
+        const wallet = hdWallet.getWalletInfo({
+          change: 0,
+          index: findAccountCurrency.number_of_external_key,
+          coinType,
+          blockchainID: findAccountCurrency.Account.Blockchain.Blockchain_id,
+        });
+
+        await this.accountAddressModel.create({
+          AccountAddress_id: uuidv4(),
+          Account_id: findAccountCurrency.Account.Account_id,
+          chain_index: 0,
+          key_index: 0,
+          public_key: wallet.publicKey,
+          address: wallet.address,
+        });
+
+        address = wallet.address;
+      }
+
+      return new ResponseFormat({
+        message: 'Get Receive Address',
+        payload: {
+          address,
+          key_index: findAccountCurrency.number_of_external_key,
+        },
+      });
+    } catch (e) {
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
+  }
+
+  async AccountChange({ params, token }) {
+    const { account_id } = params;
+    if (!Utils.validateString(account_id)) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+
+    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+    const tokenInfo = await Utils.verifyToken(token);
+
+    try {
+      const findAccountCurrency = await this.accountCurrencyModel.findOne({
+        where: { AccountCurrency_id: account_id },
+        include: [
+          {
+            model: this.accountModel,
+            attributes: ['Account_id', 'User_id', 'extend_public_key'],
+            where: {
+              User_id: tokenInfo.userID,
+            },
+            include: [
+              {
+                model: this.blockchainModel,
+                attributes: ['Blockchain_id', 'block', 'coin_type'],
+              },
+            ],
+          },
+        ],
+      });
+      if (!findAccountCurrency) return new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
+
+      const findChangeAddress = await this.accountAddressModel.findOne({
+        where: {
+          Account_id: findAccountCurrency.Account.Account_id,
+          chain_index: 1,
+          key_index: findAccountCurrency.number_of_internal_key,
+        },
+      });
+
+      const hdWallet = new HDWallet({ extendPublicKey: findAccountCurrency.Account.extend_public_key });
+      // if index address not found
+      let { address } = findChangeAddress || {};
+      if (!findChangeAddress) {
+        const coinType = findAccountCurrency.Account.Blockchain.coin_type;
+        const wallet = hdWallet.getWalletInfo({
+          change: 1,
+          index: findAccountCurrency.number_of_internal_key,
+          coinType,
+          blockchainID: findAccountCurrency.Account.Blockchain.Blockchain_id,
+        });
+
+        await this.accountAddressModel.create({
+          AccountAddress_id: uuidv4(),
+          Account_id: findAccountCurrency.Account.Account_id,
+          chain_index: 1,
+          key_index: 0,
+          public_key: wallet.publicKey,
+          address: wallet.address,
+        });
+
+        address = wallet.address;
+      }
+
+      return new ResponseFormat({
+        message: 'Get Change Address',
+        payload: {
+          address,
+          key_index: findAccountCurrency.number_of_internal_key,
+        },
+      });
+    } catch (e) {
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
