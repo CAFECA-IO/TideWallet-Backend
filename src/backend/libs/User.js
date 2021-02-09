@@ -102,7 +102,7 @@ class User extends Bot {
       const payload = await Utils.generateToken({ userID });
       return new ResponseFormat({ message: 'User Regist', payload });
     } catch (e) {
-      console.log(e);
+      if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
   }
@@ -122,6 +122,7 @@ class User extends Bot {
         },
       });
     } catch (e) {
+      if (e.code) return e;
       return e;
     }
   }

@@ -95,7 +95,7 @@ class Receptor extends Bot {
         method: ctx.method,
         query: ctx.query,
         session: ctx.session,
-
+        token: ctx.header.token,
       };
       return operation(inputs)
         .then((rs) => {

@@ -612,11 +612,12 @@ class Utils {
         where: { User_id: userID },
       });
 
-      if (!findUser) return new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
+      if (!findUser) throw new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
 
       data.user = findUser;
       return data;
     } catch (err) {
+      if (err.code === Codes.USER_NOT_FOUND) throw new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
       if (err.message === 'jwt expired') throw new ResponseFormat({ message: 'expired access token', code: Codes.EXPIRED_ACCESS_TOKEN });
       throw new ResponseFormat({ message: `server error(${err.message})`, code: Codes.SERVER_ERROR });
     }
