@@ -30,20 +30,20 @@ class CrawlerManagerBase {
   }
 
   async blockNumberFromDB() {
-    this.logger.log('blockNumberFromDB');
+    this.logger.log(`[${this.constructor.name}] blockNumberFromDB`);
     try {
       const result = await this.blockchainModel.findOne({
         where: { Blockchain_id: this.bcid },
       });
       return result.block;
     } catch (error) {
-      this.logger.log('blockNumberFromDB error', error);
+      this.logger.log(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
       return 0;
     }
   }
 
   async blockHashFromDB(block) {
-    this.logger.log(`blockHashFromDB(${block})`);
+    this.logger.log(`[${this.constructor.name}] blockHashFromDB(${block})`);
     const result = await this.blockScannedModel.findOne({
       where: { Blockchain_id: this.bcid, block },
     });
@@ -66,7 +66,7 @@ class CrawlerManagerBase {
   }
 
   async checkBlockNumberLess() {
-    this.logger.log('checkBlockNumberLess');
+    this.logger.log(`[${this.constructor.name}] checkBlockNumberLess`);
     const dbBlockNumber = await this.blockNumberFromDB();
     const currentBlockNumber = await this.blockNumberFromPeer();
     if (typeof dbBlockNumber !== 'number' || typeof currentBlockNumber !== 'number') {
@@ -76,7 +76,7 @@ class CrawlerManagerBase {
   }
 
   async checkBlockHash(block) {
-    this.logger.log(`checkBlockHash(${block})`);
+    this.logger.log(`[${this.constructor.name}] checkBlockHash(${block})`);
     const dbBlockHash = await this.blockHashFromDB(block);
     const peerBlockHash = await this.blockHashFromPeer(block);
     if (typeof dbBlockHash !== 'string' || typeof peerBlockHash !== 'string') {
@@ -87,9 +87,9 @@ class CrawlerManagerBase {
   }
 
   async insertBlock(blockData) {
-    this.logger.log(`insertBlock(${blockData.hash})`);
-    this.logger.log(`this.bcid: ${this.bcid}`);
-    this.logger.log(`blockData.height: ${blockData.height}`);
+    this.logger.log(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
+    this.logger.log(`[${this.constructor.name}] this.bcid: ${this.bcid}`);
+    this.logger.log(`[${this.constructor.name}] blockData.height: ${blockData.height}`);
 
     const insertResult = await this.blockScannedModel.findOrCreate({
       where: { Blockchain_id: this.bcid, block: blockData.height },
@@ -127,7 +127,7 @@ class CrawlerManagerBase {
   }
   
   async updateBlockHeight(block) {
-    this.logger.log(`updateBlockHeight(${block})`);
+    this.logger.log(`[${this.constructor.name}] updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(
       { block },
       { where: { Blockchain_id: this.bcid } }
