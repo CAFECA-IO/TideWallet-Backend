@@ -10,6 +10,10 @@ module.exports = (sequelize, DataTypes) => sequelize.define('BlockScanned', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  start_block: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
   block: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -31,5 +35,5 @@ module.exports = (sequelize, DataTypes) => sequelize.define('BlockScanned', {
   tableName: 'BlockScanned',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
-  indexes: [{ unique: true, fields: ['Blockchain_id'] }],
+  indexes: [{ fields: ['Blockchain_id'] }],
 });

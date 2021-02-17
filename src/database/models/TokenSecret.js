@@ -1,5 +1,5 @@
-module.exports = (sequelize, DataTypes) => sequelize.define('OAuthRefreshToken', {
-  Refresh_token: {
+module.exports = (sequelize, DataTypes) => sequelize.define('TokenSecret', {
+  TokenSecret: {
     type: DataTypes.STRING(256),
     allowNull: false,
     primaryKey: true,
@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('OAuthRefreshToken',
   },
 }, {
   timestamps: false,
-  tableName: 'OAuthRefreshToken',
+  tableName: 'TokenSecret',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
 });

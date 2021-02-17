@@ -1,6 +1,8 @@
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Codes = require('./Codes');
+const blockchainNetworks = require('./data/blockchainNetworks');
+const currency = require('./data/currency');
 
 class Blockchain extends Bot {
   constructor() {
@@ -20,7 +22,36 @@ class Blockchain extends Bot {
       this.sequelize = this.database.db.sequelize;
       this.Sequelize = this.database.db.Sequelize;
       return this;
+    }).then(async () => {
+      await this.initBlockchainNetworks();
+      await this.initCurrency();
+      return this;
     });
+  }
+
+  async initBlockchainNetworks() {
+    const networks = Object.values(blockchainNetworks);
+    for (let i = 0; i < networks.length; i++) {
+      const network = networks[i];
+      network.bip32_public = network.bip32.public;
+      network.bip32_private = network.bip32.private;
+      delete network.bip32;
+      await this.blockchainModel.findOrCreate({
+        where: { Blockchain_id: network.Blockchain_id },
+        defaults: network,
+      });
+    }
+  }
+
+  async initCurrency() {
+    for (let i = 0; i < currency.length; i++) {
+      const currencyItem = currency[i];
+
+      await this.currencyModel.findOrCreate({
+        where: { Currency_id: currencyItem.Currency_id },
+        defaults: currencyItem,
+      });
+    }
   }
 
   async BlockchainList() {
