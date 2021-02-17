@@ -117,7 +117,8 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000000"
+							"value": "80000000",
+							"type": "string"
 						}
 					]
 				}
@@ -317,7 +318,8 @@
 					"variable": [
 						{
 							"key": "currency_id",
-							"value": "5b1ea92e584bf50020130615"
+							"value": "5b1ea92e584bf50020130615",
+							"type": "string"
 						}
 					]
 				}
@@ -425,7 +427,8 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000060"
+							"value": "80000060",
+							"type": "string"
 						}
 					]
 				}
@@ -520,9 +523,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/token/:currency_id",
+					"raw": "127.0.0.1/api/v1/blockchain/:blockchain_id/token/:currency_id",
 					"host": [
-						"{{domain}}"
+						"127",
+						"0",
+						"0",
+						"1"
 					],
 					"path": [
 						"api",
@@ -535,11 +541,13 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000060"
+							"value": "80000060",
+							"type": "string"
 						},
 						{
 							"key": "currency_id",
-							"value": "5b1ea92e584bf50020130617"
+							"value": "5b1ea92e584bf50020130617",
+							"type": "string"
 						}
 					]
 				}
@@ -879,7 +887,88 @@
 					]
 				}
 			},
-			"response": []
+			"response": [
+				{
+					"name": "9. Token Verify",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/token/verify?token={{token}}",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"token",
+								"verify"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "{{token}}"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Date",
+							"value": "Thu, 04 Feb 2021 08:17:51 GMT"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Transfer-Encoding",
+							"value": "chunked"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "CF-Cache-Status",
+							"value": "DYNAMIC"
+						},
+						{
+							"key": "cf-request-id",
+							"value": "080db78c7b000021be1fafe000000001"
+						},
+						{
+							"key": "Expect-CT",
+							"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
+						},
+						{
+							"key": "Report-To",
+							"value": "{\"group\":\"cf-nel\",\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report?s=lsz2JAhf19VgzxsrTs0Y137%2BoG4xjDT3mKIf%2FUZ4acEyyhWpMUQ6ZmNvTBLLF9Af6NWkEsyzXS7aiY%2BEW389X3oFeGv4UQ84N0C9oXE2F2c%2BpOsfnlc%3D\"}],\"max_age\":604800}"
+						},
+						{
+							"key": "NEL",
+							"value": "{\"report_to\":\"cf-nel\",\"max_age\":604800}"
+						},
+						{
+							"key": "Server",
+							"value": "cloudflare"
+						},
+						{
+							"key": "CF-RAY",
+							"value": "61c2f527292021be-HKG"
+						},
+						{
+							"key": "Content-Encoding",
+							"value": "br"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Token Verify\",\n    \"payload\": {\n        \"user_id\": \"1\",\n        \"wallet_name\": \"測試錢包\"\n    }\n}"
+				}
+			]
 		},
 		{
 			"name": "10. Token Renew",
@@ -888,7 +977,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"token\": \"xxxxx...xx\",\n    \"tokenSecret\": \"xxxxx...xx\",\n}",
+					"raw": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI0OTdlMTNkYi1mN2IwLTRlNDctOGVkNi0zNTI5NzE5ZDQ3ZjIiLCJpYXQiOjE2MTI1MjAwNzAsImV4cCI6MTY0NDA1NjA3MH0.bmcjwSxhw-oS3mdmbrc8br0PA7l5NpBQ3OKRH-jsZRY\",\n    \"tokenSecret\": \"rRATKtJTMeCIFucxHqUn29iNB7s2g8zUeZqTOiUereSxjcWL5pZSc0gT1IY4HFObx4ETK9KFVpdhZXEAY5322QhwA6mrWvr9PlrjMzI1mV2NgnlrZO9BWIlAjg82G2fLEcLIYT2r2aQeZ05PqDUCs1cRCw1MxPOu57yRAkddG7FIkmnIRrqrVfEAEJD9Xya0PODU7RHsjsdafo8zugVvG4kP9xUsT14eXYMQCZWhnYhwZMKUeC6FXl758YGtze4a\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -1022,11 +1111,13 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000060"
+							"value": "80000060",
+							"type": "string"
 						},
 						{
 							"key": "currency_id",
-							"value": "5b1ea92e584bf50020130617"
+							"value": "5b1ea92e584bf50020130617",
+							"type": "string"
 						}
 					]
 				}
@@ -1260,7 +1351,8 @@
 					"variable": [
 						{
 							"key": "currency_id",
-							"value": "5b1ea92e584bf50020130615"
+							"value": "5b1ea92e584bf50020130615",
+							"type": "string"
 						}
 					]
 				}
@@ -1383,7 +1475,8 @@
 					"variable": [
 						{
 							"key": "account_id or token_account_id",
-							"value": "xxxxxxxx"
+							"value": "xxxxxxxx",
+							"type": "string"
 						}
 					]
 				}
@@ -1508,7 +1601,8 @@
 					"variable": [
 						{
 							"key": "account_id or token_account_id",
-							"value": "xxxxxxxx"
+							"value": "xxxxxxxx",
+							"type": "string"
 						}
 					]
 				}
@@ -1632,7 +1726,8 @@
 					"variable": [
 						{
 							"key": "account_id or token_account_id",
-							"value": "xxxxxxxx"
+							"value": "xxxxxxxx",
+							"type": "string"
 						}
 					]
 				}
@@ -1749,7 +1844,8 @@
 					"variable": [
 						{
 							"key": "txid",
-							"value": "txid"
+							"value": "txid",
+							"type": "string"
 						}
 					]
 				}
@@ -1867,7 +1963,8 @@
 					"variable": [
 						{
 							"key": "account_id or token_account_id",
-							"value": "xxxxxxxx"
+							"value": "xxxxxxxx",
+							"type": "string"
 						}
 					]
 				}
@@ -1984,20 +2081,101 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000000"
+							"value": "80000000",
+							"type": "string"
 						}
 					]
 				}
 			},
-			"response": []
+			"response": [
+				{
+					"name": "19. Get Fee",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/fee",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"blockchain",
+								":blockchain_id",
+								"fee"
+							],
+							"variable": [
+								{
+									"key": "blockchain_id",
+									"value": "80000000",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Date",
+							"value": "Thu, 04 Feb 2021 08:19:06 GMT"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Transfer-Encoding",
+							"value": "chunked"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "CF-Cache-Status",
+							"value": "DYNAMIC"
+						},
+						{
+							"key": "cf-request-id",
+							"value": "080db8b0d3000021bef1a1c000000001"
+						},
+						{
+							"key": "Expect-CT",
+							"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
+						},
+						{
+							"key": "Report-To",
+							"value": "{\"group\":\"cf-nel\",\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report?s=G4DTSpzmtKx9H29s28XZ6VSlDECbr%2FMJWVzH0JOA%2FA1XItOOcuNFTxfoYSvfVbsXUcnBIS9sIYVpeObUOhCEzHp6uxXqK8xFRilGdzvB2fpvq4PmAS0%3D\"}],\"max_age\":604800}"
+						},
+						{
+							"key": "NEL",
+							"value": "{\"report_to\":\"cf-nel\",\"max_age\":604800}"
+						},
+						{
+							"key": "Server",
+							"value": "cloudflare"
+						},
+						{
+							"key": "CF-RAY",
+							"value": "61c2f6faed6621be-HKG"
+						},
+						{
+							"key": "Content-Encoding",
+							"value": "br"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Fee\",\n    \"payload\": {\n        \"slow\": 100,\n        \"standard\": 100,\n        \"fast\": 100\n    }\n}"
+				}
+			]
 		},
 		{
 			"name": "20. Get Gas Limit",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
 			"request": {
-				"method": "GET",
+				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
@@ -2009,9 +2187,12 @@
 					}
 				},
 				"url": {
-					"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/gas-limit",
+					"raw": "127.0.0.1/api/v1/blockchain/:blockchain_id/gas-limit",
 					"host": [
-						"{{domain}}"
+						"127",
+						"0",
+						"0",
+						"1"
 					],
 					"path": [
 						"api",
@@ -2023,7 +2204,8 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000000"
+							"value": "80000000",
+							"type": "string"
 						}
 					]
 				}
@@ -2141,12 +2323,96 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000000"
+							"value": "80000000",
+							"type": "string"
 						}
 					]
 				}
 			},
-			"response": []
+			"response": [
+				{
+					"name": "21. Get Nonce",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/nonce",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"blockchain",
+								":blockchain_id",
+								"nonce"
+							],
+							"variable": [
+								{
+									"key": "blockchain_id",
+									"value": "80000000",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Date",
+							"value": "Thu, 04 Feb 2021 08:19:13 GMT"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Transfer-Encoding",
+							"value": "chunked"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "CF-Cache-Status",
+							"value": "DYNAMIC"
+						},
+						{
+							"key": "cf-request-id",
+							"value": "080db8cc06000021be25909000000001"
+						},
+						{
+							"key": "Expect-CT",
+							"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
+						},
+						{
+							"key": "Report-To",
+							"value": "{\"group\":\"cf-nel\",\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report?s=rQ4lWPLbZ0n4gUWjUYb85Gc5aMk%2FDbhNmdnZsGumTFPc7VcKUHYRV80BVl0YXU2BQsIVi2ODeYqpGkA6Qs2JZkwD0fdj0z%2BQLWvZTiuli9HwZdz5sD8%3D\"}],\"max_age\":604800}"
+						},
+						{
+							"key": "NEL",
+							"value": "{\"report_to\":\"cf-nel\",\"max_age\":604800}"
+						},
+						{
+							"key": "Server",
+							"value": "cloudflare"
+						},
+						{
+							"key": "CF-RAY",
+							"value": "61c2f7266d7c21be-HKG"
+						},
+						{
+							"key": "Content-Encoding",
+							"value": "br"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Nonce\",\n    \"payload\": {\n        \"nonce\": \"20\"\n    }\n}"
+				}
+			]
 		},
 		{
 			"name": "22. Publish Transaction",
@@ -2184,11 +2450,13 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000000"
+							"value": "80000000",
+							"type": "string"
 						},
 						{
 							"key": "account_id or token_account_id",
-							"value": "xxxxxxxx"
+							"value": "xxxxxxxx",
+							"type": "string"
 						}
 					]
 				}
@@ -2294,6 +2562,101 @@
 					],
 					"cookie": [],
 					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Publish Transaction\",\n    \"payload\": {}\n}"
+				}
+			]
+		},
+		{
+			"name": "23. List Fiat Currency Rate",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/api/v1/fiats/rate",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"fiats",
+						"rate"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "23. List Fiat Currency Rate",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/fiats/rate",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"fiats",
+								"rate"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Date",
+							"value": "Mon, 08 Feb 2021 07:26:56 GMT"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Transfer-Encoding",
+							"value": "chunked"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "CF-Cache-Status",
+							"value": "DYNAMIC"
+						},
+						{
+							"key": "cf-request-id",
+							"value": "0822225f2a00009509429dc000000001"
+						},
+						{
+							"key": "Expect-CT",
+							"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
+						},
+						{
+							"key": "Report-To",
+							"value": "{\"max_age\":604800,\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report?s=7u%2FQqprgigZlQIVYc4A6AtltOCFKOyFFhWCKTUVQI576hdos8EFwaSSefHU%2Fff4UXIBCp2%2FfgCS3pS%2F4mvJCV47l1c4jXq2uAgG%2Fx6uk4MOpvZ5BnBw%3D\"}],\"group\":\"cf-nel\"}"
+						},
+						{
+							"key": "NEL",
+							"value": "{\"max_age\":604800,\"report_to\":\"cf-nel\"}"
+						},
+						{
+							"key": "Server",
+							"value": "cloudflare"
+						},
+						{
+							"key": "CF-RAY",
+							"value": "61e3a011dd579509-NRT"
+						},
+						{
+							"key": "Content-Encoding",
+							"value": "br"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"List Fiat Currency Rate\",\n    \"payload\": [\n        {\n            \"currency_id\": \"5b1ea92e584bf50020130615\",\n            \"name\": \"USD\",\n            \"rate\": \"1\"\n        },\n        {\n            \"currency_id\": \"5b1ea92e584bf50020130613\",\n            \"name\": \"CNY\",\n            \"rate\": \"0.14\"\n        },\n        {\n            \"currency_id\": \"5b1ea92e584bf50020130ced\",\n            \"name\": \"TWD\",\n            \"rate\": \"0.03\"\n        },\n        {\n            \"currency_id\": \"5b1ea92e584bf500201307c3\",\n            \"name\": \"HKD\",\n            \"rate\": \"0.14\"\n        },\n        {\n            \"currency_id\": \"5b1ea92e584bf5002013061b\",\n            \"name\": \"JPY\",\n            \"rate\": \"0.01\"\n        }\n    ]\n}"
 				}
 			]
 		}

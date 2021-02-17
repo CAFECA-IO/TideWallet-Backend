@@ -10,12 +10,17 @@
   },
   "bundleDependencies": false,
   "dependencies": {
+    "bignumber.js": "^9.0.1",
+    "bs58check": "^2.1.2",
     "command-line-args": "^5.0.2",
     "dvalue": "^1.0.20",
     "ecrequest": "^1.1.3",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.22.1",
+    "ethereumjs-util": "^7.0.8",
+    "ethereumjs-wallet": "^1.0.1",
     "i18n": "^0.8.3",
+    "jsonwebtoken": "^8.5.1",
     "koa": "^2.7.0",
     "koa-body": "^4.0.8",
     "koa-router": "^7.4.0",
@@ -25,9 +30,11 @@
     "ncp": "^2.0.0",
     "pem": "^1.14.2",
     "pg": "^8.5.1",
+    "rand-token": "^1.0.1",
     "sequelize": "^6.5.0",
     "spdy": "^4.0.0",
     "toml": "^3.0.0",
+    "uuid": "^8.3.2",
     "ws": "^6.2.0"
   },
   "deprecated": false,
@@ -35,7 +42,8 @@
   "devDependencies": {
     "@babel/core": "^7.3.3",
     "babel-plugin-transform-decorators-legacy": "^1.3.5",
-    "eslint": "^7.19.0"
+    "eslint": "^7.19.0",
+    "sequelize-cli": "^6.2.0"
   },
   "keywords": [
     "frontend",
@@ -50,7 +58,13 @@
     "url": "git+https://github.com:BOLT-Protocol/TideWallet-Backend.git"
   },
   "scripts": {
-    "start": "bin/main.js"
+    "start": "bin/main.js",
+    "migrateDB": "./node_modules/.bin/sequelize db:migrate --env development --config ./env.js --migrations-path ./src/database/migrations --models-path ./src/database/models",
+    "deleteDB": "./node_modules/.bin/sequelize db:migrate:undo:all --env development --config ./env.js --migrations-path ./src/database/migrations --models-path ./src/database/models",
+    "undoDB": "./node_modules/.bin/sequelize db:migrate:undo --env development --config ./env.js --migrations-path ./src/database/migrations --models-path ./src/database/models",
+    "seedDB": "./node_modules/.bin/sequelize db:seed:all --env development --config ./env.js --seeders-path ./src/database/seeders",
+    "deleteSeedDB": "./node_modules/.bin/sequelize db:seed:undo:all --env development --config ./env.js --seeders-path ./src/database/seeders",
+    "undoSeedDB": "./node_modules/.bin/sequelize db:seed:undo --env development --config ./env.js --seeders-path ./src/database/seeders"
   },
-  "version": "0.1.11"
+  "version": "1.0.0"
 }
