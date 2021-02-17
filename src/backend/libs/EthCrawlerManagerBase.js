@@ -40,11 +40,15 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     options.data = this.constructor.cmd({ type });
     const checkId = options.data.id;
     const data = await Utils.ETHRPC(options);
+    console.log(data);
     if (data instanceof Object) {
-      if (data.id !== checkId) return Promise.reject();
+      if (data.id !== checkId) {
+        this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock number not found\x1b[0m\x1b[21m`);
+        return Promise.reject();
+      }
       return Promise.resolve(data.result);
     }
-    this.logger.log('\x1b[1m\x1b[90mbtc block number not found\x1b[0m\x1b[21m');
+    this.logger.log(`[${this.constructor.name}]\x1b[1m\x1b[90m block number not found\x1b[0m\x1b[21m`);
     return Promise.reject();
   }
 

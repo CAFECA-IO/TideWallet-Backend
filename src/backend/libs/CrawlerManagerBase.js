@@ -84,6 +84,7 @@ class CrawlerManagerBase {
     this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${dbBlockNumber}, currentBlockNumber: ${currentBlockNumber}`);
     if (typeof currentBlockNumber === 'string') {
       currentBlockNumber = parseInt(currentBlockNumber, 16);
+      this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${dbBlockNumber}, currentBlockNumber: ${currentBlockNumber}`);
     }
     if (typeof dbBlockNumber !== 'number' || typeof currentBlockNumber !== 'number') {
       return false;
