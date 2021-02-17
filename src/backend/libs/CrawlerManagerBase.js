@@ -1,8 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
 
 class CrawlerManagerBase {
-  constructor(blockchainName, config, database, logger) {
-    this.blockchainName = blockchainName;
+  constructor(blockchainId, config, database, logger) {
+    this.bcid = blockchainId;
     this.config = config;
     this.database = database;
     this.logger = logger;
@@ -27,14 +27,6 @@ class CrawlerManagerBase {
     // TODO
     // get blockchain_id, start block
     return Promise.resolve();
-  }
-
-  async blockchainId() {
-    this.logger.log('blockchainId')
-    const result = await this.blockchainModel.findOne({
-      where: { name: this.blockchainName },
-    });
-    return result.Blockchain_id;
   }
 
   async blockNumberFromDB() {

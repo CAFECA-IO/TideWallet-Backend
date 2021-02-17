@@ -6,14 +6,13 @@ const Utils = require('./Utils');
 
 class BtcCrawlerManager extends CrawlerManagerBase {
   constructor(config, database, logger) {
-    super('Bitcoin', config, database, logger);
+    super('80000000', config, database, logger);
   }
 
   async init() {
     this.options = this.config.bitcoin;
     this.peerBlock = 0;
     this.syncInterval = this.config.syncInterval.bitcoin ? this.config.syncInterval.bitcoin : 900000;
-    this.bcid = await this.blockchainId();
     try {
       this.oneCycle();
     } catch (error) {
