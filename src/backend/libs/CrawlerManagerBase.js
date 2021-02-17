@@ -1,9 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
 
 class CrawlerManagerBase {
-  constructor(blockchainId, config, database, logger) {
+  constructor(blockchainId, database, logger) {
     this.bcid = blockchainId;
-    this.config = config;
     this.database = database;
     this.logger = logger;
 
@@ -68,7 +67,11 @@ class CrawlerManagerBase {
   async checkBlockNumberLess() {
     this.logger.log(`[${this.constructor.name}] checkBlockNumberLess`);
     const dbBlockNumber = await this.blockNumberFromDB();
-    const currentBlockNumber = await this.blockNumberFromPeer();
+    let currentBlockNumber = await this.blockNumberFromPeer();
+    this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${dbBlockNumber}, currentBlockNumber: ${currentBlockNumber}`)
+    if (typeof currentBlockNumber === 'string') {
+      currentBlockNumber = parseInt(currentBlockNumber, 16);
+    }
     if (typeof dbBlockNumber !== 'number' || typeof currentBlockNumber !== 'number') {
       return false;
     }
@@ -76,14 +79,19 @@ class CrawlerManagerBase {
   }
 
   async checkBlockHash(block) {
-    this.logger.log(`[${this.constructor.name}] checkBlockHash(${block})`);
-    const dbBlockHash = await this.blockHashFromDB(block);
-    const peerBlockHash = await this.blockHashFromPeer(block);
-    if (typeof dbBlockHash !== 'string' || typeof peerBlockHash !== 'string') {
+    try {
+      this.logger.log(`[${this.constructor.name}] checkBlockHash(${block})`);
+      const dbBlockHash = await this.blockHashFromDB(block);
+      const peerBlockHash = await this.blockHashFromPeer(block);
+      if (typeof dbBlockHash !== 'string' || typeof peerBlockHash !== 'string') {
+        return false;
+      }
+  
+      return dbBlockHash === peerBlockHash;
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] checkBlockHash(${block}) error ${error}`)
       return false;
     }
-
-    return dbBlockHash === peerBlockHash;
   }
 
   async insertBlock(blockData) {

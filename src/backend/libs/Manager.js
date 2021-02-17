@@ -1,6 +1,7 @@
 
 const Bot = require('./Bot');
 const BtcCrawlerManager = require('./BtcCrawlerManager');
+const EthCrawlerManager = require('./EthCrawlerManager');
 
 class Manager extends Bot {
   constructor() {
@@ -30,6 +31,7 @@ class Manager extends Bot {
   createManager() {
     const result = []
     result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
+    result.push(new EthCrawlerManager(this.config, this.database, this.logger));
 
     return result;
   }
