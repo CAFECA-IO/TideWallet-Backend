@@ -1,4 +1,3 @@
-
 const Bot = require('./Bot');
 const BtcCrawlerManager = require('./BtcCrawlerManager');
 const EthCrawlerManager = require('./EthCrawlerManager');
@@ -19,17 +18,17 @@ class Manager extends Bot {
       return this;
     });
   }
-  
+
   start() {
     return super.start()
       .then(() => {
         this._crawlerManager = this.initManager();
         return this;
-      })
+      });
   }
 
   createManager() {
-    const result = []
+    const result = [];
     result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
     result.push(new EthCrawlerManager(this.config, this.database, this.logger));
 
@@ -37,13 +36,10 @@ class Manager extends Bot {
   }
 
   initManager() {
-    this._crawlerManager.forEach(manager => {
+    this._crawlerManager.forEach((manager) => {
       manager.init();
     });
   }
-
-  
-
 }
 
 module.exports = Manager;

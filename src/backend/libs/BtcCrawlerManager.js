@@ -1,4 +1,4 @@
-const BtcCrawlerManagerBase = require('./BtcCrawlerManagerBase')
+const BtcCrawlerManagerBase = require('./BtcCrawlerManagerBase');
 
 class BtcCrawlerManager extends BtcCrawlerManagerBase {
   constructor(config, database, logger) {
