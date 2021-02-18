@@ -30,6 +30,7 @@ class Account extends Bot {
       this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
       this.tokenTransactionModel = this.database.db.TokenTransaction;
       this.deviceModel = this.database.db.Device;
+      this.utxoModel = this.database.db.UTXO;
 
       this.sequelize = this.database.db.sequelize;
       this.Sequelize = this.database.db.Sequelize;
@@ -237,6 +238,7 @@ class Account extends Bot {
   }
 
   async AccountReceive({ params, token }) {
+    // account_id -> accountCurrency_id
     const { account_id } = params;
     if (!Utils.validateString(account_id)) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
 
@@ -311,6 +313,7 @@ class Account extends Bot {
   }
 
   async AccountChange({ params, token }) {
+    // account_id -> accountCurrency_id
     const { account_id } = params;
     if (!Utils.validateString(account_id)) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
 
@@ -462,6 +465,7 @@ class Account extends Bot {
   }
 
   async ListTransactions({ params, token }) {
+    // account_id -> accountCurrency_id
     const { account_id } = params;
 
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
@@ -564,6 +568,102 @@ class Account extends Bot {
       return new ResponseFormat({ message: 'txid not found', code: Codes.TX_NOT_FOUND });
     } catch (e) {
       this.logger.error('TransactionDetail e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
+  }
+
+  _formateUTXOType(typeValue) {
+    switch (typeValue) {
+      case 0:
+        return 'legacy';
+      case 1:
+        return 'segwit';
+      case 2:
+        return 'native_segwit';
+      default:
+        return 'legacy';
+    }
+  }
+
+  async _findAccountUTXO({
+    findAccountCurrency, payload, chain_index, key_index,
+  }) {
+    // find AccountAddress
+    const findAccountAddress = await this.accountAddressModel.findOne({ where: { account_id: findAccountCurrency.Account.account_id, chain_index, key_index } });
+    if (!findAccountAddress) return new ResponseFormat({ message: 'account not found(address not found)', code: Codes.ACCOUNT_NOT_FOUND });
+
+    // find all UTXO
+    const findUTXO = await this.utxoModel.findAll({
+      where: { accountAddress_id: findAccountAddress.accountAddress_id },
+    });
+
+    for (let i = 0; i < findUTXO.length; i++) {
+      const utxo = findUTXO[i];
+      payload.push({
+        txid: utxo.txid,
+        utxo_id: utxo.utxo_id,
+        vout: utxo.vout,
+        'type:': this._formateUTXOType(utxo.type),
+        amount: utxo.amount,
+        script: utxo.script,
+        timestamp: utxo.on_block_timestamp,
+        chain_index,
+        key_index,
+      });
+    }
+  }
+
+  async GetUTXO({ params, token }) {
+    // account_id -> accountCurrency_id
+    const { account_id } = params;
+
+    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+    const tokenInfo = await Utils.verifyToken(token);
+
+    try {
+      // find Account
+      const findAccountCurrency = await this.accountCurrencyModel.findOne({
+        where: {
+          accountCurrency_id: account_id,
+        },
+        include: [
+          {
+            model: this.accountModel,
+            where: {
+              user_id: tokenInfo.userID,
+            },
+          },
+        ],
+      });
+      if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+
+      const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
+      const payload = [];
+      // find external address txs
+      for (let i = 0; i <= number_of_external_key; i++) {
+        // find all address
+        await this._findAccountUTXO({
+          findAccountCurrency, payload, chain_index: 0, key_index: i,
+        });
+      }
+
+      // find internal address txs
+      for (let i = 0; i <= number_of_internal_key; i++) {
+        await this._findAccountUTXO({
+          findAccountCurrency, payload, chain_index: 1, key_index: i,
+        });
+      }
+
+      // sort by timestamps
+      payload.sort((a, b) => b.timestamp - a.timestamp);
+
+      return new ResponseFormat({
+        message: 'List Transactions',
+        payload,
+      });
+    } catch (e) {
+      this.logger.error('GetUTXO e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
