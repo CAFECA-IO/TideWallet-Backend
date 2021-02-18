@@ -15,6 +15,7 @@ module.exports = {
     scriptHash: 0x05,
     wif: 0x80,
     start_block: 0,
+    avg_fee: '0',
   },
   BITCOIN_TESTNET: {
     blockchain_id: '80000001',
@@ -32,6 +33,7 @@ module.exports = {
     scriptHash: 0xc4,
     wif: 0xef,
     start_block: 0,
+    avg_fee: '0',
   },
   ETH: {
     blockchain_id: '80000060',
@@ -49,6 +51,7 @@ module.exports = {
     scriptHash: 0,
     wif: 0,
     start_block: 0,
+    avg_fee: '0',
   },
   ROPSTEN: {
     blockchain_id: '80000603',
@@ -66,6 +69,7 @@ module.exports = {
     scriptHash: 0,
     wif: 0,
     start_block: 0,
+    avg_fee: '0',
   },
   CAFECA: {
     blockchain_id: '80003324',
@@ -83,5 +87,6 @@ module.exports = {
     scriptHash: 0,
     wif: 0,
     start_block: 0,
+    avg_fee: '0',
   },
 };

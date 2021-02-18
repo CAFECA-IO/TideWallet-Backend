@@ -1,5 +1,5 @@
-const ResponseFormat = require('./ResponseFormat');
-const Bot = require('./Bot.js');
+const BigNumber = require('bignumber.js');
+const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
 const Codes = require('./Codes');
 const blockchainNetworks = require('./data/blockchainNetworks');
 const currency = require('./data/currency');
@@ -178,6 +178,33 @@ class Blockchain extends Bot {
       return new ResponseFormat({ message: 'Get Currency Detail', payload });
     } catch (e) {
       this.logger.error('TokenDetail e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async GetFee({ params }) {
+    try {
+      const { blockchain_id } = params;
+
+      const findBlockchainInfo = await this.blockchainModel.findOne({ where: { blockchain_id }, attributes: ['avg_fee'] });
+      if (!findBlockchainInfo) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+      const { avg_fee = '0' } = findBlockchainInfo;
+
+      const slow = new BigNumber(avg_fee).multipliedBy(0.8).toFixed();
+      const fast = new BigNumber(avg_fee).multipliedBy(1.5).toFixed();
+
+      return new ResponseFormat({
+        message: 'Get Currency Detail',
+        payload: {
+          slow,
+          standard: avg_fee,
+          fast,
+        },
+      });
+    } catch (e) {
+      this.logger.error('GetFee e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
