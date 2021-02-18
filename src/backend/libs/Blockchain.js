@@ -243,7 +243,7 @@ class Blockchain extends Bot {
           // eslint-disable-next-line no-case-declarations
           const data = await Utils.ETHRPC(option);
 
-          if (!data.result) return new ResponseFormat({ message: 'rpc error', code: Codes.RPC_ERROR });
+          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
           nonce = new BigNumber(data.result).toFixed();
 
           return new ResponseFormat({
@@ -285,7 +285,7 @@ class Blockchain extends Bot {
           // eslint-disable-next-line no-case-declarations
           const data = await Utils.ETHRPC(option);
 
-          if (!data.result) return new ResponseFormat({ message: 'rpc error', code: Codes.RPC_ERROR });
+          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
 
           return new ResponseFormat({
             message: 'Publish Transaction',
