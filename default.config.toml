@@ -66,6 +66,7 @@ pathname = [
   "get | /api/v1/wallet/account/tx/:txid | Bot.Account.TransactionDetail",
   "get | /api/v1/wallet/account/txs/uxto/:account_id | Bot.Account.GetUTXO",
   "get | /api/v1/blockchain/:blockchain_id/fee | Bot.Blockchain.GetFee",
+  "get | /api/v1/blockchain/:blockchain_id/address/:address/nonce | Bot.Blockchain.GetNonce",
 
   "get | /tool/drop | Bot.Account.DROP_ALL_TABLE"
 ]

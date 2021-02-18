@@ -1,6 +1,8 @@
 const BigNumber = require('bignumber.js');
+const dvalue = require('dvalue');
 const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
 const Codes = require('./Codes');
+const Utils = require('./Utils');
 const blockchainNetworks = require('./data/blockchainNetworks');
 const currency = require('./data/currency');
 
@@ -17,6 +19,7 @@ class Blockchain extends Bot {
     return super.init({
       config, database, logger, i18n,
     }).then(() => {
+      this.accountModel = this.database.db.Account;
       this.blockchainModel = this.database.db.Blockchain;
       this.currencyModel = this.database.db.Currency;
       this.sequelize = this.database.db.sequelize;
@@ -205,6 +208,59 @@ class Blockchain extends Bot {
       });
     } catch (e) {
       this.logger.error('GetFee e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async GetNonce({ params, token }) {
+    const { blockchain_id, address } = params;
+
+    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+    const tokenInfo = await Utils.verifyToken(token);
+
+    try {
+      // find user, address mapping
+      const findUserAddress = await this.accountModel.findOne({
+        where: { blockchain_id, user_id: tokenInfo.userID },
+      });
+
+      if (!findUserAddress) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+
+      let option = {};
+      let nonce = '0';
+      // TODO: support another blockchain
+      switch (blockchain_id) {
+        case '80000060':
+        case '80000603':
+          option = { ...this.config.ethereum.ropsten };
+          break;
+
+        default:
+
+          return new ResponseFormat({
+            message: 'Get Nonce',
+            payload: { nonce },
+          });
+      }
+      option.data = {
+        jsonrpc: '2.0',
+        method: 'eth_getTransactionCount',
+        params: [address, 'latest'],
+        id: dvalue.randomID(),
+      };
+      const data = await Utils.ETHRPC(option);
+
+      if (data.result) {
+        nonce = new BigNumber(data.result).toFixed();
+      }
+
+      return new ResponseFormat({
+        message: 'Get Nonce',
+        payload: { nonce: '0' },
+      });
+    } catch (e) {
+      this.logger.error('GetNonce e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
