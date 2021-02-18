@@ -59,7 +59,7 @@ pathname = [
   "post | /api/v1/token/renew | Bot.User.AccessTokenRenew",
   "post | /api/v1/wallet/blockchain/:blockchain_id/token/:currency_id | Bot.Account.TokenRegist",
   "get | /api/v1/wallet/accounts | Bot.Account.AccountList",
-  "get | /api/v1/wallet/account/:currency_id | Bot.Account.AccountDetail",
+  "get | /api/v1/wallet/account/:account_id | Bot.Account.AccountDetail",
   "get | /api/v1/wallet/account/address/:account_id/receive | Bot.Account.AccountReceive",
   "get | /api/v1/wallet/account/address/:account_id/change | Bot.Account.AccountChange",
   "get | /api/v1/wallet/account/txs/:account_id | Bot.Account.ListTransactions",
