@@ -102,6 +102,31 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     }
   }
 
+  async insertUnparsedTransaction(transaction, timestamp) {
+    this.logger.log(`[${this.constructor.name}] insertUnparsedTransaction`);
+    this.logger.log(`[${this.constructor.name}] transaction: ${transaction}`);
+    this.logger.log(`[${this.constructor.name}] timestamp: ${timestamp}`);
+
+    try {
+      const insertResult = await this.unparsedTxModel.findOrCreate({
+        where: { blockchain_id: this.bcid, txid: transaction.hash },
+        defaults: {
+          unparsedTransaction_id: uuidv4(),
+          blockchain_id: this.bcid,
+          txid: transaction.txid,
+          transaction: JSON.stringify(transaction),
+          receipt: '',
+          timestamp,
+        },
+      });
+      return insertResult;
+    } catch (error) {
+      const e = new Error(`[${this.constructor.name}] insertUnparsedTransaction(${transaction.hash}) error: ${error}`);
+      this.logger.log(e);
+      return Promise.reject(e);
+    }
+  }
+
   async oneCycle() {
     try {
       if (this.isSyncing) return Promise.resolve('BtcCrawlerManagerBase is sycning');
@@ -149,11 +174,12 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     // step
     // 1. sync block +1
     // 2. save block data into db
-    // 3. assign parser
-    // 4. after parse done update blockchain table block column
-    // 5. check block in db is equal to this.peerBlock
-    // 6. if yes return
-    // 7. if no, recursive
+    // 3. save unparsed transaction into db
+    // 4. assign parser
+    // 5. after parse done update blockchain table block column
+    // 6. check block in db is equal to this.peerBlock
+    // 7. if yes return
+    // 8. if no, recursive
 
     try {
       let syncBlock = block;
@@ -174,10 +200,17 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
         // must success
         await this.insertBlock(syncResult);
 
-        // 3. assign parser
+        // 3. save unparsed transaction into db
+        const txs = syncResult.tx;
+        const timestamp = syncResult.time;
+        for (const transaction of txs) {
+          await this.insertUnparsedTransaction(transaction, timestamp);
+        }
+
+        // 4. assign parser
         // must success
 
-        // 4. after parse done update blockchain table block column
+        // 5. after parse done update blockchain table block column
         await this.updateBlockHeight(syncBlock);
       } while (syncBlock < this.peerBlock);
       return Promise.resolve(syncBlock);

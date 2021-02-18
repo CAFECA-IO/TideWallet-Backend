@@ -10,6 +10,7 @@ class CrawlerManagerBase {
     this.blockScannedModel = this.database.db.BlockScanned;
     this.currencyModel = this.database.db.Currency;
     this.sequelize = this.database.db.sequelize;
+    this.unparsedTxModel = this.database.db.UnparsedTransaction;
   }
 
   async init() {
@@ -125,6 +126,11 @@ class CrawlerManagerBase {
       },
     });
     return insertResult;
+  }
+
+  async insertUnparsedTransaction() {
+    // need override
+    return Promise.resolve();
   }
 
   async oneCycle() {
