@@ -123,6 +123,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       this.peerBlock = await this.blockNumberFromPeer();
       if (!await this.checkBlockNumberLess()) {
         this.logger.log(`[${this.constructor.name}] block height ${dbBlock} is top now.`);
+        this.isSyncing = false;
         return Promise.resolve();
       }
 
