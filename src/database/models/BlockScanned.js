@@ -1,17 +1,13 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('BlockScanned', {
   // PK
-  BlockScanned_id: {
+  blockScanned_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
   },
   // FK
-  Blockchain_id: {
+  blockchain_id: {
     type: DataTypes.STRING,
-    allowNull: false,
-  },
-  start_block: {
-    type: DataTypes.INTEGER,
     allowNull: false,
   },
   block: {
@@ -35,5 +31,5 @@ module.exports = (sequelize, DataTypes) => sequelize.define('BlockScanned', {
   tableName: 'BlockScanned',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
-  indexes: [{ fields: ['Blockchain_id'] }],
+  indexes: [{ fields: ['blockchain_id'] }],
 });

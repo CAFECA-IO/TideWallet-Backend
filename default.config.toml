@@ -62,4 +62,6 @@ pathname = [
   "get | /api/v1/wallet/account/:currency_id | Bot.Account.AccountDetail",
   "get | /api/v1/wallet/account/address/:account_id/receive | Bot.Account.AccountReceive",
   "get | /api/v1/wallet/account/address/:account_id/change | Bot.Account.AccountChange",
+  "get | /api/v1/wallet/account/txs/:account_id | Bot.Account.ListTransactions",
+  "get | /tool/drop | Bot.Account.DROP_ALL_TABLE"
 ]

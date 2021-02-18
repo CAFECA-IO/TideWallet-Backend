@@ -37,7 +37,7 @@ class Blockchain extends Bot {
       network.bip32_private = network.bip32.private;
       delete network.bip32;
       await this.blockchainModel.findOrCreate({
-        where: { Blockchain_id: network.Blockchain_id },
+        where: { blockchain_id: network.blockchain_id },
         defaults: network,
       });
     }
@@ -48,7 +48,7 @@ class Blockchain extends Bot {
       const currencyItem = currency[i];
 
       await this.currencyModel.findOrCreate({
-        where: { Currency_id: currencyItem.Currency_id },
+        where: { currency_id: currencyItem.currency_id },
         defaults: currencyItem,
       });
     }
@@ -59,7 +59,7 @@ class Blockchain extends Bot {
       let payload = await this.blockchainModel.findAll();
       if (payload) {
         payload = payload.map((item) => ({
-          Blockchain_id: item.Blockchain_id,
+          blockchain_id: item.blockchain_id,
           name: item.name,
           coin_type: item.coin_type,
           network_id: item.network_id,
@@ -68,6 +68,8 @@ class Blockchain extends Bot {
       }
       return new ResponseFormat({ message: 'List Supported Blockchains', payload });
     } catch (e) {
+      this.logger.error('BlockchainList e:', e);
+      if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
   }
@@ -76,12 +78,14 @@ class Blockchain extends Bot {
     const { blockchain_id } = params;
     try {
       const payload = await this.blockchainModel.findOne({
-        where: { Blockchain_id: blockchain_id },
+        where: { blockchain_id },
       });
 
       if (!payload) return new ResponseFormat({ message: 'blockchain_id Not Found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
       return new ResponseFormat({ message: 'Get Blockchain Detail', payload });
     } catch (e) {
+      this.logger.error('BlockchainDetail e:', e);
+      if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
   }
@@ -95,7 +99,7 @@ class Blockchain extends Bot {
       });
       if (payload) {
         payload = payload.map((item) => ({
-          Currency_id: item.Currency_id,
+          currency_id: item.currency_id,
           name: item.name,
           symbol: item.symbol,
           type: item.type,
@@ -107,6 +111,8 @@ class Blockchain extends Bot {
       }
       return new ResponseFormat({ message: 'List Supported Currencies', payload });
     } catch (e) {
+      this.logger.error('CurrencyList e:', e);
+      if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
   }
@@ -116,7 +122,7 @@ class Blockchain extends Bot {
     try {
       const payload = await this.currencyModel.findOne({
         where: {
-          Currency_id: currency_id,
+          currency_id,
           [this.Sequelize.Op.or]: [{ type: 0 }, { type: 1 }],
         },
       });
@@ -124,6 +130,8 @@ class Blockchain extends Bot {
       if (!payload) return new ResponseFormat({ message: 'currency_id Not Found', code: Codes.CURRENCY_ID_NOT_FOUND });
       return new ResponseFormat({ message: 'Get Currency Detail', payload });
     } catch (e) {
+      this.logger.error('CurrencyDetail e:', e);
+      if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
   }
@@ -132,11 +140,11 @@ class Blockchain extends Bot {
     const { blockchain_id } = params;
     try {
       let payload = await this.currencyModel.findAll({
-        where: { Blockchain_id: blockchain_id, type: 2 },
+        where: { blockchain_id, type: 2 },
       });
       if (payload) {
         payload = payload.map((item) => ({
-          Currency_id: item.Currency_id,
+          currency_id: item.currency_id,
           name: item.name,
           symbol: item.symbol,
           type: item.type,
@@ -150,6 +158,8 @@ class Blockchain extends Bot {
       }
       return new ResponseFormat({ message: 'List Supported Currencies', payload });
     } catch (e) {
+      this.logger.error('TokenList e:', e);
+      if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
   }
@@ -159,14 +169,16 @@ class Blockchain extends Bot {
     try {
       const payload = await this.currencyModel.findOne({
         where: {
-          Currency_id: token_id, type: 2,
+          currency_id: token_id, type: 2,
         },
       });
 
       if (!payload) return new ResponseFormat({ message: 'currency_id Not Found', code: Codes.CURRENCY_ID_NOT_FOUND });
-      if (payload.Blockchain_id !== blockchain_id) return new ResponseFormat({ message: 'currency_id Not Found', code: Codes.CURRENCY_ID_NOT_FOUND });
+      if (payload.blockchain_id !== blockchain_id) return new ResponseFormat({ message: 'currency_id Not Found', code: Codes.CURRENCY_ID_NOT_FOUND });
       return new ResponseFormat({ message: 'Get Currency Detail', payload });
     } catch (e) {
+      this.logger.error('TokenDetail e:', e);
+      if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
   }

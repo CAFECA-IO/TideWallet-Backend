@@ -38,76 +38,76 @@ module.exports = env;
       });
 
     // Account
-    db.Account.belongsTo(db.User, { foreignKey: 'User_id' });
-    db.User.hasMany(db.Account, { foreignKey: 'User_id' });
-    db.Account.belongsTo(db.Blockchain, { foreignKey: 'Blockchain_id' });
-    db.Blockchain.hasOne(db.Account, { foreignKey: 'Blockchain_id' });
+    db.Account.belongsTo(db.User, { foreignKey: 'user_id' });
+    db.User.hasMany(db.Account, { foreignKey: 'user_id' });
+    db.Account.belongsTo(db.Blockchain, { foreignKey: 'blockchain_id' });
+    db.Blockchain.hasOne(db.Account, { foreignKey: 'blockchain_id' });
 
     // AccountCurrency
-    db.AccountCurrency.belongsTo(db.Account, { foreignKey: 'Account_id' });
-    db.Account.hasMany(db.AccountCurrency, { foreignKey: 'Account_id' });
-    db.AccountCurrency.belongsTo(db.Currency, { foreignKey: 'Currency_id' });
-    db.Currency.hasOne(db.AccountCurrency, { foreignKey: 'Currency_id' });
+    db.AccountCurrency.belongsTo(db.Account, { foreignKey: 'account_id' });
+    db.Account.hasMany(db.AccountCurrency, { foreignKey: 'account_id' });
+    db.AccountCurrency.belongsTo(db.Currency, { foreignKey: 'currency_id' });
+    db.Currency.hasOne(db.AccountCurrency, { foreignKey: 'currency_id' });
 
     // AccountAddress
-    db.AccountAddress.belongsTo(db.Account, { foreignKey: 'Account_id' });
-    db.Account.hasMany(db.AccountAddress, { foreignKey: 'Account_id' });
+    db.AccountAddress.belongsTo(db.Account, { foreignKey: 'account_id' });
+    db.Account.hasMany(db.AccountAddress, { foreignKey: 'account_id' });
 
     // BlockScanned
-    db.BlockScanned.belongsTo(db.Blockchain, { foreignKey: 'Blockchain_id' });
-    db.Blockchain.hasMany(db.BlockScanned, { foreignKey: 'Blockchain_id' });
+    db.BlockScanned.belongsTo(db.Blockchain, { foreignKey: 'blockchain_id' });
+    db.Blockchain.hasMany(db.BlockScanned, { foreignKey: 'blockchain_id' });
 
     // Currency
-    db.Currency.belongsTo(db.Blockchain, { foreignKey: 'Blockchain_id' });
-    db.Blockchain.hasOne(db.Currency, { foreignKey: 'Blockchain_id' });
+    db.Currency.belongsTo(db.Blockchain, { foreignKey: 'blockchain_id' });
+    db.Blockchain.hasOne(db.Currency, { foreignKey: 'blockchain_id' });
 
     // Device
-    db.Device.belongsTo(db.User, { foreignKey: 'User_id' });
-    db.User.hasMany(db.Device, { foreignKey: 'User_id' });
+    db.Device.belongsTo(db.User, { foreignKey: 'user_id' });
+    db.User.hasMany(db.Device, { foreignKey: 'user_id' });
 
     // ThirdPartyLink
-    db.ThirdPartyLink.belongsTo(db.User, { foreignKey: 'User_id' });
-    db.User.hasMany(db.ThirdPartyLink, { foreignKey: 'User_id' });
+    db.ThirdPartyLink.belongsTo(db.User, { foreignKey: 'user_id' });
+    db.User.hasMany(db.ThirdPartyLink, { foreignKey: 'user_id' });
 
     // Transaction
-    db.Transaction.belongsTo(db.Currency, { foreignKey: 'Currency_id' });
-    db.Currency.hasMany(db.Transaction, { foreignKey: 'Currency_id' });
+    db.Transaction.belongsTo(db.Currency, { foreignKey: 'currency_id' });
+    db.Currency.hasMany(db.Transaction, { foreignKey: 'currency_id' });
 
     // AddressTransaction
-    db.AddressTransaction.belongsTo(db.Currency, { foreignKey: 'Currency_id' });
-    db.Currency.hasMany(db.AddressTransaction, { foreignKey: 'Currency_id' });
-    db.AddressTransaction.belongsTo(db.AccountAddress, { foreignKey: 'AccountAddress_id' });
-    db.AccountAddress.hasMany(db.AddressTransaction, { foreignKey: 'AccountAddress_id' });
-    db.AddressTransaction.belongsTo(db.Transaction, { foreignKey: 'Transaction_id' });
-    db.Transaction.hasMany(db.AddressTransaction, { foreignKey: 'Transaction_id' });
+    db.AddressTransaction.belongsTo(db.Currency, { foreignKey: 'currency_id' });
+    db.Currency.hasMany(db.AddressTransaction, { foreignKey: 'currency_id' });
+    db.AddressTransaction.belongsTo(db.AccountAddress, { foreignKey: 'accountAddress_id' });
+    db.AccountAddress.hasMany(db.AddressTransaction, { foreignKey: 'accountAddress_id' });
+    db.AddressTransaction.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
+    db.Transaction.hasMany(db.AddressTransaction, { foreignKey: 'transaction_id' });
 
     // TokenTransaction
-    db.TokenTransaction.belongsTo(db.Currency, { foreignKey: 'Currency_id' });
-    db.Currency.hasMany(db.TokenTransaction, { foreignKey: 'Currency_id' });
-    db.TokenTransaction.belongsTo(db.Transaction, { foreignKey: 'Transaction_id' });
-    db.Transaction.hasMany(db.TokenTransaction, { foreignKey: 'Transaction_id' });
+    db.TokenTransaction.belongsTo(db.Currency, { foreignKey: 'currency_id' });
+    db.Currency.hasMany(db.TokenTransaction, { foreignKey: 'currency_id' });
+    db.TokenTransaction.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
+    db.Transaction.hasMany(db.TokenTransaction, { foreignKey: 'transaction_id' });
 
     // AddressTokenTransaction
-    db.AddressTokenTransaction.belongsTo(db.Currency, { foreignKey: 'Currency_id' });
-    db.Currency.hasMany(db.AddressTokenTransaction, { foreignKey: 'Currency_id' });
-    db.AddressTokenTransaction.belongsTo(db.AccountAddress, { foreignKey: 'AccountAddress_id' });
-    db.AccountAddress.hasMany(db.AddressTokenTransaction, { foreignKey: 'AccountAddress_id' });
-    db.AddressTokenTransaction.belongsTo(db.TokenTransaction, { foreignKey: 'TokenTransaction_id' });
-    db.TokenTransaction.hasMany(db.AddressTokenTransaction, { foreignKey: 'TokenTransaction_id' });
+    db.AddressTokenTransaction.belongsTo(db.Currency, { foreignKey: 'currency_id' });
+    db.Currency.hasMany(db.AddressTokenTransaction, { foreignKey: 'currency_id' });
+    db.AddressTokenTransaction.belongsTo(db.AccountAddress, { foreignKey: 'accountAddress_id' });
+    db.AccountAddress.hasMany(db.AddressTokenTransaction, { foreignKey: 'accountAddress_id' });
+    db.AddressTokenTransaction.belongsTo(db.TokenTransaction, { foreignKey: 'Tokentransaction_id' });
+    db.TokenTransaction.hasMany(db.AddressTokenTransaction, { foreignKey: 'Tokentransaction_id' });
 
     // UTXO
-    db.UTXO.belongsTo(db.Currency, { foreignKey: 'Currency_id' });
-    db.Currency.hasMany(db.UTXO, { foreignKey: 'Currency_id' });
-    db.UTXO.belongsTo(db.AccountAddress, { foreignKey: 'AccountAddress_id' });
-    db.AccountAddress.hasMany(db.UTXO, { foreignKey: 'AccountAddress_id' });
-    db.UTXO.belongsTo(db.Transaction, { foreignKey: 'Transaction_id' });
-    db.Transaction.hasMany(db.UTXO, { foreignKey: 'Transaction_id' });
+    db.UTXO.belongsTo(db.Currency, { foreignKey: 'currency_id' });
+    db.Currency.hasMany(db.UTXO, { foreignKey: 'currency_id' });
+    db.UTXO.belongsTo(db.AccountAddress, { foreignKey: 'accountAddress_id' });
+    db.AccountAddress.hasMany(db.UTXO, { foreignKey: 'accountAddress_id' });
+    db.UTXO.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
+    db.Transaction.hasMany(db.UTXO, { foreignKey: 'transaction_id' });
     db.UTXO.belongsTo(db.Transaction, { foreignKey: 'to_tx' });
     db.Transaction.hasMany(db.UTXO, { foreignKey: 'to_tx' });
 
     // TokenSecret
-    db.TokenSecret.belongsTo(db.User, { foreignKey: 'User_id' });
-    db.User.hasMany(db.TokenSecret, { foreignKey: 'User_id' });
+    db.TokenSecret.belongsTo(db.User, { foreignKey: 'user_id' });
+    db.User.hasMany(db.TokenSecret, { foreignKey: 'user_id' });
 
     db.sequelize = sequelize;
     db.Sequelize = Sequelize;

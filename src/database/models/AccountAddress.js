@@ -1,12 +1,12 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('AccountAddress', {
   // PK
-  AccountAddress_id: {
+  accountAddress_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
   },
   // FK
-  Account_id: {
+  account_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },

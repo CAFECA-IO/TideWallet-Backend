@@ -1,12 +1,12 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('ThirdPartyLink', {
   // PK
-  ThirdPartyLink_id: {
+  thirdPartyLink_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
   },
   // FK
-  User_id: {
+  user_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },

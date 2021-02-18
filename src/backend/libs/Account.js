@@ -25,6 +25,10 @@ class Account extends Bot {
       this.accountModel = this.database.db.Account;
       this.accountCurrencyModel = this.database.db.AccountCurrency;
       this.accountAddressModel = this.database.db.AccountAddress;
+      this.addressTransactionModel = this.database.db.AddressTransaction;
+      this.transactionModel = this.database.db.Transaction;
+      this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
+      this.tokenTransactionModel = this.database.db.TokenTransaction;
       this.deviceModel = this.database.db.Device;
 
       this.sequelize = this.database.db.sequelize;
@@ -46,24 +50,24 @@ class Account extends Bot {
 
       // find Token is exist
       const findTokenItem = await this.currencyModel.findOne({
-        where: { type: 2, Currency_id: currency_id },
+        where: { type: 2, currency_id },
       });
 
       if (findTokenItem) {
         // check token x blockchain mapping
-        if (findTokenItem.Blockchain_id !== blockchain_id) return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
+        if (findTokenItem.blockchain_id !== blockchain_id) return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
 
         // check account token is exist
         const findUserAccountData = await this.accountModel.findOne({
           where: {
-            User_id: tokenInfo.userID, Blockchain_id: blockchain_id,
+            user_id: tokenInfo.userID, blockchain_id,
           },
         });
         if (!findUserAccountData) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
         const findUserAccountToken = await this.accountCurrencyModel.findOne({
           where: {
-            Account_id: findUserAccountData.Account_id, Currency_id: currency_id,
+            account_id: findUserAccountData.account_id, currency_id,
           },
         });
         if (findUserAccountToken) return new ResponseFormat({ message: 'account token exist', code: Codes.ACCOUNT_TOKEN_EXIST });
@@ -73,9 +77,9 @@ class Account extends Bot {
           const payload = await this.sequelize.transaction(async (transaction) => {
             const token_account_id = uuidv4();
             await this.accountCurrencyModel.create({
-              AccountCurrency_id: uuidv4(),
-              Account_id: findUserAccountData.Account_id,
-              Currency_id: currency_id,
+              accountCurrency_id: token_account_id,
+              account_id: findUserAccountData.account_id,
+              currency_id,
               balance: '0',
               number_of_external_key: '0',
               number_of_internal_key: '0',
@@ -83,13 +87,13 @@ class Account extends Bot {
 
             // find token public_key & address
             const findAccountAddress = await this.accountAddressModel.findOne({
-              where: { Account_id: findUserAccountData.Account_id },
+              where: { account_id: findUserAccountData.account_id },
               transaction,
             });
 
             await this.accountAddressModel.create({
-              AccountAddress_id: uuidv4(),
-              Account_id: findUserAccountData.Account_id,
+              accountAddress_id: uuidv4(),
+              account_id: findUserAccountData.account_id,
               chain_index: 0,
               key_index: 0,
               public_key: findAccountAddress.public_key,
@@ -108,6 +112,7 @@ class Account extends Bot {
       // TODO: if not found token in DB, parse token contract info from blockchain
       return new ResponseFormat({ message: 'Account Token Regist', payload: {} });
     } catch (e) {
+      this.logger.error('TokenRegist e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
@@ -121,15 +126,21 @@ class Account extends Bot {
     try {
       const findAccounts = await this.accountModel.findAll({
         where: {
-          User_id: tokenInfo.userID,
+          user_id: tokenInfo.userID,
         },
+        include: [
+          {
+            model: this.blockchainModel,
+            attributes: ['network_id'],
+          },
+        ],
       });
 
       for (let i = 0; i < findAccounts.length; i++) {
         const account = findAccounts[i];
         const findAccountCurrencies = await this.accountCurrencyModel.findAll({
           where: {
-            Account_id: account.Account_id,
+            account_id: account.account_id,
           },
           include: [
             {
@@ -144,9 +155,10 @@ class Account extends Bot {
         for (let j = 0; j < findAccountCurrencies.length; j++) {
           const accountCurrency = findAccountCurrencies[j];
           payload.push({
-            account_id: findAccountCurrencies.AccountCurrency_id,
-            blockchain_id: account.Blockchain_id,
-            currency_id: accountCurrency.Currency_id,
+            account_id: accountCurrency.accountCurrency_id,
+            blockchain_id: account.blockchain_id,
+            network_id: account.Blockchain.network_id,
+            currency_id: accountCurrency.currency_id,
             balance: accountCurrency.balance,
             account_index: '0',
           });
@@ -154,6 +166,7 @@ class Account extends Bot {
       }
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
+      this.logger.error('AccountList e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
@@ -171,7 +184,7 @@ class Account extends Bot {
     try {
       const findAccounts = await this.accountModel.findAll({
         where: {
-          User_id: tokenInfo.userID,
+          user_id: tokenInfo.userID,
         },
       });
 
@@ -179,12 +192,12 @@ class Account extends Bot {
         const account = findAccounts[i];
         const findAccountCurrencies = await this.accountCurrencyModel.findAll({
           where: {
-            Account_id: account.Account_id,
+            account_id: account.account_id,
           },
           include: [
             {
               model: this.currencyModel,
-              attributes: ['Currency_id', 'name', 'symbol', 'type', 'publish', 'decimals', 'total_supply', 'contract', 'icon'],
+              attributes: ['currency_id', 'name', 'symbol', 'type', 'publish', 'decimals', 'total_supply', 'contract', 'icon'],
               where: {
                 [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
               },
@@ -195,9 +208,9 @@ class Account extends Bot {
           const accountCurrency = findAccountCurrencies[j];
           if (accountCurrency.Currency && accountCurrency.Currency.type === 1) {
             payload.push({
-              blockchain_id: account.Blockchain_id,
-              currency_id: accountCurrency.Currency_id,
-              account_id: accountCurrency.AccountCurrency_id,
+              blockchain_id: account.blockchain_id,
+              currency_id: accountCurrency.currency_id,
+              account_id: accountCurrency.accountCurrency_id,
               purpose: account.purpose,
               account_index: '0',
               curve_type: account.curve_type,
@@ -208,10 +221,10 @@ class Account extends Bot {
               icon: accountCurrency.Currency.icon,
             });
           } else if (accountCurrency.Currency && accountCurrency.Currency.type === 2) {
-            if (!accountObj[account.Account_id])accountObj[account.Account_id] = [];
-            accountObj[account.Account_id].push({
-              token_id: accountCurrency.Currency.Currency_id,
-              blockchain_id: account.Blockchain_id,
+            if (!accountObj[account.account_id])accountObj[account.account_id] = [];
+            accountObj[account.account_id].push({
+              token_id: accountCurrency.Currency.currency_id,
+              blockchain_id: account.blockchain_id,
               name: accountCurrency.Currency.name,
               symbol: accountCurrency.Currency.symbol,
               type: accountCurrency.Currency.type,
@@ -229,6 +242,7 @@ class Account extends Bot {
       });
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
+      this.logger.error('AccountDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
@@ -243,28 +257,28 @@ class Account extends Bot {
 
     try {
       const findAccountCurrency = await this.accountCurrencyModel.findOne({
-        where: { AccountCurrency_id: account_id },
+        where: { accountCurrency_id: account_id },
         include: [
           {
             model: this.accountModel,
-            attributes: ['Account_id', 'User_id', 'extend_public_key'],
+            attributes: ['account_id', 'user_id', 'extend_public_key'],
             where: {
-              User_id: tokenInfo.userID,
+              user_id: tokenInfo.userID,
             },
             include: [
               {
                 model: this.blockchainModel,
-                attributes: ['Blockchain_id', 'block', 'coin_type'],
+                attributes: ['blockchain_id', 'block', 'coin_type'],
               },
             ],
           },
         ],
       });
-      if (!findAccountCurrency) return new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
+      if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const findReceiveAddress = await this.accountAddressModel.findOne({
         where: {
-          Account_id: findAccountCurrency.Account.Account_id,
+          account_id: findAccountCurrency.Account.account_id,
           chain_index: 0,
           key_index: findAccountCurrency.number_of_external_key,
         },
@@ -283,8 +297,8 @@ class Account extends Bot {
         });
 
         await this.accountAddressModel.create({
-          AccountAddress_id: uuidv4(),
-          Account_id: findAccountCurrency.Account.Account_id,
+          accountAddress_id: uuidv4(),
+          account_id: findAccountCurrency.Account.account_id,
           chain_index: 0,
           key_index: 0,
           public_key: wallet.publicKey,
@@ -302,6 +316,7 @@ class Account extends Bot {
         },
       });
     } catch (e) {
+      this.logger.error('AccountReceive e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
@@ -316,28 +331,28 @@ class Account extends Bot {
 
     try {
       const findAccountCurrency = await this.accountCurrencyModel.findOne({
-        where: { AccountCurrency_id: account_id },
+        where: { accountCurrency_id: account_id },
         include: [
           {
             model: this.accountModel,
-            attributes: ['Account_id', 'User_id', 'extend_public_key'],
+            attributes: ['account_id', 'user_id', 'extend_public_key'],
             where: {
-              User_id: tokenInfo.userID,
+              user_id: tokenInfo.userID,
             },
             include: [
               {
                 model: this.blockchainModel,
-                attributes: ['Blockchain_id', 'block', 'coin_type'],
+                attributes: ['blockchain_id', 'block', 'coin_type'],
               },
             ],
           },
         ],
       });
-      if (!findAccountCurrency) return new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
+      if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const findChangeAddress = await this.accountAddressModel.findOne({
         where: {
-          Account_id: findAccountCurrency.Account.Account_id,
+          account_id: findAccountCurrency.Account.account_id,
           chain_index: 1,
           key_index: findAccountCurrency.number_of_internal_key,
         },
@@ -352,12 +367,12 @@ class Account extends Bot {
           change: 1,
           index: findAccountCurrency.number_of_internal_key,
           coinType,
-          blockchainID: findAccountCurrency.Account.Blockchain.Blockchain_id,
+          blockchainID: findAccountCurrency.Account.Blockchain.blockchain_id,
         });
 
         await this.accountAddressModel.create({
-          AccountAddress_id: uuidv4(),
-          Account_id: findAccountCurrency.Account.Account_id,
+          accountAddress_id: uuidv4(),
+          account_id: findAccountCurrency.Account.account_id,
           chain_index: 1,
           key_index: 0,
           public_key: wallet.publicKey,
@@ -375,9 +390,154 @@ class Account extends Bot {
         },
       });
     } catch (e) {
+      this.logger.error('AccountChange e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
+  }
+
+  async _findAccountTXs({
+    findAccountCurrency, txs, chain_index, key_index,
+  }) {
+    const isToken = findAccountCurrency.Currency.type === 2;
+    console.log('isToken:', isToken);
+    const findAccountAddress = await this.accountAddressModel.findOne({
+      where: { account_id: findAccountCurrency.account_id, chain_index, key_index },
+    });
+    // find all tx by address
+    if (findAccountAddress) {
+      if (isToken) {
+        const findTxByAddress = await this.addressTokenTransactionModel.findAll({
+          where: {
+            currency_id: findAccountCurrency.currency_id,
+            accountAddress_id: findAccountAddress.accountAddress_id,
+          },
+          include: [
+            {
+              model: this.tokenTransactionModel,
+              include: [
+                {
+                  model: this.transactionModel,
+                },
+              ],
+            },
+          ],
+        });
+        console.log('findTxByAddress:', findTxByAddress);
+        // if (findTxByAddress) {
+        //   for (let j = 0; j < findTxByAddress.length; j++) {
+        //     const txInfo = findTxByAddress[j];
+        //     txs.push({
+        //       txid: txInfo.Transaction.txid,
+        //       status: (isToken) ? findTxByAddress.result : 'success',
+        //       amount: txInfo.Transaction.amount,
+        //       symbol: findAccountCurrency.Currency.symbol, // "unit"
+        //       direction: txInfo.direction === 0 ? 'send' : 'receive',
+        //       confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.Transaction.block,
+        //       timestamp: txInfo.Transaction.timestamp,
+        //       source_addresses: txInfo.Transaction.source_addresses,
+        //       destination_addresses: txInfo.Transaction.destination_addresses,
+        //       fee: txInfo.Transaction.fee,
+        //     });
+        //   }
+        // }
+      } else {
+        const findTxByAddress = await this.addressTransactionModel.findAll({
+          where: {
+            currency_id: findAccountCurrency.currency_id,
+            accountAddress_id: findAccountAddress.accountAddress_id,
+          },
+          include: [
+            {
+              model: this.transactionModel,
+            },
+          ],
+        });
+        if (findTxByAddress) {
+          for (let j = 0; j < findTxByAddress.length; j++) {
+            const txInfo = findTxByAddress[j];
+            txs.push({
+              txid: txInfo.Transaction.txid,
+              status: (isToken) ? findTxByAddress.result : 'success',
+              amount: txInfo.Transaction.amount,
+              symbol: findAccountCurrency.Currency.symbol, // "unit"
+              direction: txInfo.direction === 0 ? 'send' : 'receive',
+              confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.Transaction.block,
+              timestamp: txInfo.Transaction.timestamp,
+              source_addresses: txInfo.Transaction.source_addresses,
+              destination_addresses: txInfo.Transaction.destination_addresses,
+              fee: txInfo.Transaction.fee,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  async ListTransactions({ params, token }) {
+    const { account_id } = params;
+
+    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+    const tokenInfo = await Utils.verifyToken(token);
+    try {
+      const findAccountCurrency = await this.accountCurrencyModel.findOne({
+        where: { accountCurrency_id: account_id },
+        include: [
+          {
+            model: this.accountModel,
+            attributes: ['account_id', 'user_id'],
+            where: {
+              user_id: tokenInfo.userID,
+            },
+            include: [
+              {
+                model: this.blockchainModel,
+                attributes: ['blockchain_id', 'block', 'coin_type'],
+              },
+            ],
+          },
+          {
+            model: this.currencyModel,
+            attributes: ['type', 'symbol'],
+          },
+        ],
+      });
+
+      if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+
+      const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
+      const payload = [];
+      // find external address txs
+      for (let i = 0; i <= number_of_external_key; i++) {
+        // find all address
+        await this._findAccountTXs({
+          findAccountCurrency, txs: payload, chain_index: 0, key_index: i,
+        });
+      }
+
+      // find internal address txs
+      for (let i = 0; i <= number_of_internal_key; i++) {
+        await this._findAccountTXs({
+          findAccountCurrency, txs: payload, chain_index: 1, key_index: i,
+        });
+      }
+
+      // sort by timestamps
+      payload.sort((a, b) => b.timestamp - a.timestamp);
+
+      return new ResponseFormat({
+        message: 'List Transactions',
+        payload,
+      });
+    } catch (e) {
+      this.logger.error('ListTransactions e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
+  }
+
+  async DROP_ALL_TABLE() {
+    await this.sequelize.drop();
   }
 }
 

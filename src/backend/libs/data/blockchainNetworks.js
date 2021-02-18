@@ -1,6 +1,6 @@
 module.exports = {
   BITCOIN: {
-    Blockchain_id: '80000000',
+    blockchain_id: '80000000',
     name: 'Bitcoin',
     coin_type: 0,
     network_id: 0,
@@ -14,9 +14,10 @@ module.exports = {
     pubKeyHash: 0x00,
     scriptHash: 0x05,
     wif: 0x80,
+    start_block: 0,
   },
   BITCOIN_TESTNET: {
-    Blockchain_id: '80000001',
+    blockchain_id: '80000001',
     name: 'Bitcoin Testnet',
     coin_type: 1,
     network_id: 0,
@@ -30,9 +31,10 @@ module.exports = {
     pubKeyHash: 0x6f,
     scriptHash: 0xc4,
     wif: 0xef,
+    start_block: 0,
   },
   ETH: {
-    Blockchain_id: '80000060',
+    blockchain_id: '80000060',
     name: 'Ethereum',
     coin_type: 60,
     network_id: 0,
@@ -46,9 +48,10 @@ module.exports = {
     pubKeyHash: 0,
     scriptHash: 0,
     wif: 0,
+    start_block: 0,
   },
   ROPSTEN: {
-    Blockchain_id: '80000603',
+    blockchain_id: '80000603',
     name: 'Ropsten',
     coin_type: 603,
     network_id: 3,
@@ -62,9 +65,10 @@ module.exports = {
     pubKeyHash: 0,
     scriptHash: 0,
     wif: 0,
+    start_block: 0,
   },
   CAFECA: {
-    Blockchain_id: '80003324',
+    blockchain_id: '80003324',
     name: 'Cafeca',
     coin_type: 3324,
     network_id: 0,
@@ -78,5 +82,6 @@ module.exports = {
     pubKeyHash: 0,
     scriptHash: 0,
     wif: 0,
+    start_block: 0,
   },
 };

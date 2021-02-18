@@ -10,7 +10,9 @@
   },
   "bundleDependencies": false,
   "dependencies": {
+    "base58": "^2.0.1",
     "bignumber.js": "^9.0.1",
+    "bitcoinjs-lib": "^5.2.0",
     "bs58check": "^2.1.2",
     "command-line-args": "^5.0.2",
     "dvalue": "^1.0.20",

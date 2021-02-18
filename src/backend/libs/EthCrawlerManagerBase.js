@@ -1,7 +1,7 @@
 const dvalue = require('dvalue');
 const { v4: uuidv4 } = require('uuid');
 
-const CrawlerManagerBase = require('./CrawlerManagerBase')
+const CrawlerManagerBase = require('./CrawlerManagerBase');
 const Utils = require('./Utils');
 
 class EthCrawlerManagerBase extends CrawlerManagerBase {
@@ -43,7 +43,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.log(`\x1b[1m\x1b[90mbtc block number not found\x1b[0m\x1b[21m`);
+    this.logger.log('\x1b[1m\x1b[90mbtc block number not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -58,7 +58,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.log(`\x1b[1m\x1b[90mbtc block data not found\x1b[0m\x1b[21m`);
+    this.logger.log('\x1b[1m\x1b[90mbtc block data not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -74,7 +74,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       const block = data.result;
       return Promise.resolve(block.hash);
     }
-    this.logger.log(`\x1b[1m\x1b[90mbtc block hash not found\x1b[0m\x1b[21m`);
+    this.logger.log('\x1b[1m\x1b[90mbtc block hash not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -85,15 +85,15 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
     try {
       const insertResult = await this.blockScannedModel.findOrCreate({
-        where: { Blockchain_id: this.bcid, block: parseInt(blockData.number, 16) },
+        where: { blockchain_id: this.bcid, block: parseInt(blockData.number, 16) },
         defaults: {
-          BlockScanned_id: uuidv4(),
-          Blockchain_id: this.bcid,
+          blockScanned_id: uuidv4(),
+          blockchain_id: this.bcid,
           block: parseInt(blockData.number, 16),
           block_hash: blockData.hash,
           timestamp: parseInt(blockData.timestamp, 16),
-          result: JSON.stringify(blockData)
-        }
+          result: JSON.stringify(blockData),
+        },
       });
       return insertResult;
     } catch (error) {
@@ -106,20 +106,20 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     try {
       if (this.isSyncing) return Promise.reject('EthCrawlerManagerBase is sycning');
       this.isSyncing = true;
-      //step
-      //1. blockNumberFromDB
-      //2. blockNumberFromPeer
-      //3. checkBlockNumber
-      //4. if equal wait to next cycle
-      //5. blockHashFromDB
-      //6. blockHashFromPeer
-      //7. checkBlockHash
-      //7-1 if not equal rollbackBlock
-      //8. syncNextBlock
-      //9. updateBalance
-      //10. wait to next cycle
-  
-      let dbBlock = await this.blockNumberFromDB();
+      // step
+      // 1. blockNumberFromDB
+      // 2. blockNumberFromPeer
+      // 3. checkBlockNumber
+      // 4. if equal wait to next cycle
+      // 5. blockHashFromDB
+      // 6. blockHashFromPeer
+      // 7. checkBlockHash
+      // 7-1 if not equal rollbackBlock
+      // 8. syncNextBlock
+      // 9. updateBalance
+      // 10. wait to next cycle
+
+      const dbBlock = await this.blockNumberFromDB();
       this.peerBlock = await this.blockNumberFromPeer();
       if (!await this.checkBlockNumberLess()) {
         this.logger.log(`[${this.constructor.name}] block height ${dbBlock} is top now.`);
@@ -163,22 +163,21 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         const syncBlockHash = await this.blockHashFromPeer(syncBlock);
         const syncResult = await this.blockDataFromPeer(syncBlockHash);
         if (!syncBlockHash || !syncResult) {
-          //block hash or data not found
-          //maybe network error or block doesn't exist
-          //end this recursive
+          // block hash or data not found
+          // maybe network error or block doesn't exist
+          // end this recursive
           return Promise.resolve(syncBlock - 1);
         }
-  
+
         // 2. save block data into db
         // must success
-        const BlockScanned_id = await this.insertBlock(syncResult);
-  
+        const blockScanned_id = await this.insertBlock(syncResult);
+
         // 3. assign parser
         // must success
-  
+
         // 4. after parse done update blockchain table block column
         const updateResult = await this.updateBlockHeight(syncBlock);
-  
       } while (syncBlock < this.peerBlock);
       return Promise.resolve(syncBlock);
     } catch (error) {
@@ -187,7 +186,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     }
   }
 
-  async updateBalance(){
+  async updateBalance() {
     // TODO
     return Promise.resolve();
   }
@@ -196,7 +195,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     this.logger.log(`[${this.constructor.name}] updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(
       { block },
-      { where: { Blockchain_id: this.bcid } }
+      { where: { blockchain_id: this.bcid } },
     );
     return insertResult;
   }
@@ -234,7 +233,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     }
     return result;
   }
-
 }
 
 module.exports = EthCrawlerManagerBase;

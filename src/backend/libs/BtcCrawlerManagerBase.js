@@ -1,7 +1,7 @@
 const dvalue = require('dvalue');
 const { v4: uuidv4 } = require('uuid');
 
-const CrawlerManagerBase = require('./CrawlerManagerBase')
+const CrawlerManagerBase = require('./CrawlerManagerBase');
 const Utils = require('./Utils');
 
 class BtcCrawlerManagerBase extends CrawlerManagerBase {
@@ -43,7 +43,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.log(`\x1b[1m\x1b[90mbtc block number not found\x1b[0m\x1b[21m`);
+    this.logger.log('\x1b[1m\x1b[90mbtc block number not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -58,7 +58,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.log(`\x1b[1m\x1b[90mbtc block data not found\x1b[0m\x1b[21m`);
+    this.logger.log('\x1b[1m\x1b[90mbtc block data not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -73,7 +73,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.log(`\x1b[1m\x1b[90mbtc block hash not found\x1b[0m\x1b[21m`);
+    this.logger.log('\x1b[1m\x1b[90mbtc block hash not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -83,15 +83,15 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     this.logger.log(`[${this.constructor.name}] blockData.height: ${blockData.height}`);
 
     const insertResult = await this.blockScannedModel.findOrCreate({
-      where: { Blockchain_id: this.bcid, block: blockData.height },
+      where: { blockchain_id: this.bcid, block: blockData.height },
       defaults: {
-        BlockScanned_id: uuidv4(),
-        Blockchain_id: this.bcid,
+        blockScanned_id: uuidv4(),
+        blockchain_id: this.bcid,
         block: blockData.height,
         block_hash: blockData.hash,
         timestamp: blockData.time,
-        result: JSON.stringify(blockData)
-      }
+        result: JSON.stringify(blockData),
+      },
     });
     return insertResult;
   }
@@ -100,20 +100,20 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     try {
       if (this.isSyncing) return Promise.reject('BtcCrawlerManagerBase is sycning');
       this.isSyncing = true;
-      //step
-      //1. blockNumberFromDB
-      //2. blockNumberFromPeer
-      //3. checkBlockNumber
-      //4. if equal wait to next cycle
-      //5. blockHashFromDB
-      //6. blockHashFromPeer
-      //7. checkBlockHash
-      //7-1 if not equal rollbackBlock
-      //8. syncNextBlock
-      //9. updateBalance
-      //10. wait to next cycle
-  
-      let dbBlock = await this.blockNumberFromDB();
+      // step
+      // 1. blockNumberFromDB
+      // 2. blockNumberFromPeer
+      // 3. checkBlockNumber
+      // 4. if equal wait to next cycle
+      // 5. blockHashFromDB
+      // 6. blockHashFromPeer
+      // 7. checkBlockHash
+      // 7-1 if not equal rollbackBlock
+      // 8. syncNextBlock
+      // 9. updateBalance
+      // 10. wait to next cycle
+
+      const dbBlock = await this.blockNumberFromDB();
       this.peerBlock = await this.blockNumberFromPeer();
       if (!await this.checkBlockNumberLess()) {
         this.logger.log(`[${this.constructor.name}] block height ${dbBlock} is top now.`);
@@ -157,22 +157,21 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
         const syncBlockHash = await this.blockHashFromPeer(syncBlock);
         const syncResult = await this.blockDataFromPeer(syncBlockHash);
         if (!syncBlockHash || !syncResult) {
-          //block hash or data not found
-          //maybe network error or block doesn't exist
-          //end this recursive
+          // block hash or data not found
+          // maybe network error or block doesn't exist
+          // end this recursive
           return Promise.resolve(syncBlock - 1);
         }
-  
+
         // 2. save block data into db
         // must success
-        const BlockScanned_id = await this.insertBlock(syncResult);
-  
+        const blockScanned_id = await this.insertBlock(syncResult);
+
         // 3. assign parser
         // must success
-  
+
         // 4. after parse done update blockchain table block column
         const updateResult = await this.updateBlockHeight(syncBlock);
-  
       } while (syncBlock < this.peerBlock);
       return Promise.resolve(syncBlock);
     } catch (error) {
@@ -181,7 +180,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     }
   }
 
-  async updateBalance(){
+  async updateBalance() {
     // TODO
     return Promise.resolve();
   }
@@ -190,7 +189,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     this.logger.log(`[${this.constructor.name}] updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(
       { block },
-      { where: { Blockchain_id: this.bcid } }
+      { where: { blockchain_id: this.bcid } },
     );
     return insertResult;
   }
@@ -217,18 +216,17 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
         };
         break;
 
-        case 'getblock':
-          result = {
-            jsonrpc: '1.0',
-            method: 'getblock',
-            params: [blockHash, 2],
-            id: dvalue.randomID(),
-          };
-          break;
+      case 'getblock':
+        result = {
+          jsonrpc: '1.0',
+          method: 'getblock',
+          params: [blockHash, 2],
+          id: dvalue.randomID(),
+        };
+        break;
     }
     return result;
   }
-
 }
 
 module.exports = BtcCrawlerManagerBase;

@@ -1,17 +1,17 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('AccountCurrency', {
   // PK
-  AccountCurrency_id: {
+  accountCurrency_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
   },
   // FK
-  Account_id: {
+  account_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },
   // FK
-  Currency_id: {
+  currency_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },
