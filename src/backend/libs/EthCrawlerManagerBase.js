@@ -9,6 +9,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     super(blockchainId, database, logger);
     this.options = {};
     this.syncInterval = 15000;
+    this.unparsedTxModel = this.database.db.UnparsedTransaction;
   }
 
   async init() {
@@ -35,7 +36,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
   async blockNumberFromPeer() {
     this.logger.log(`[${this.constructor.name}] blockNumberFromPeer`);
-    const type = 'getblockcount';
+    const type = 'getBlockcount';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type });
     const checkId = options.data.id;
@@ -54,32 +55,38 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
   async blockDataFromPeer(blockHash) {
     this.logger.log(`[${this.constructor.name}] blockDataFromPeer(${blockHash})`);
-    const type = 'getblock';
+    const type = 'getBlock';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, blockHash });
     const checkId = options.data.id;
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
-      if (data.id !== checkId) return Promise.reject();
+      if (data.id !== checkId) {
+        this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock data not found\x1b[0m\x1b[21m`);
+        return Promise.reject();
+      }
       return Promise.resolve(data.result);
     }
-    this.logger.log('\x1b[1m\x1b[90mbtc block data not found\x1b[0m\x1b[21m');
+    this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock data not found\x1b[0m\x1b[21m`);
     return Promise.reject();
   }
 
   async blockHashFromPeer(block) {
     this.logger.log(`[${this.constructor.name}] blockhashFromPeer(${block})`);
-    const type = 'getblockhash';
+    const type = 'getBlockhash';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, block });
     const checkId = options.data.id;
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
-      if (data.id !== checkId) return Promise.reject();
+      if (data.id !== checkId) {
+        this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock hash not found\x1b[0m\x1b[21m`);
+        return Promise.reject();
+      }
       const blockData = data.result;
       return Promise.resolve(blockData.hash);
     }
-    this.logger.log('\x1b[1m\x1b[90mbtc block hash not found\x1b[0m\x1b[21m');
+    this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock hash not found\x1b[0m\x1b[21m`);
     return Promise.reject();
   }
 
@@ -103,6 +110,32 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       return insertResult;
     } catch (error) {
       const e = new Error(`[${this.constructor.name}] insertBlock(${blockData.hash}) error: ${error}`);
+      this.logger.log(e);
+      return Promise.reject(e);
+    }
+  }
+
+  async insertUnparsedTransaction(transaction, receipt, timestamp) {
+    this.logger.log(`[${this.constructor.name}] insertUnparsedTransaction`);
+    this.logger.log(`[${this.constructor.name}] transaction: ${transaction}`);
+    this.logger.log(`[${this.constructor.name}] receipt: ${receipt}`);
+    this.logger.log(`[${this.constructor.name}] timestamp: ${timestamp}`);
+
+    try {
+      const insertResult = await this.unparsedTxModel.findOrCreate({
+        where: { blockchain_id: this.bcid, txid: transaction.hash },
+        defaults: {
+          unparsedTransaction_id: uuidv4(),
+          blockchain_id: this.bcid,
+          txid: transaction.hash,
+          transaction: JSON.stringify(transaction),
+          receipt: JSON.stringify(receipt),
+          timestamp,
+        },
+      });
+      return insertResult;
+    } catch (error) {
+      const e = new Error(`[${this.constructor.name}] insertUnparsedTransaction(${transaction.hash}) error: ${error}`);
       this.logger.log(e);
       return Promise.reject(e);
     }
@@ -156,11 +189,13 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     // step
     // 1. sync block +1
     // 2. save block data into db
-    // 3. assign parser
-    // 4. after parse done update blockchain table block column
-    // 5. check block in db is equal to this.peerBlock
-    // 6. if yes return
-    // 7. if no, recursive
+    // 3. sync tx and receipt
+    // 4. save unparsed tx and receipt into db
+    // 5. assign parser
+    // 6. after parse done update blockchain table block column
+    // 7. check block in db is equal to this.peerBlock
+    // 8. if yes return
+    // 9. if no, recursive
 
     try {
       let syncBlock = block;
@@ -181,10 +216,24 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         // must success
         await this.insertBlock(syncResult);
 
-        // 3. assign parser
+        // 3. sync tx and receipt
+        const txids = syncResult.transactions;
+        const timestamp = parseInt(syncResult.timestamp, 16);
+        for (const txid of txids) {
+          const transaction = await this.transactionFromPeer(txid);
+          const receipt = await this.receiptFromPeer(txid);
+
+          if (!transaction || !receipt) {
+            // TODO error handle
+          }
+          // 4. save unparsed tx and receipt into db
+          await this.insertUnparsedTransaction(transaction, receipt, timestamp);
+        }
+
+        // 5. assign parser
         // must success
 
-        // 4. after parse done update blockchain table block column
+        // 6. after parse done update blockchain table block column
         await this.updateBlockHeight(syncBlock);
       } while (syncBlock < this.peerBlock);
       return Promise.resolve(syncBlock);
@@ -192,6 +241,42 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       this.logger.log(`[${this.constructor.name}] syncBlock() error: ${error}`);
       return Promise.reject();
     }
+  }
+
+  async receiptFromPeer(txid) {
+    this.logger.log(`[${this.constructor.name}] receiptFromPeer(${txid})`);
+    const type = 'getReceipt';
+    const options = dvalue.clone(this.options);
+    options.data = this.constructor.cmd({ type, txid });
+    const checkId = options.data.id;
+    const data = await Utils.ETHRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
+        return Promise.reject();
+      }
+      return Promise.resolve(data.result);
+    }
+    this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
+    return Promise.reject();
+  }
+
+  async transactionFromPeer(txid) {
+    this.logger.log(`[${this.constructor.name}] transactionFromPeer(${txid})`);
+    const type = 'getTransaction';
+    const options = dvalue.clone(this.options);
+    options.data = this.constructor.cmd({ type, txid });
+    const checkId = options.data.id;
+    const data = await Utils.ETHRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mtransaction not found\x1b[0m\x1b[21m`);
+        return Promise.reject();
+      }
+      return Promise.resolve(data.result);
+    }
+    this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mtransaction not found\x1b[0m\x1b[21m`);
+    return Promise.reject();
   }
 
   async updateBalance() {
@@ -209,11 +294,11 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   static cmd({
-    type, block, blockHash,
+    type, block, blockHash, txid,
   }) {
     let result;
     switch (type) {
-      case 'getblockcount':
+      case 'getBlockcount':
         result = {
           jsonrpc: '2.0',
           method: 'eth_blockNumber',
@@ -221,7 +306,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           id: dvalue.randomID(),
         };
         break;
-      case 'getblockhash':
+      case 'getBlockhash':
         result = {
           jsonrpc: '2.0',
           method: 'eth_getBlockByNumber',
@@ -229,12 +314,27 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           id: dvalue.randomID(),
         };
         break;
-
-      case 'getblock':
+      case 'getBlock':
         result = {
           jsonrpc: '2.0',
           method: 'eth_getBlockByHash',
-          params: [blockHash, true],
+          params: [blockHash, false],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getTransaction':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_getTransactionByHash',
+          params: [txid],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getReceipt':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_getTransactionReceipt',
+          params: [txid],
           id: dvalue.randomID(),
         };
         break;
