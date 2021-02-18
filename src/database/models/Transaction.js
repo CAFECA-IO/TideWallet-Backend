@@ -1,12 +1,12 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('Transaction', {
   // PK
-  Transaction_id: {
+  transaction_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
   },
   // FK
-  Currency_id: {
+  currency_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -56,5 +56,5 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Transaction', {
   tableName: 'Transaction',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
-  indexes: [{ fields: ['Currency_id'] }],
+  indexes: [{ fields: ['currency_id'] }],
 });

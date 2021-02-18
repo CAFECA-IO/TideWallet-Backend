@@ -1,12 +1,12 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('Device', {
   // PK
-  Device_id: {
+  device_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
   },
   // FK
-  User_id: {
+  user_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },

@@ -1,12 +1,12 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('Currency', {
   // PK
-  Currency_id: {
+  currency_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
   },
   // FK
-  Blockchain_id: {
+  blockchain_id: {
     type: DataTypes.STRING,
   },
   name: {

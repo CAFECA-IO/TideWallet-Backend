@@ -85,10 +85,10 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       this.logger.log(`[${this.constructor.name}] blockData.height: ${blockData.height}`);
 
       const insertResult = await this.blockScannedModel.findOrCreate({
-        where: { Blockchain_id: this.bcid, block: blockData.height },
+        where: { blockchain_id: this.bcid, block: blockData.height },
         defaults: {
-          BlockScanned_id: uuidv4(),
-          Blockchain_id: this.bcid,
+          blockScanned_id: uuidv4(),
+          blockchain_id: this.bcid,
           block: blockData.height,
           block_hash: blockData.hash,
           timestamp: blockData.time,
@@ -195,7 +195,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     this.logger.log(`[${this.constructor.name}] updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(
       { block },
-      { where: { Blockchain_id: this.bcid } },
+      { where: { blockchain_id: this.bcid } },
     );
     return insertResult;
   }

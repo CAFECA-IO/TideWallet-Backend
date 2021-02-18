@@ -90,10 +90,10 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
     try {
       const insertResult = await this.blockScannedModel.findOrCreate({
-        where: { Blockchain_id: this.bcid, block: parseInt(blockData.number, 16) },
+        where: { blockchain_id: this.bcid, block: parseInt(blockData.number, 16) },
         defaults: {
-          BlockScanned_id: uuidv4(),
-          Blockchain_id: this.bcid,
+          blockScanned_id: uuidv4(),
+          blockchain_id: this.bcid,
           block: parseInt(blockData.number, 16),
           block_hash: blockData.hash,
           timestamp: parseInt(blockData.timestamp, 16),
@@ -202,7 +202,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     this.logger.log(`[${this.constructor.name}] updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(
       { block },
-      { where: { Blockchain_id: this.bcid } },
+      { where: { blockchain_id: this.bcid } },
     );
     return insertResult;
   }

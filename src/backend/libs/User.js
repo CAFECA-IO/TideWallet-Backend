@@ -47,7 +47,7 @@ class User extends Bot {
     try {
       const userID = await this.sequelize.transaction(async (transaction) => {
         const insertUser = await this.userModel.create({
-          User_id: uuidv4(),
+          user_id: uuidv4(),
           wallet_name,
           last_login_timestamp: Math.floor(Date.now() / 1000),
         }, { transaction });
@@ -59,15 +59,15 @@ class User extends Bot {
           include: [
             {
               model: this.blockchainModel,
-              attributes: ['Blockchain_id', 'block', 'coin_type'],
+              attributes: ['blockchain_id', 'block', 'coin_type'],
             },
           ],
         });
         for (let i = 0; i < accounts.length; i++) {
           const insertAccount = await this.accountModel.create({
-            Account_id: uuidv4(),
-            User_id: insertUser.User_id,
-            Blockchain_id: accounts[i].Blockchain_id,
+            account_id: uuidv4(),
+            user_id: insertUser.user_id,
+            blockchain_id: accounts[i].blockchain_id,
             purpose: 44,
             curve_type: 0,
             extend_public_key,
@@ -75,20 +75,20 @@ class User extends Bot {
           }, { transaction });
 
           await this.accountCurrencyModel.create({
-            AccountCurrency_id: uuidv4(),
-            Account_id: insertAccount.Account_id,
-            Currency_id: accounts[i].Currency_id,
+            accountCurrency_id: uuidv4(),
+            account_id: insertAccount.account_id,
+            currency_id: accounts[i].currency_id,
             balance: '0',
             number_of_external_key: '0',
             number_of_internal_key: '0',
           }, { transaction });
 
           const coinType = accounts[i].Blockchain.coin_type;
-          const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.Blockchain_id });
+          const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id });
 
           await this.accountAddressModel.create({
-            AccountAddress_id: uuidv4(),
-            Account_id: insertAccount.Account_id,
+            accountAddress_id: uuidv4(),
+            account_id: insertAccount.account_id,
             chain_index: 0,
             key_index: 0,
             public_key: wallet.publicKey,
@@ -96,12 +96,13 @@ class User extends Bot {
           }, { transaction });
         }
 
-        return insertUser.User_id;
+        return insertUser.user_id;
       });
 
       const payload = await Utils.generateToken({ userID });
       return new ResponseFormat({ message: 'User Regist', payload });
     } catch (e) {
+      this.logger.error('UserRegist e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
@@ -122,6 +123,7 @@ class User extends Bot {
         },
       });
     } catch (e) {
+      this.logger.error('AccessTokenVerify e:', e);
       if (e.code) return e;
       return e;
     }
@@ -136,7 +138,7 @@ class User extends Bot {
       const data = await Utils.verifyToken(token, true);
       const findTokenSecret = await this.tokenSecretModel.findOne({
         where: {
-          TokenSecret: tokenSecret, User_id: data.userID,
+          tokenSecret, user_id: data.userID,
         },
       });
 
@@ -149,7 +151,7 @@ class User extends Bot {
         // if generateToken success, delete old tokenSecret
         await this.tokenSecretModel.destroy({
           where: {
-            TokenSecret: findTokenSecret.TokenSecret, User_id: findTokenSecret.User_id,
+            tokenSecret: findTokenSecret.tokenSecret, user_id: findTokenSecret.user_id,
           },
         }, { transaction });
 
@@ -157,6 +159,7 @@ class User extends Bot {
       });
       return new ResponseFormat({ message: 'Token Renew', payload });
     } catch (e) {
+      this.logger.error('AccessTokenRenew e:', e);
       if (e.code) return e;
       throw e;
     }

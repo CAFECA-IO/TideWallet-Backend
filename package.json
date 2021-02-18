@@ -10,7 +10,9 @@
   },
   "bundleDependencies": false,
   "dependencies": {
+    "base58": "^2.0.1",
     "bignumber.js": "^9.0.1",
+    "bitcoinjs-lib": "^5.2.0",
     "bs58check": "^2.1.2",
     "command-line-args": "^5.0.2",
     "dvalue": "^1.0.20",
@@ -26,7 +28,7 @@
     "koa-router": "^7.4.0",
     "koa-session": "^5.10.1",
     "koa-static": "^5.0.0",
-    "level": "^4.0.0",
+    "level": "^6.0.1",
     "ncp": "^2.0.0",
     "pem": "^1.14.2",
     "pg": "^8.5.1",
