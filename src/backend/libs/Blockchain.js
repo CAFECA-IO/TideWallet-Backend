@@ -234,33 +234,72 @@ class Blockchain extends Bot {
         case '80000060':
         case '80000603':
           option = { ...this.config.ethereum.ropsten };
-          break;
+          option.data = {
+            jsonrpc: '2.0',
+            method: 'eth_getTransactionCount',
+            params: [address, 'latest'],
+            id: dvalue.randomID(),
+          };
+          // eslint-disable-next-line no-case-declarations
+          const data = await Utils.ETHRPC(option);
+
+          if (!data.result) return new ResponseFormat({ message: 'rpc error', code: Codes.RPC_ERROR });
+          nonce = new BigNumber(data.result).toFixed();
+
+          return new ResponseFormat({
+            message: 'Get Nonce',
+            payload: { nonce: '0' },
+          });
 
         default:
-
           return new ResponseFormat({
             message: 'Get Nonce',
             payload: { nonce },
           });
       }
-      option.data = {
-        jsonrpc: '2.0',
-        method: 'eth_getTransactionCount',
-        params: [address, 'latest'],
-        id: dvalue.randomID(),
-      };
-      const data = await Utils.ETHRPC(option);
-
-      if (data.result) {
-        nonce = new BigNumber(data.result).toFixed();
-      }
-
-      return new ResponseFormat({
-        message: 'Get Nonce',
-        payload: { nonce: '0' },
-      });
     } catch (e) {
       this.logger.error('GetNonce e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async PublishTransaction({ params, body }) {
+    const { blockchain_id } = params;
+    const { hex } = body;
+    if (!hex) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+
+    try {
+      let option = {};
+      // TODO: support another blockchain
+      switch (blockchain_id) {
+        case '80000060':
+        case '80000603':
+          option = { ...this.config.ethereum.ropsten };
+          option.data = {
+            jsonrpc: '2.0',
+            method: 'eth_sendRawTransaction',
+            params: [hex],
+            id: dvalue.randomID(),
+          };
+          // eslint-disable-next-line no-case-declarations
+          const data = await Utils.ETHRPC(option);
+
+          if (!data.result) return new ResponseFormat({ message: 'rpc error', code: Codes.RPC_ERROR });
+
+          return new ResponseFormat({
+            message: 'Publish Transaction',
+            payload: {},
+          });
+
+        default:
+          return new ResponseFormat({
+            message: 'Publish Transaction',
+            payload: {},
+          });
+      }
+    } catch (e) {
+      this.logger.error('PublishTransaction e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }

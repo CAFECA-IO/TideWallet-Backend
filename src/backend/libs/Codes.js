@@ -26,6 +26,7 @@ const Codes = {
   // Processing Error (Caught Exception) 05000000 - 05009999
   DB_ERROR: '05000000',
   PUBLISH_TX_ERROR: '05000001',
+  RPC_ERROR: '05000002',
 
   // Uncaught Exception or Unknown Error 09000000
   UNKNOWN_ERROR: '09000000',
