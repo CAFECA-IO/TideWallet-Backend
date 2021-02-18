@@ -213,6 +213,7 @@ class Account extends Bot {
           payload.icon = accountCurrency.Currency.icon;
         } else if (accountCurrency.Currency && accountCurrency.Currency.type === 2) {
           tokens.push({
+            account_token_id: accountCurrency.accountCurrency_id,
             token_id: accountCurrency.Currency.currency_id,
             blockchain_id: findAccount.blockchain_id,
             name: accountCurrency.Currency.name,
@@ -387,7 +388,6 @@ class Account extends Bot {
     findAccountCurrency, txs, chain_index, key_index,
   }) {
     const isToken = findAccountCurrency.Currency.type === 2;
-    console.log('isToken:', isToken);
     const findAccountAddress = await this.accountAddressModel.findOne({
       where: { account_id: findAccountCurrency.account_id, chain_index, key_index },
     });
@@ -410,24 +410,23 @@ class Account extends Bot {
             },
           ],
         });
-        console.log('findTxByAddress:', findTxByAddress);
-        // if (findTxByAddress) {
-        //   for (let j = 0; j < findTxByAddress.length; j++) {
-        //     const txInfo = findTxByAddress[j];
-        //     txs.push({
-        //       txid: txInfo.Transaction.txid,
-        //       status: (isToken) ? findTxByAddress.result : 'success',
-        //       amount: txInfo.Transaction.amount,
-        //       symbol: findAccountCurrency.Currency.symbol, // "unit"
-        //       direction: txInfo.direction === 0 ? 'send' : 'receive',
-        //       confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.Transaction.block,
-        //       timestamp: txInfo.Transaction.timestamp,
-        //       source_addresses: txInfo.Transaction.source_addresses,
-        //       destination_addresses: txInfo.Transaction.destination_addresses,
-        //       fee: txInfo.Transaction.fee,
-        //     });
-        //   }
-        // }
+        if (findTxByAddress && findTxByAddress.length > 0) {
+          for (let j = 0; j < findTxByAddress.length; j++) {
+            const txInfo = findTxByAddress[j];
+            txs.push({
+              txid: txInfo.TokenTransaction.Transaction.txid,
+              status: (isToken) ? findTxByAddress.result : 'success',
+              amount: txInfo.TokenTransaction.amount,
+              symbol: findAccountCurrency.Currency.symbol, // "unit"
+              direction: txInfo.TokenTransaction.direction === 0 ? 'send' : 'receive',
+              confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.TokenTransaction.Transaction.block,
+              timestamp: txInfo.TokenTransaction.timestamp,
+              source_addresses: txInfo.TokenTransaction.source_addresses,
+              destination_addresses: txInfo.TokenTransaction.destination_addresses,
+              fee: txInfo.TokenTransaction.Transaction.fee,
+            });
+          }
+        }
       } else {
         const findTxByAddress = await this.addressTransactionModel.findAll({
           where: {

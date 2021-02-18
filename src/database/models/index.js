@@ -92,8 +92,8 @@ module.exports = env;
     db.Currency.hasMany(db.AddressTokenTransaction, { foreignKey: 'currency_id' });
     db.AddressTokenTransaction.belongsTo(db.AccountAddress, { foreignKey: 'accountAddress_id' });
     db.AccountAddress.hasMany(db.AddressTokenTransaction, { foreignKey: 'accountAddress_id' });
-    db.AddressTokenTransaction.belongsTo(db.TokenTransaction, { foreignKey: 'Tokentransaction_id' });
-    db.TokenTransaction.hasMany(db.AddressTokenTransaction, { foreignKey: 'Tokentransaction_id' });
+    db.AddressTokenTransaction.belongsTo(db.TokenTransaction, { foreignKey: 'tokenTransaction_id' });
+    db.TokenTransaction.hasMany(db.AddressTokenTransaction, { foreignKey: 'tokenTransaction_id' });
 
     // UTXO
     db.UTXO.belongsTo(db.Currency, { foreignKey: 'currency_id' });
