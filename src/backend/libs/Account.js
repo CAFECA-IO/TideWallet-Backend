@@ -444,7 +444,8 @@ class Account extends Bot {
             const txInfo = findTxByAddress[j];
             txs.push({
               txid: txInfo.Transaction.txid,
-              status: (isToken) ? findTxByAddress.result : 'success',
+              // eslint-disable-next-line no-nested-ternary
+              status: (isToken) ? findTxByAddress.result ? 'success' : 'failed' : 'success',
               amount: txInfo.Transaction.amount,
               symbol: findAccountCurrency.Currency.symbol, // "unit"
               direction: txInfo.direction === 0 ? 'send' : 'receive',
@@ -517,6 +518,52 @@ class Account extends Bot {
       });
     } catch (e) {
       this.logger.error('ListTransactions e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
+  }
+
+  async TransactionDetail({ params }) {
+    const { txid } = params;
+
+    try {
+    // find Transaction table
+      const findTX = await this.transactionModel.findOne({
+        where: { txid },
+        include: [
+          {
+            model: this.currencyModel,
+            attributes: ['currency_id', 'symbol'],
+            include: [
+              {
+                model: this.blockchainModel,
+                attributes: ['blockchain_id', 'block'],
+              },
+            ],
+          },
+        ],
+      });
+      if (findTX) {
+        return new ResponseFormat({
+          message: 'Get Transaction Detail',
+          payload: {
+            txid: findTX.txid,
+            status: findTX.result ? 'success' : 'failed',
+            confirmations: findTX.Currency.Blockchain.block - findTX.block,
+            amount: findTX.amount,
+            blockchain_id: findTX.Currency.Blockchain.blockchain_id,
+            symbol: findTX.Currency.symbol,
+            direction: findTX.direction === 0 ? 'send' : 'receive',
+            timestamp: findTX.timestamp,
+            source_addresses: findTX.source_addresses,
+            destination_addresses: findTX.destination_addresses,
+            fee: findTX.fee,
+          },
+        });
+      }
+      return new ResponseFormat({ message: 'txid not found', code: Codes.TX_NOT_FOUND });
+    } catch (e) {
+      this.logger.error('TransactionDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
