@@ -28,6 +28,14 @@ path = "/"
 user = ''
 password = ''
 
+[bitcoin.testnet]
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 18332
+path = "/"
+user = ''
+password = ''
+
 [syncInterval]
 ethereum = 15000
 bitcoin = 900000
