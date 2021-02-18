@@ -648,7 +648,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"wallet_name\": \"測試錢包\",\n    \"extend_public_key\": \"xxxxxxxxxxxxx...xxxxx\",\n    \"install_id\": \"xxxxxxxxxxxxx...xxxxx\",\n    \"app_uuid\": \"xxxxxxxxxxxxx...xxxxx\"\n}",
+					"raw": "{\n    \"wallet_name\": \"測試錢包\",\n    \"extend_public_key\": \"xprv9tuogRdb5YTgcL3P8Waj7REqDuQx4sXcodQaWTtEVFEp6yRKh1CjrWfXChnhgHeLDuXxo2auDZegMiVMGGxwxcrb2PmiGyCngLxvLeGsZRq\",\n    \"install_id\": \"xxxxxxxxxxxxx...xxxxx\",\n    \"app_uuid\": \"xxxxxxxxxxxxx...xxxxx\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -977,7 +977,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI0OTdlMTNkYi1mN2IwLTRlNDctOGVkNi0zNTI5NzE5ZDQ3ZjIiLCJpYXQiOjE2MTI1MjAwNzAsImV4cCI6MTY0NDA1NjA3MH0.bmcjwSxhw-oS3mdmbrc8br0PA7l5NpBQ3OKRH-jsZRY\",\n    \"tokenSecret\": \"rRATKtJTMeCIFucxHqUn29iNB7s2g8zUeZqTOiUereSxjcWL5pZSc0gT1IY4HFObx4ETK9KFVpdhZXEAY5322QhwA6mrWvr9PlrjMzI1mV2NgnlrZO9BWIlAjg82G2fLEcLIYT2r2aQeZ05PqDUCs1cRCw1MxPOu57yRAkddG7FIkmnIRrqrVfEAEJD9Xya0PODU7RHsjsdafo8zugVvG4kP9xUsT14eXYMQCZWhnYhwZMKUeC6FXl758YGtze4a\"\n}",
+					"raw": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2OWUwNWJhMS02NDFmLTRjYjQtYmRhYi0xYWY2MTA0OWI1MmIiLCJpYXQiOjE2MTI3NzEzNjUsImV4cCI6MTY0NDMwNzM2NX0.IhiPzbCJaNPhVxDgXihVxL-gFk4o6BS63sJ9WgpuhII\",\n    \"tokenSecret\": \"MLSit9gevXgxfrE9wP3l0ySM0mCLGkokUSRRwtjxn80KW5pfhYRVQklweDvpGpyaZuR0iLTBZzZOYqIW8SEArh2YbwmXtbpFJwwyHEBH8FUtMKpsFopLDKZMXPLWdfLEQahLWuDtGSigf2NeyzLoGPxttnKfqWdCL2iATGIrIJiMadxKHC1rNE9fVfqgBJWMQDWB22RgT9IjaL4kDBC4Wl3yktHVwpFoe4T33A37qjtoq5Tfqj4smW8INmGKujYq\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -1337,7 +1337,7 @@
 					}
 				],
 				"url": {
-					"raw": "{{domain}}/api/v1/wallet/account/:currency_id",
+					"raw": "{{domain}}/api/v1/wallet/account/:account_id",
 					"host": [
 						"{{domain}}"
 					],
@@ -1346,13 +1346,12 @@
 						"v1",
 						"wallet",
 						"account",
-						":currency_id"
+						":account_id"
 					],
 					"variable": [
 						{
-							"key": "currency_id",
-							"value": "5b1ea92e584bf50020130615",
-							"type": "string"
+							"key": "account_id",
+							"value": "39434fa0-2a62-461a-90ec-1866e043c8ba"
 						}
 					]
 				}
@@ -1370,7 +1369,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{domain}}/api/v1/wallet/account/:currency_id",
+							"raw": "{{domain}}/api/v1/wallet/account/:account_id",
 							"host": [
 								"{{domain}}"
 							],
@@ -1379,12 +1378,16 @@
 								"v1",
 								"wallet",
 								"account",
-								":currency_id"
+								":account_id"
 							],
 							"variable": [
 								{
-									"key": "currency_id",
-									"value": "5b1ea92e584bf50020130615"
+									"key": "account_id",
+									"value": "8a8a54b4-9c03-4daa-944c-05bc0186f33a"
+								},
+								{
+									"value": "5b1ea92e584bf50020130615",
+									"key": "currency_id"
 								}
 							]
 						}
@@ -1601,7 +1604,7 @@
 					"variable": [
 						{
 							"key": "account_id or token_account_id",
-							"value": "xxxxxxxx",
+							"value": "5bd3b1ff-b81a-41eb-a017-f582a4e21fda",
 							"type": "string"
 						}
 					]
@@ -1726,7 +1729,7 @@
 					"variable": [
 						{
 							"key": "account_id or token_account_id",
-							"value": "xxxxxxxx",
+							"value": "a708c544-91b9-4c32-9b13-1a7e89f2eb21",
 							"type": "string"
 						}
 					]
@@ -1827,7 +1830,13 @@
 			"name": "17. Get Transaction Detail（暫時保留，與 list 資料重複性太高）",
 			"request": {
 				"method": "GET",
-				"header": [],
+				"header": [
+					{
+						"key": "token",
+						"value": "{{token}}",
+						"type": "text"
+					}
+				],
 				"url": {
 					"raw": "{{domain}}/api/v1/wallet/account/tx/:txid",
 					"host": [
@@ -1844,7 +1853,7 @@
 					"variable": [
 						{
 							"key": "txid",
-							"value": "txid",
+							"value": "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",
 							"type": "string"
 						}
 					]
@@ -2307,9 +2316,15 @@
 			"name": "21. Get Nonce",
 			"request": {
 				"method": "GET",
-				"header": [],
+				"header": [
+					{
+						"key": "token",
+						"value": "{{token}}",
+						"type": "text"
+					}
+				],
 				"url": {
-					"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/nonce",
+					"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/address/:address/nonce",
 					"host": [
 						"{{domain}}"
 					],
@@ -2318,13 +2333,19 @@
 						"v1",
 						"blockchain",
 						":blockchain_id",
+						"address",
+						":address",
 						"nonce"
 					],
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000000",
+							"value": "80000060",
 							"type": "string"
+						},
+						{
+							"key": "address",
+							"value": "0x184bc0b671807ae5834e62150d9bf5bc51d0d733"
 						}
 					]
 				}
@@ -2427,7 +2448,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"hex\": \"01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff2d03a58605204d696e656420627920416e74506f6f6c20757361311f10b53620558903d80272a70c0000724c0600ffffffff010f9e5096000000001976a9142ef12bd2ac1416406d0e132e5bc8d0b02df3861b88ac00000000\"\n}",
+					"raw": "{\n    \"hex\": \"0xf86a22827d00831e8480941b85a43e2e7f52e766ddfdfa2b901c42cb1201be8801b27f33b807c0008029a084ccbf02b27e0842fb1eda7a187a5589c3759be0e969e0ca989dc469a5e5e394a02e111e1156b197f1de4c1d9ba4af26e50665ea6d617d05b3e4047da12b915e69\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -2435,7 +2456,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/push-tx/:account_id or token_account_id",
+					"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/push-tx",
 					"host": [
 						"{{domain}}"
 					],
@@ -2444,18 +2465,12 @@
 						"v1",
 						"blockchain",
 						":blockchain_id",
-						"push-tx",
-						":account_id or token_account_id"
+						"push-tx"
 					],
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000000",
-							"type": "string"
-						},
-						{
-							"key": "account_id or token_account_id",
-							"value": "xxxxxxxx",
+							"value": "80000060",
 							"type": "string"
 						}
 					]

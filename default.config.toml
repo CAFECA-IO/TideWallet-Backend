@@ -73,9 +73,15 @@ pathname = [
   "post | /api/v1/token/renew | Bot.User.AccessTokenRenew",
   "post | /api/v1/wallet/blockchain/:blockchain_id/token/:currency_id | Bot.Account.TokenRegist",
   "get | /api/v1/wallet/accounts | Bot.Account.AccountList",
-  "get | /api/v1/wallet/account/:currency_id | Bot.Account.AccountDetail",
+  "get | /api/v1/wallet/account/:account_id | Bot.Account.AccountDetail",
   "get | /api/v1/wallet/account/address/:account_id/receive | Bot.Account.AccountReceive",
   "get | /api/v1/wallet/account/address/:account_id/change | Bot.Account.AccountChange",
   "get | /api/v1/wallet/account/txs/:account_id | Bot.Account.ListTransactions",
+  "get | /api/v1/wallet/account/tx/:txid | Bot.Account.TransactionDetail",
+  "get | /api/v1/wallet/account/txs/uxto/:account_id | Bot.Account.GetUTXO",
+  "get | /api/v1/blockchain/:blockchain_id/fee | Bot.Blockchain.GetFee",
+  "get | /api/v1/blockchain/:blockchain_id/address/:address/nonce | Bot.Blockchain.GetNonce",
+  "post | /api/v1/blockchain/:blockchain_id/push-tx | Bot.Blockchain.PublishTransaction",
+
   "get | /tool/drop | Bot.Account.DROP_ALL_TABLE"
 ]

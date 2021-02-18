@@ -52,6 +52,11 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Blockchain', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  avg_fee: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: '0',
+  },
 }, {
   timestamps: false,
   tableName: 'Blockchain',
