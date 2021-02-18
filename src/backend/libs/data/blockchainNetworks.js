@@ -14,7 +14,7 @@ module.exports = {
     pubKeyHash: 0x00,
     scriptHash: 0x05,
     wif: 0x80,
-    start_block: 0,
+    start_block: 671111,
     avg_fee: '0',
   },
   BITCOIN_TESTNET: {
@@ -32,7 +32,7 @@ module.exports = {
     pubKeyHash: 0x6f,
     scriptHash: 0xc4,
     wif: 0xef,
-    start_block: 0,
+    start_block: 1936629,
     avg_fee: '0',
   },
   ETH: {
@@ -50,7 +50,7 @@ module.exports = {
     pubKeyHash: 0,
     scriptHash: 0,
     wif: 0,
-    start_block: 0,
+    start_block: 11880154,
     avg_fee: '0',
   },
   ROPSTEN: {
@@ -68,7 +68,7 @@ module.exports = {
     pubKeyHash: 0,
     scriptHash: 0,
     wif: 0,
-    start_block: 0,
+    start_block: 9679898,
     avg_fee: '0',
   },
   CAFECA: {
