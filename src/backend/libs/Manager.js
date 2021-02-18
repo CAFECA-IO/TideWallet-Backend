@@ -34,9 +34,9 @@ class Manager extends Bot {
   createManager() {
     console.log('createManager');
     const result = [];
-    result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
+    // result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
     result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
-    result.push(new EthCrawlerManager(this.config, this.database, this.logger));
+    // result.push(new EthCrawlerManager(this.config, this.database, this.logger));
     result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
 
     return result;
