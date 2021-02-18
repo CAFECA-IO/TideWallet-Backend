@@ -14,7 +14,7 @@ module.exports = {
     pubKeyHash: 0x00,
     scriptHash: 0x05,
     wif: 0x80,
-    start_block: 0,
+    start_block: 671111,
   },
   BITCOIN_TESTNET: {
     blockchain_id: '80000001',
@@ -31,7 +31,7 @@ module.exports = {
     pubKeyHash: 0x6f,
     scriptHash: 0xc4,
     wif: 0xef,
-    start_block: 0,
+    start_block: 1936629,
   },
   ETH: {
     blockchain_id: '80000060',
@@ -48,7 +48,7 @@ module.exports = {
     pubKeyHash: 0,
     scriptHash: 0,
     wif: 0,
-    start_block: 0,
+    start_block: 11880154,
   },
   ROPSTEN: {
     blockchain_id: '80000603',
@@ -65,7 +65,7 @@ module.exports = {
     pubKeyHash: 0,
     scriptHash: 0,
     wif: 0,
-    start_block: 0,
+    start_block: 9679898,
   },
   CAFECA: {
     blockchain_id: '80003324',
