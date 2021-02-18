@@ -13,8 +13,11 @@ class HDWallet {
   }) {
     const node = hdkey.fromExtendedKey(this.extendPublicKey);
 
+    // console.log('node:', node);
     const path = `m/${purpose}'/${coinType}'/${account}'/${change}/${index}`;
     this.hdWallet = node.derivePath(path).getWallet();
+    // this.hdWallet = node.derivePath(`m/${change}/${index}`);
+    // console.log('this.hdWallet:', this.hdWallet);
 
     const publicKey = this.hdWallet.getPublicKeyString();
     let address = this.hdWallet.getAddressString();

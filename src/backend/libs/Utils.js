@@ -171,15 +171,15 @@ class Utils {
 
   static BTCRPC({
     // eslint-disable-next-line no-shadow
-    protocol, port, hostname, path, data, user, password
+    protocol, port, hostname, path, data, user, password,
   }) {
-    const basicAuth = this.base64Encode(`${user}:${password}`)
+    const basicAuth = this.base64Encode(`${user}:${password}`);
     const opt = {
       protocol,
       port,
       hostname,
       path,
-      headers: { 'content-type': 'application/json', 'Authorization': `Basic ${basicAuth}` },
+      headers: { 'content-type': 'application/json', Authorization: `Basic ${basicAuth}` },
       data,
     };
     return ecRequest.post(opt).then((rs) => Promise.resolve(JSON.parse(rs.data)));
@@ -460,6 +460,7 @@ class Utils {
   static initialLogger({ base }) {
     return Promise.resolve({
       log: console.log,
+      error: console.error,
       debug: base.debug ? console.log : () => {},
       trace: console.trace,
     });
@@ -589,23 +590,23 @@ class Utils {
   }
 
   static async generateToken({ userID, data = {} }) {
-    const TokenSecret = randToken.uid(256);
+    const tokenSecret = randToken.uid(256);
     const expireTime = new Date(new Date().getTime() + (Number(this.config.base.token_secret_expire_time) * 1000));
 
     const findOne = await this.database.db.TokenSecret.findOrCreate({
-      where: { User_id: userID },
+      where: { user_id: userID },
       defaults: {
-        TokenSecret, User_id: userID, expire_time: expireTime,
+        tokenSecret, user_id: userID, expire_time: expireTime,
       },
     });
 
     if (!findOne[1]) {
       // update
       await this.database.db.TokenSecret.update({
-        TokenSecret, User_id: userID, expire_time: expireTime,
+        tokenSecret, user_id: userID, expire_time: expireTime,
       },
       {
-        where: { User_id: userID },
+        where: { user_id: userID },
       });
     }
 
@@ -613,11 +614,11 @@ class Utils {
       token: JWT.sign({ userID, ...data }, this.config.jwt.secret, {
         expiresIn: this.config.base.token_secret_expire_time,
       }),
-      tokenSecret: TokenSecret,
+      tokenSecret,
       user_id: userID,
     };
   }
-  
+
   static base64Encode(string) {
     const buf = Buffer.from(string);
     return buf.toString('base64');
@@ -630,7 +631,7 @@ class Utils {
 
       const { userID } = data;
       const findUser = await this.database.db.User.findOne({
-        where: { User_id: userID },
+        where: { user_id: userID },
       });
 
       if (!findUser) throw new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
@@ -683,7 +684,7 @@ class Utils {
     try {
       const _pubkey = pubkey.replace('0x', '');
       const fingerprint = this.ripemd160(this.sha256(_pubkey.length > 33 ? this.compressedPublicKey(_pubkey) : _pubkey));
-      const findNetwork = Object.values(blockchainNetworks).find((value) => value.Blockchain_id === blockchainID);
+      const findNetwork = Object.values(blockchainNetworks).find((value) => value.blockchain_id === blockchainID);
       const prefix = Buffer.from((findNetwork.pubKeyHash).toString(16).padStart(2, '0'), 'hex');
       const hashPubKey = Buffer.concat([prefix, fingerprint]);
       const address = bs58check.encode(hashPubKey);

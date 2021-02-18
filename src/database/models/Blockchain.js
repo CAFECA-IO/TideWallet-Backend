@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('Blockchain', {
   // PK
-  Blockchain_id: {
+  blockchain_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
@@ -25,6 +25,10 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Blockchain', {
     type: DataTypes.TEXT,
   },
   block: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  start_block: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },

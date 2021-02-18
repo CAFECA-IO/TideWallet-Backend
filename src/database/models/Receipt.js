@@ -1,6 +1,6 @@
-module.exports = (sequelize, DataTypes) => sequelize.define('TokenTransaction', {
+module.exports = (sequelize, DataTypes) => sequelize.define('Receipt', {
   // PK
-  tokenTransaction_id: {
+  receipt_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
@@ -15,33 +15,30 @@ module.exports = (sequelize, DataTypes) => sequelize.define('TokenTransaction', 
     type: DataTypes.STRING,
     allowNull: false,
   },
-  txid: {
+  contract_address: {
     type: DataTypes.STRING,
-    allowNull: false,
   },
-  timestamp: {
+  cumulative_gas_used: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  source_addresses: {
+  gas_used: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  logs: {
     type: DataTypes.TEXT,
-    allowNull: false,
   },
-  destination_addresses: {
+  logsBloom: {
     type: DataTypes.TEXT,
-    allowNull: false,
   },
-  amount: {
-    type: DataTypes.STRING,
+  status: {
+    type: DataTypes.INTEGER,
     allowNull: false,
-  },
-  result: {
-    type: DataTypes.BOOLEAN,
   },
 }, {
   timestamps: false,
-  tableName: 'TokenTransaction',
+  tableName: 'Receipt',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
-  indexes: [{ fields: ['currency_id'] }],
 });

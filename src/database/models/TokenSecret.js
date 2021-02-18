@@ -1,10 +1,10 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('TokenSecret', {
-  TokenSecret: {
+  tokenSecret: {
     type: DataTypes.STRING(256),
     allowNull: false,
     primaryKey: true,
   },
-  User_id: {
+  user_id: {
     type: DataTypes.STRING,
     allowNull: false,
     primaryKey: true,

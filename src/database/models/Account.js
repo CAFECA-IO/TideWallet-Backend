@@ -1,17 +1,17 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('Account', {
   // PK
-  Account_id: {
+  account_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
   },
   // FK
-  User_id: {
+  user_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },
   // FK
-  Blockchain_id: {
+  blockchain_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },

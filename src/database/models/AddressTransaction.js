@@ -1,22 +1,22 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('AddressTransaction', {
   // PK
-  AddressTransaction_id: {
+  addressTransaction_id: {
     type: DataTypes.STRING,
     primaryKey: true,
     allowNull: false,
   },
   // FK
-  Currency_id: {
+  currency_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },
   // FK
-  AccountAddress_id: {
+  accountAddress_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },
   // FK
-  Transaction_id: {
+  transaction_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -29,5 +29,5 @@ module.exports = (sequelize, DataTypes) => sequelize.define('AddressTransaction'
   tableName: 'AddressTransaction',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
-  indexes: [{ fields: ['Currency_id'] }],
+  indexes: [{ fields: ['currency_id'] }],
 });

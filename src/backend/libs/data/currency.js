@@ -1,6 +1,6 @@
 module.exports = [
   {
-    Currency_id: '5b1ea92e584bf50020130615',
+    currency_id: '5b1ea92e584bf50020130615',
     name: 'US Dollar',
     symbol: 'USD',
     type: 0,
@@ -10,7 +10,7 @@ module.exports = [
     exchange_rate: '1',
   },
   {
-    Currency_id: '5b1ea92e584bf50020130613',
+    currency_id: '5b1ea92e584bf50020130613',
     name: 'Yuan Renminbi',
     symbol: 'CNY',
     type: 0,
@@ -19,7 +19,7 @@ module.exports = [
     decimals: 2,
   },
   {
-    Currency_id: '5b1ea92e584bf50020130ced',
+    currency_id: '5b1ea92e584bf50020130ced',
     name: 'New Taiwan Dollar',
     symbol: 'TWD',
     type: 0,
@@ -28,7 +28,7 @@ module.exports = [
     decimals: 2,
   },
   {
-    Currency_id: '5b1ea92e584bf500201307c3',
+    currency_id: '5b1ea92e584bf500201307c3',
     name: 'Hong Kong Dollar',
     symbol: 'HKD',
     type: 0,
@@ -37,7 +37,7 @@ module.exports = [
     decimals: 2,
   },
   {
-    Currency_id: '5b1ea92e584bf5002013061b',
+    currency_id: '5b1ea92e584bf5002013061b',
     name: 'Yen',
     symbol: 'JPY',
     type: 0,
@@ -46,7 +46,7 @@ module.exports = [
     decimals: 0,
   },
   {
-    Currency_id: '5b1ea92e584bf5002013061a',
+    currency_id: '5b1ea92e584bf5002013061a',
     name: 'Euro',
     symbol: 'EUR',
     type: 0,
@@ -55,8 +55,8 @@ module.exports = [
     decimals: 2,
   },
   {
-    Currency_id: '5b1ea92e584bf50020130612',
-    Blockchain_id: '80000000',
+    currency_id: '5b1ea92e584bf50020130612',
+    blockchain_id: '80000000',
     name: 'Bitcoin',
     symbol: 'BTC',
     type: 1,
@@ -66,8 +66,8 @@ module.exports = [
     icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/btc.png',
   },
   {
-    Currency_id: '5b755dacd5dd99000b3d92b2',
-    Blockchain_id: '80000060',
+    currency_id: '5b755dacd5dd99000b3d92b2',
+    blockchain_id: '80000060',
     name: 'Ethereum',
     symbol: 'ETH',
     type: 1,
@@ -77,8 +77,8 @@ module.exports = [
     icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png',
   },
   {
-    Currency_id: '5b1ea92e584bf50020130617',
-    Blockchain_id: '80000060',
+    currency_id: '5b1ea92e584bf50020130617',
+    blockchain_id: '80000060',
     name: 'Tether',
     symbol: 'USDT',
     type: 2,
@@ -90,8 +90,8 @@ module.exports = [
     icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/usdt.png',
   },
   {
-    Currency_id: '5b1ea92e584bf50020130685',
-    Blockchain_id: '80000060',
+    currency_id: '5b1ea92e584bf50020130685',
+    blockchain_id: '80000060',
     name: 'Chainlink',
     symbol: 'LINK',
     type: 2,
@@ -103,8 +103,8 @@ module.exports = [
     icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/link.png',
   },
   {
-    Currency_id: '5b1ea92e584bf50020130b28',
-    Blockchain_id: '80000060',
+    currency_id: '5b1ea92e584bf50020130b28',
+    blockchain_id: '80000060',
     name: 'Dai',
     symbol: 'DAI',
     type: 2,
@@ -116,8 +116,8 @@ module.exports = [
     icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/dai.png',
   },
   {
-    Currency_id: '5c0009411e24e600214f0eb1',
-    Blockchain_id: '80000060',
+    currency_id: '5c0009411e24e600214f0eb1',
+    blockchain_id: '80000060',
     name: 'USD Coin',
     symbol: 'USDC',
     type: 2,
@@ -129,8 +129,8 @@ module.exports = [
     icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/usdc.png',
   },
   {
-    Currency_id: '5c00093e1e24e600214f0837',
-    Blockchain_id: '80000060',
+    currency_id: '5c00093e1e24e600214f0837',
+    blockchain_id: '80000060',
     name: 'Wrapped Bitcoin',
     symbol: 'WBTC',
     type: 2,
