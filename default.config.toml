@@ -14,7 +14,21 @@ hostname = "127.0.0.1"
 port = 8545
 path = "/"
 
+[ethereum.ropsten]
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 8545
+path = "/"
+
 [bitcoin]
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 18332
+path = "/"
+user = ''
+password = ''
+
+[bitcoin.testnet]
 protocol = "http:"
 hostname = "127.0.0.1"
 port = 18332

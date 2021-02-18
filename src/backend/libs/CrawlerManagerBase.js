@@ -10,10 +10,15 @@ class CrawlerManagerBase {
     this.blockScannedModel = this.database.db.BlockScanned;
     this.currencyModel = this.database.db.Currency;
     this.sequelize = this.database.db.sequelize;
+    this.unparsedTxModel = this.database.db.UnparsedTransaction;
   }
 
   async init() {
     this.isSyncing = false;
+    this.blockInfo = await this.getBlockInfo();
+    if (this.blockInfo.start_block > this.blockInfo.block) {
+      await this.updateBlockHeight(this.blockInfo.start_block);
+    }
     return this;
   }
 
@@ -22,10 +27,17 @@ class CrawlerManagerBase {
     return Promise.resolve();
   }
 
-  async blockInfo() {
-    // TODO
-    // get blockchain_id, start block
-    return Promise.resolve();
+  async getBlockInfo() {
+    this.logger.log(`[${this.constructor.name}] getBlockInfo`);
+    try {
+      const result = await this.blockchainModel.findOne({
+        where: { blockchain_id: this.bcid },
+      });
+      return result;
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
+      return {};
+    }
   }
 
   async blockNumberFromDB() {
@@ -54,11 +66,13 @@ class CrawlerManagerBase {
     return Promise.resolve();
   }
 
+  // eslint-disable-next-line no-unused-vars
   async blockDataFromPeer(blockHash) {
     // need override
     return Promise.resolve();
   }
 
+  // eslint-disable-next-line no-unused-vars
   async blockHashFromPeer(block) {
     // need override
     return Promise.resolve();
@@ -71,6 +85,7 @@ class CrawlerManagerBase {
     this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${dbBlockNumber}, currentBlockNumber: ${currentBlockNumber}`);
     if (typeof currentBlockNumber === 'string') {
       currentBlockNumber = parseInt(currentBlockNumber, 16);
+      this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${dbBlockNumber}, currentBlockNumber: ${currentBlockNumber}`);
     }
     if (typeof dbBlockNumber !== 'number' || typeof currentBlockNumber !== 'number') {
       return false;
@@ -113,6 +128,11 @@ class CrawlerManagerBase {
     return insertResult;
   }
 
+  async insertUnparsedTransaction() {
+    // need override
+    return Promise.resolve();
+  }
+
   async oneCycle() {
     // need override
     return Promise.resolve();
@@ -124,6 +144,7 @@ class CrawlerManagerBase {
     return Promise.resolve();
   }
 
+  // eslint-disable-next-line no-unused-vars
   async syncBlock(block) {
     // need override
     return Promise.resolve();

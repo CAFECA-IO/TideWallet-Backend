@@ -7,11 +7,12 @@ const Utils = require('./Utils');
 class BtcCrawlerManagerBase extends CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
     super(blockchainId, database, logger);
-    this.options;
-    this.syncInterval;
+    this.options = {};
+    this.syncInterval = 90000;
   }
 
   async init() {
+    await super.init();
     this.peerBlock = 0;
     try {
       this.oneCycle();
@@ -78,27 +79,57 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   async insertBlock(blockData) {
-    this.logger.log(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
-    this.logger.log(`[${this.constructor.name}] this.bcid: ${this.bcid}`);
-    this.logger.log(`[${this.constructor.name}] blockData.height: ${blockData.height}`);
+    try {
+      this.logger.log(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
+      this.logger.log(`[${this.constructor.name}] this.bcid: ${this.bcid}`);
+      this.logger.log(`[${this.constructor.name}] blockData.height: ${blockData.height}`);
 
-    const insertResult = await this.blockScannedModel.findOrCreate({
-      where: { blockchain_id: this.bcid, block: blockData.height },
-      defaults: {
-        blockScanned_id: uuidv4(),
-        blockchain_id: this.bcid,
-        block: blockData.height,
-        block_hash: blockData.hash,
-        timestamp: blockData.time,
-        result: JSON.stringify(blockData),
-      },
-    });
-    return insertResult;
+      const insertResult = await this.blockScannedModel.findOrCreate({
+        where: { blockchain_id: this.bcid, block: blockData.height },
+        defaults: {
+          blockScanned_id: uuidv4(),
+          blockchain_id: this.bcid,
+          block: blockData.height,
+          block_hash: blockData.hash,
+          timestamp: blockData.time,
+          result: JSON.stringify(blockData),
+        },
+      });
+      return insertResult;
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] insertBlock(${blockData.hash}) error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
+  async insertUnparsedTransaction(transaction, timestamp) {
+    this.logger.log(`[${this.constructor.name}] insertUnparsedTransaction`);
+    this.logger.log(`[${this.constructor.name}] transaction: ${transaction}`);
+    this.logger.log(`[${this.constructor.name}] timestamp: ${timestamp}`);
+
+    try {
+      const insertResult = await this.unparsedTxModel.findOrCreate({
+        where: { blockchain_id: this.bcid, txid: transaction.hash },
+        defaults: {
+          unparsedTransaction_id: uuidv4(),
+          blockchain_id: this.bcid,
+          txid: transaction.txid,
+          transaction: JSON.stringify(transaction),
+          receipt: '',
+          timestamp,
+        },
+      });
+      return insertResult;
+    } catch (error) {
+      const e = new Error(`[${this.constructor.name}] insertUnparsedTransaction(${transaction.hash}) error: ${error}`);
+      this.logger.log(e);
+      return Promise.reject(e);
+    }
   }
 
   async oneCycle() {
     try {
-      if (this.isSyncing) return Promise.reject('BtcCrawlerManagerBase is sycning');
+      if (this.isSyncing) return Promise.resolve('BtcCrawlerManagerBase is sycning');
       this.isSyncing = true;
       // step
       // 1. blockNumberFromDB
@@ -117,6 +148,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       this.peerBlock = await this.blockNumberFromPeer();
       if (!await this.checkBlockNumberLess()) {
         this.logger.log(`[${this.constructor.name}] block height ${dbBlock} is top now.`);
+        this.isSyncing = false;
         return Promise.resolve();
       }
 
@@ -142,11 +174,12 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     // step
     // 1. sync block +1
     // 2. save block data into db
-    // 3. assign parser
-    // 4. after parse done update blockchain table block column
-    // 5. check block in db is equal to this.peerBlock
-    // 6. if yes return
-    // 7. if no, recursive
+    // 3. save unparsed transaction into db
+    // 4. assign parser
+    // 5. after parse done update blockchain table block column
+    // 6. check block in db is equal to this.peerBlock
+    // 7. if yes return
+    // 8. if no, recursive
 
     try {
       let syncBlock = block;
@@ -165,17 +198,24 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
 
         // 2. save block data into db
         // must success
-        const blockScanned_id = await this.insertBlock(syncResult);
+        await this.insertBlock(syncResult);
 
-        // 3. assign parser
+        // 3. save unparsed transaction into db
+        const txs = syncResult.tx;
+        const timestamp = syncResult.time;
+        for (const transaction of txs) {
+          await this.insertUnparsedTransaction(transaction, timestamp);
+        }
+
+        // 4. assign parser
         // must success
 
-        // 4. after parse done update blockchain table block column
-        const updateResult = await this.updateBlockHeight(syncBlock);
+        // 5. after parse done update blockchain table block column
+        await this.updateBlockHeight(syncBlock);
       } while (syncBlock < this.peerBlock);
       return Promise.resolve(syncBlock);
     } catch (error) {
-      this.logger.error(error);
+      this.logger.log(error);
       return Promise.reject();
     }
   }
@@ -224,6 +264,8 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           id: dvalue.randomID(),
         };
         break;
+      default:
+        result = {};
     }
     return result;
   }
