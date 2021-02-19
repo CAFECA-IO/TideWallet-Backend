@@ -213,6 +213,60 @@ class Blockchain extends Bot {
     }
   }
 
+  async GetGasLimit({ params, body }) {
+    const { blockchain_id } = params;
+    const {
+      fromAddress, toAddress, value, data: signatureData,
+    } = body;
+
+    if (!Utils.validateString(fromAddress)
+    || !Utils.validateString(toAddress)
+    || !Utils.validateString(value)
+    || !Utils.validateString(signatureData)) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+
+    try {
+      const findBlockchainInfo = await this.blockchainModel.findOne({ where: { blockchain_id }, attributes: ['avg_fee'] });
+      if (!findBlockchainInfo) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+      let gasLimit = '0';
+      if (blockchain_id === '80000060' || blockchain_id === '80000603') {
+        const option = { ...this.config.ethereum.ropsten };
+        option.data = {
+          jsonrpc: '2.0',
+          method: 'eth_estimateGas',
+          params: [{
+            from: fromAddress,
+            nonce: value,
+            to: toAddress,
+            data: signatureData,
+          }],
+          id: dvalue.randomID(),
+        };
+        // eslint-disable-next-line no-case-declarations
+        const data = await Utils.ETHRPC(option);
+
+        if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+        gasLimit = new BigNumber(data.result).toFixed();
+        return new ResponseFormat({
+          message: 'Get Gas Limit',
+          payload: {
+            gasLimit,
+          },
+        });
+      }
+      return new ResponseFormat({
+        message: 'Get Gas Limit',
+        payload: {
+          gasLimit,
+        },
+      });
+    } catch (e) {
+      this.logger.error('GetGasLimit e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
   async GetNonce({ params, token }) {
     const { blockchain_id, address } = params;
 

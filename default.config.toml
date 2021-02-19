@@ -80,6 +80,7 @@ pathname = [
   "get | /api/v1/wallet/account/tx/:txid | Bot.Account.TransactionDetail",
   "get | /api/v1/wallet/account/txs/uxto/:account_id | Bot.Account.GetUTXO",
   "get | /api/v1/blockchain/:blockchain_id/fee | Bot.Blockchain.GetFee",
+  "post | /api/v1/blockchain/:blockchain_id/gas-limit | Bot.Blockchain.GetGasLimit",
   "get | /api/v1/blockchain/:blockchain_id/address/:address/nonce | Bot.Blockchain.GetNonce",
   "post | /api/v1/blockchain/:blockchain_id/push-tx | Bot.Blockchain.PublishTransaction",
 
