@@ -109,6 +109,10 @@ module.exports = env;
     db.TokenSecret.belongsTo(db.User, { foreignKey: 'user_id' });
     db.User.hasMany(db.TokenSecret, { foreignKey: 'user_id' });
 
+    // FiatCurrencyRate
+    db.FiatCurrencyRate.belongsTo(db.Currency, { foreignKey: 'currency_id' });
+    db.Currency.hasMany(db.FiatCurrencyRate, { foreignKey: 'currency_id' });
+
     db.sequelize = sequelize;
     db.Sequelize = Sequelize;
 

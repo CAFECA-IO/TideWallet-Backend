@@ -4,6 +4,7 @@ const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.j
 const Codes = require('./Codes');
 const Utils = require('./Utils');
 const blockchainNetworks = require('./data/blockchainNetworks');
+const fiatCurrencyRate = require('./data/fiatCurrencyRate');
 const currency = require('./data/currency');
 
 class Blockchain extends Bot {
@@ -22,12 +23,15 @@ class Blockchain extends Bot {
       this.accountModel = this.database.db.Account;
       this.blockchainModel = this.database.db.Blockchain;
       this.currencyModel = this.database.db.Currency;
+      this.fiatCurrencyRateModel = this.database.db.FiatCurrencyRate;
+
       this.sequelize = this.database.db.sequelize;
       this.Sequelize = this.database.db.Sequelize;
       return this;
     }).then(async () => {
       await this.initBlockchainNetworks();
       await this.initCurrency();
+      await this.initFiatCurrencyRate();
       return this;
     });
   }
@@ -53,6 +57,17 @@ class Blockchain extends Bot {
       await this.currencyModel.findOrCreate({
         where: { currency_id: currencyItem.currency_id },
         defaults: currencyItem,
+      });
+    }
+  }
+
+  async initFiatCurrencyRate() {
+    for (let i = 0; i < fiatCurrencyRate.length; i++) {
+      const fiatCurrencyRateItem = fiatCurrencyRate[i];
+
+      await this.fiatCurrencyRateModel.findOrCreate({
+        where: { fiatCurrencyRate_id: fiatCurrencyRateItem.fiatCurrencyRate_id },
+        defaults: fiatCurrencyRateItem,
       });
     }
   }
@@ -354,6 +369,51 @@ class Blockchain extends Bot {
       }
     } catch (e) {
       this.logger.error('PublishTransaction e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async FiatsRate() {
+    try {
+      const findRates = await this.fiatCurrencyRateModel.findAll({
+        include: [
+          {
+            model: this.currencyModel,
+            attributes: ['symbol'],
+          },
+        ],
+      });
+      const payload = [];
+      findRates.forEach((item) => {
+        payload.push({ name: item.Currency.symbol, rate: item.rate });
+      });
+      return new ResponseFormat({ message: 'List Fiat Currency Rate', payload });
+    } catch (e) {
+      this.logger.error('FiatsRate e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async CryptoRate() {
+    try {
+      const findRates = await this.currencyModel.findAll({
+        attributes: ['exchange_rate', 'symbol'],
+        where: {
+          [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
+        },
+      });
+      const payload = [];
+      findRates.forEach((item) => {
+        payload.push({
+          name: item.symbol,
+          rate: item.exchange_rate,
+        });
+      });
+      return new ResponseFormat({ message: 'List Crypto Currency Rate', payload });
+    } catch (e) {
+      this.logger.error('CryptoRate e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }

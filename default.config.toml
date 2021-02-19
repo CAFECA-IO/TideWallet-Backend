@@ -83,6 +83,8 @@ pathname = [
   "post | /api/v1/blockchain/:blockchain_id/gas-limit | Bot.Blockchain.GetGasLimit",
   "get | /api/v1/blockchain/:blockchain_id/address/:address/nonce | Bot.Blockchain.GetNonce",
   "post | /api/v1/blockchain/:blockchain_id/push-tx | Bot.Blockchain.PublishTransaction",
+  "get | /api/v1/fiats/rate | Bot.Blockchain.FiatsRate",
+  "get | /api/v1/crypto/rate | Bot.Blockchain.CryptoRate",
 
   "get | /tool/drop | Bot.Account.DROP_ALL_TABLE"
 ]
