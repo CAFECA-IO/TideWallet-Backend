@@ -648,7 +648,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"wallet_name\": \"測試錢包\",\n    \"extend_public_key\": \"xprv9tuogRdb5YTgcL3P8Waj7REqDuQx4sXcodQaWTtEVFEp6yRKh1CjrWfXChnhgHeLDuXxo2auDZegMiVMGGxwxcrb2PmiGyCngLxvLeGsZRq\",\n    \"install_id\": \"xxxxxxxxxxxxx...xxxxx\",\n    \"app_uuid\": \"xxxxxxxxxxxxx...xxxxx\"\n}",
+					"raw": "{\n    \"wallet_name\": \"測試錢包\",\n    \"extend_public_key\": \"xpub6BkDbi1QPL9k8cFCYWZjcJRVoZRPz2pUwa8QbrFamggDV7xV1P453Dc9kchScia1bHNeyCYgNfhPnNRTPDchffqBJT71uSvh1ejbUw4AN2X\",\n    \"install_id\": \"xxxxxxxxxxxxx...xxxxx\",\n    \"app_uuid\": \"xxxxxxxxxxxxx...xxxxx\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -1116,7 +1116,7 @@
 						},
 						{
 							"key": "currency_id",
-							"value": "5b1ea92e584bf50020130617",
+							"value": "5c00093e1e24e600214f0837",
 							"type": "string"
 						}
 					]
@@ -1214,7 +1214,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Account Token Regist\",\n    \"payload\": {\n        \"token_account_id\": \"1\"\n    }\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Account Token Regist\",\n    \"payload\": {\n        \"token_account_id\": \"7c04dd7f-8f00-4e05-b681-0b334a30ce0d\"\n    }\n}"
 				}
 			]
 		},
@@ -1321,7 +1321,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Account List\",\n    \"payload\": [\n        {\n            \"acount_id\": \"xxxxxxxx\",\n            \"blockchain_id\": \"80000000\",\n            \"currency_id\": \"5b1ea92e584bf50020130615\",\n            \"balance\": \"1000\"\n        },\n        {\n            \"acount_id\": \"xxxxxxxx\",\n            \"blockchain_id\": \"80000000\",\n            \"currency_id\": \"5b1ea92e584bf50020130615\",\n            \"balance\": \"1000\"\n        },\n        {\n            \"acount_id\": \"xxxxxxxx\",\n            \"blockchain_id\": \"80000000\",\n            \"currency_id\": \"5b1ea92e584bf50020130615\",\n            \"balance\": \"1000\"\n        }\n    ]\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Account List\",\n    \"payload\": {\n        \"blockchain_id\": \"80000060\",\n        \"currency_id\": \"5b755dacd5dd99000b3d92b2\",\n        \"account_id\": \"925016db-727d-412f-a68f-81db8a8e05ea\",\n        \"purpose\": 44,\n        \"account_index\": \"0\",\n        \"curve_type\": 0,\n        \"balance\": \"0\",\n        \"symbol\": \"ETH\",\n        \"icon\": \"https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png\",\n        \"tokens\": [\n            {\n                \"account_token_id\": \"488c3047-ced5-4049-9967-8ececb41ced1\",\n                \"token_id\": \"5b1ea92e584bf50020130617\",\n                \"blockchain_id\": \"80000060\",\n                \"name\": \"Tether\",\n                \"symbol\": \"USDT\",\n                \"type\": 2,\n                \"publish\": true,\n                \"decimals\": 2,\n                \"total_supply\": \"26,310,299,179\",\n                \"contract\": \"0xdAC17F958D2ee523a2206206994597C13D831ec7\",\n                \"balance\": \"0\"\n            },\n            {\n                \"account_token_id\": \"7c04dd7f-8f00-4e05-b681-0b334a30ce0d\",\n                \"token_id\": \"5c00093e1e24e600214f0837\",\n                \"blockchain_id\": \"80000060\",\n                \"name\": \"Wrapped Bitcoin\",\n                \"symbol\": \"WBTC\",\n                \"type\": 2,\n                \"publish\": true,\n                \"decimals\": 2,\n                \"total_supply\": \"115,721\",\n                \"contract\": \"0x2260fac5e5542a773aa44fbcfedf7c193bc2c599\",\n                \"balance\": \"0\"\n            }\n        ]\n    }\n}"
 				}
 			]
 		},
@@ -1351,7 +1351,7 @@
 					"variable": [
 						{
 							"key": "account_id",
-							"value": "39434fa0-2a62-461a-90ec-1866e043c8ba"
+							"value": "925016db-727d-412f-a68f-81db8a8e05ea"
 						}
 					]
 				}
@@ -1384,10 +1384,6 @@
 								{
 									"key": "account_id",
 									"value": "8a8a54b4-9c03-4daa-944c-05bc0186f33a"
-								},
-								{
-									"value": "5b1ea92e584bf50020130615",
-									"key": "currency_id"
 								}
 							]
 						}
@@ -1478,7 +1474,7 @@
 					"variable": [
 						{
 							"key": "account_id or token_account_id",
-							"value": "xxxxxxxx",
+							"value": "7c04dd7f-8f00-4e05-b681-0b334a30ce0d",
 							"type": "string"
 						}
 					]
@@ -1513,7 +1509,7 @@
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "xxxxxxxx"
+									"value": "7c04dd7f-8f00-4e05-b681-0b334a30ce0d"
 								}
 							]
 						}
@@ -1572,7 +1568,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Receive Address\",\n    \"payload\": {\n        \"address\": \"xxxxxxxxxxxxxxxxxxxxxx\",\n        \"key_index\": 0\n    }\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Receive Address\",\n    \"payload\": {\n        \"address\": \"0x253c7e53c775c76cb743c3b23579f840280085e6\",\n        \"key_index\": 0\n    }\n}"
 				}
 			]
 		},
@@ -1604,7 +1600,7 @@
 					"variable": [
 						{
 							"key": "account_id or token_account_id",
-							"value": "5bd3b1ff-b81a-41eb-a017-f582a4e21fda",
+							"value": "7c04dd7f-8f00-4e05-b681-0b334a30ce0d",
 							"type": "string"
 						}
 					]
@@ -1639,7 +1635,7 @@
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "xxxxxxxx"
+									"value": "7c04dd7f-8f00-4e05-b681-0b334a30ce0d"
 								}
 							]
 						}
@@ -1698,7 +1694,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Change Address\",\n    \"payload\": {\n        \"address\": \"xxxxxxxxxxxxxxxxxxxxxx\",\n        \"change_index\": 0\n    }\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Change Address\",\n    \"payload\": {\n        \"address\": \"0xcd2e584d9f97e1125a7e801d328f106784d08387\",\n        \"change_index\": 0\n    }\n}"
 				}
 			]
 		},
@@ -1729,7 +1725,7 @@
 					"variable": [
 						{
 							"key": "account_id or token_account_id",
-							"value": "a708c544-91b9-4c32-9b13-1a7e89f2eb21",
+							"value": "62d4a411-8915-4c31-879a-b00cbc2d07d2",
 							"type": "string"
 						}
 					]
@@ -1763,7 +1759,7 @@
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "xxxxxxxx"
+									"value": "62d4a411-8915-4c31-879a-b00cbc2d07d2"
 								}
 							]
 						}
@@ -1822,7 +1818,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"List Transactions\",\n    \"payload\": [\n        {\n            \"status\": \"success\",\n            \"amount\": \"0.00003650\",\n            \"symbol\": \"BTC\",\n            \"direction\": \"send\",\n            \"confirmations\": 8,\n            \"timestamp\": 1577122889,\n            \"source_addresses\": [\n                \"xxxxxxxxxxxxxxxxxxxxxx\"\n            ],\n            \"destination_addresses\": [\n                \"xxxxxxxxxxxxxxxxxxxxxx\"\n            ],\n            \"fee\": \"0.00035006946653\"\n        }\n    ]\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"List Transactions\",\n    \"payload\": [\n        {\n            \"txid\": \"4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b\",\n            \"status\": \"success\",\n            \"amount\": \"0.00986735\",\n            \"symbol\": \"BTC\",\n            \"direction\": \"send\",\n            \"confirmations\": 1944,\n            \"timestamp\": 1612510071,\n            \"source_addresses\": \"[1wHoLpp5SGxLhQtmecBWJKS7wMKpFtTdM,1HFe8Eezn8x8rRLzujwDw6FF86RowGxRgz,1wHoLpp5SGxLhQtmecBWJKS7wMKpFtTdM]\",\n            \"destination_addresses\": \"1Jy1L1XyFXDUnXU78yTzHbr4BUPVedyEMW\",\n            \"fee\": \"0.00012548\",\n            \"gas_price\": null,\n            \"gas_used\": null\n        }\n    ]\n}"
 				}
 			]
 		},
@@ -1881,7 +1877,7 @@
 							"variable": [
 								{
 									"key": "txid",
-									"value": "txid"
+									"value": "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"
 								}
 							]
 						}
@@ -1940,7 +1936,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Transaction Detail\",\n    \"payload\": {\n        \"status\": \"success\",\n        \"confirmations\": 8,\n        \"amount\": \"0.00003650\",\n        \"blockchain_id\": \"80000000\",\n        \"symbol\": \"BTC\",\n        \"direction\": \"send\",\n        \"timestamp\": 1577122889,\n        \"source_addresses\": \"xxxxxxxxxxxxxxxxxxxxxx\",\n        \"destination_addresses\": \"xxxxxxxxxxxxxxxxxxxxxx\",\n        \"fee\": \"0.00035006946653\"\n    }\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Transaction Detail\",\n    \"payload\": {\n        \"txid\": \"4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b\",\n        \"status\": \"failed\",\n        \"confirmations\": 1944,\n        \"amount\": \"0.00986735\",\n        \"blockchain_id\": \"80000000\",\n        \"symbol\": \"BTC\",\n        \"direction\": \"receive\",\n        \"timestamp\": 1612510071,\n        \"source_addresses\": \"[1wHoLpp5SGxLhQtmecBWJKS7wMKpFtTdM,1HFe8Eezn8x8rRLzujwDw6FF86RowGxRgz,1wHoLpp5SGxLhQtmecBWJKS7wMKpFtTdM]\",\n        \"destination_addresses\": \"1Jy1L1XyFXDUnXU78yTzHbr4BUPVedyEMW\",\n        \"fee\": \"0.00012548\",\n        \"gas_price\": null,\n        \"gas_used\": null\n    }\n}"
 				}
 			]
 		},
@@ -2177,7 +2173,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Fee\",\n    \"payload\": {\n        \"slow\": 100,\n        \"standard\": 100,\n        \"fast\": 100\n    }\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Fee\",\n    \"payload\": {\n        \"slow\": \"100\",\n        \"standard\": \"100\",\n        \"fast\": \"100\"\n    }\n}"
 				}
 			]
 		},

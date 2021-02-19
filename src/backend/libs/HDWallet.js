@@ -48,19 +48,15 @@ class HDWallet {
     coinType = '0', change = '0', index = '0', blockchainID,
   }) {
     const findNetwork = Object.values(blockchainNetworks).find((value) => value.coin_type === coinType);
-    console.log('findNetwork:', findNetwork);
     const _serializedExtendPublicKey = this.serializedExtendPublicKey(findNetwork);
-    console.log('_serializedExtendPublicKey:', _serializedExtendPublicKey);
     const node = hdkey.fromExtendedKey(_serializedExtendPublicKey);
     this.hdWallet = node.deriveChild(change).deriveChild(index).getWallet();
     const publicKey = this.hdWallet.getPublicKeyString();
 
     let address = this.hdWallet.getAddressString();
-    console.log('address:', address);
     if (coinType === 0 || coinType === 1) {
       address = Utils.toP2pkhAddress(blockchainID, publicKey);
     }
-    console.log('address:', address);
 
     return ({
       coinType,
