@@ -386,7 +386,7 @@ class Blockchain extends Bot {
       });
       const payload = [];
       findRates.forEach((item) => {
-        payload.push({ name: item.Currency.symbol, rate: item.rate });
+        payload.push({ name: item.Currency.symbol, rate: item.rate || '0' });
       });
       return new ResponseFormat({ message: 'List Fiat Currency Rate', payload });
     } catch (e) {
@@ -408,7 +408,7 @@ class Blockchain extends Bot {
       findRates.forEach((item) => {
         payload.push({
           name: item.symbol,
-          rate: item.exchange_rate,
+          rate: item.exchange_rate || '0',
         });
       });
       return new ResponseFormat({ message: 'List Crypto Currency Rate', payload });
