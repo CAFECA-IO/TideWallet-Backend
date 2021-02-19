@@ -141,4 +141,15 @@ module.exports = [
     contract: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
     icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/wbtc.png',
   },
+  {
+    currency_id: '3ab0ffc4-8cd3-4832-ab31-9d99d2691cee',
+    blockchain_id: '80000603',
+    name: 'Ethereum Ropsten',
+    symbol: 'ETH',
+    type: 1,
+    description: 'ETH Ropsten description',
+    publish: false,
+    decimals: 18,
+    icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png',
+  },
 ];
