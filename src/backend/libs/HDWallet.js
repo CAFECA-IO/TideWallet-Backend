@@ -22,18 +22,11 @@ class HDWallet {
   }
 
   /**
-  * @param String type        pub || prv
-  * @param Boolean testnet    is testnet?
-  * @param Number depth       The depth
-  * @param String parentFP    The parent fingerprint
-  * @param Number index       The key index
-  * @param String chainC      The chain code
-  * @param String compressedKey The compressed key
     see: https://learnmeabitcoin.com/guide/extended-keys
   */
   serializedExtendPublicKey(network) {
-    const TESTNET_PUB = '043587CF';
-    const version = (network.bip32.public) ? network.bip32.public.toString(16).padStart(8, 0) : TESTNET_PUB;
+    const MAINNET_PUB = '0488b21e';
+    const version = (network.bip32.public) ? network.bip32.public.toString(16).padStart(8, 0) : MAINNET_PUB;
     const _depth = '03'.toString(16);
     const _index = '00000000'.toString(16);
 
@@ -55,15 +48,19 @@ class HDWallet {
     coinType = '0', change = '0', index = '0', blockchainID,
   }) {
     const findNetwork = Object.values(blockchainNetworks).find((value) => value.coin_type === coinType);
+    console.log('findNetwork:', findNetwork);
     const _serializedExtendPublicKey = this.serializedExtendPublicKey(findNetwork);
+    console.log('_serializedExtendPublicKey:', _serializedExtendPublicKey);
     const node = hdkey.fromExtendedKey(_serializedExtendPublicKey);
     this.hdWallet = node.deriveChild(change).deriveChild(index).getWallet();
     const publicKey = this.hdWallet.getPublicKeyString();
 
     let address = this.hdWallet.getAddressString();
+    console.log('address:', address);
     if (coinType === 0 || coinType === 1) {
       address = Utils.toP2pkhAddress(blockchainID, publicKey);
     }
+    console.log('address:', address);
 
     return ({
       coinType,

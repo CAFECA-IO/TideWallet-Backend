@@ -33,9 +33,9 @@ class Blockchain extends Bot {
   }
 
   async initBlockchainNetworks() {
-    const networks = Array.from(blockchainNetworks);
+    const networks = Object.values(blockchainNetworks);
     for (let i = 0; i < networks.length; i++) {
-      const network = networks[i];
+      const network = { ...networks[i] };
       network.bip32_public = network.bip32.public;
       network.bip32_private = network.bip32.private;
       delete network.bip32;

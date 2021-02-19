@@ -54,7 +54,7 @@ ormEnable = true
   connectTimeout = 3000
 
   [database.pool]
-  max = 100
+  max = 80
 
 [jwt]
 secret = ""
