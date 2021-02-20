@@ -160,6 +160,14 @@ class EthRopstenParser extends ParserBase {
       // 6-1-1 if no in db, create currency
       // TODO
 
+      // 6-2 if is token, parse transaction
+      console.log('logs:', receipt.logs);
+      if (true) {
+        if (receipt.logs && receipt.logs.length > 0) {
+
+        }
+      }
+
       // 7. check is regist address
       const accountAddressTo = await this.checkRegistAddress(to);
       if (accountAddressTo) {
