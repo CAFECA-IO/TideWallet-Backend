@@ -283,7 +283,7 @@ class Account extends Bot {
           change: 0,
           index: findAccountCurrency.number_of_external_key,
           coinType,
-          blockchainID: findAccountCurrency.Account.Blockchain.Blockchain_id,
+          blockchainID: findAccountCurrency.Account.Blockchain.blockchain_id,
         });
 
         await this.accountAddressModel.create({
@@ -341,11 +341,22 @@ class Account extends Bot {
       });
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
+      let chain_index = 0;
+      // only BTC has change address
+      switch (findAccountCurrency.Account.Blockchain.blockchain_id) {
+        case '80000000':
+        case '80000001':
+          chain_index = 1;
+          break;
+        default:
+          break;
+      }
+
       const findChangeAddress = await this.accountAddressModel.findOne({
         where: {
           account_id: findAccountCurrency.Account.account_id,
-          chain_index: 1,
-          change_index: findAccountCurrency.number_of_internal_key,
+          chain_index,
+          key_index: findAccountCurrency.number_of_internal_key,
         },
       });
 
@@ -355,7 +366,7 @@ class Account extends Bot {
       if (!findChangeAddress) {
         const coinType = findAccountCurrency.Account.Blockchain.coin_type;
         const wallet = hdWallet.getWalletInfo({
-          change: 1,
+          change: chain_index,
           index: findAccountCurrency.number_of_internal_key,
           coinType,
           blockchainID: findAccountCurrency.Account.Blockchain.blockchain_id,
