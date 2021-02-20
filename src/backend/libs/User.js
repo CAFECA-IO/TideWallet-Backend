@@ -45,10 +45,30 @@ class User extends Bot {
     }
 
     try {
-      // check user is exist
       const findUser = await this.accountModel.findOne({ where: { extend_public_key } });
-      if (findUser) return new ResponseFormat({ message: 'user occupation', code: Codes.USER_OCCUPATION });
 
+      // recover
+      if (findUser) {
+        // if new app_id, add it
+        await this.deviceModel.findOrCreate({
+          where: {
+            install_id, app_uuid,
+          },
+          defaults: {
+            device_id: uuidv4(),
+            user_id: findUser.user_id,
+            install_id,
+            timestamp: Math.floor(Date.now() / 1000),
+            name: '',
+            app_uuid,
+          },
+        });
+
+        const payload = await Utils.generateToken({ userID: findUser.user_id });
+        return new ResponseFormat({ message: 'User Regist', payload });
+      }
+
+      // new user
       const userID = await this.sequelize.transaction(async (transaction) => {
         const insertUser = await this.userModel.create({
           user_id: uuidv4(),
@@ -98,6 +118,15 @@ class User extends Bot {
             public_key: wallet.publicKey,
             address: wallet.address,
           }, { transaction });
+
+          await this.deviceModel.create({
+            device_id: uuidv4(),
+            user_id: insertUser.user_id,
+            install_id,
+            timestamp: Math.floor(Date.now() / 1000),
+            name: '',
+            app_uuid,
+          });
         }
 
         return insertUser.user_id;
