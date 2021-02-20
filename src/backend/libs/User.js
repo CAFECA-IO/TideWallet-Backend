@@ -118,16 +118,15 @@ class User extends Bot {
             public_key: wallet.publicKey,
             address: wallet.address,
           }, { transaction });
-
-          await this.deviceModel.create({
-            device_id: uuidv4(),
-            user_id: insertUser.user_id,
-            install_id,
-            timestamp: Math.floor(Date.now() / 1000),
-            name: '',
-            app_uuid,
-          });
         }
+        await this.deviceModel.create({
+          device_id: uuidv4(),
+          user_id: insertUser.user_id,
+          install_id,
+          timestamp: Math.floor(Date.now() / 1000),
+          name: '',
+          app_uuid,
+        });
 
         return insertUser.user_id;
       });
