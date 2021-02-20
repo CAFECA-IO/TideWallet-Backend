@@ -4,6 +4,9 @@ const BtcTestnetCrawlerManager = require('./BtcTestnetCrawlerManager');
 const EthCrawlerManager = require('./EthCrawlerManager');
 const EthRopstenCrawlerManager = require('./EthRopstenCrawlerManager');
 
+// test
+const EthRopstenParser = require('./EthRopstenParser');
+
 class Manager extends Bot {
   constructor() {
     super();
@@ -38,7 +41,7 @@ class Manager extends Bot {
     result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
     // result.push(new EthCrawlerManager(this.config, this.database, this.logger));
     result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
-
+    result.push(new EthRopstenParser(this.config, this.database, this.logger));
     return result;
   }
 
