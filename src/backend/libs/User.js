@@ -126,7 +126,7 @@ class User extends Bot {
           timestamp: Math.floor(Date.now() / 1000),
           name: '',
           app_uuid,
-        });
+        }, { transaction });
 
         return insertUser.user_id;
       });
