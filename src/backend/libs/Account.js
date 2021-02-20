@@ -345,7 +345,7 @@ class Account extends Bot {
         where: {
           account_id: findAccountCurrency.Account.account_id,
           chain_index: 1,
-          key_index: findAccountCurrency.number_of_internal_key,
+          change_index: findAccountCurrency.number_of_internal_key,
         },
       });
 
@@ -427,6 +427,8 @@ class Account extends Bot {
               source_addresses: txInfo.TokenTransaction.source_addresses,
               destination_addresses: txInfo.TokenTransaction.destination_addresses,
               fee: txInfo.TokenTransaction.Transaction.fee,
+              gas_price: txInfo.TokenTransaction.Transaction.gas_price,
+              gas_used: txInfo.TokenTransaction.Transaction.gas_used,
             });
           }
         }
@@ -457,6 +459,8 @@ class Account extends Bot {
               source_addresses: txInfo.Transaction.source_addresses,
               destination_addresses: txInfo.Transaction.destination_addresses,
               fee: txInfo.Transaction.fee,
+              gas_price: txInfo.Transaction.gas_price,
+              gas_used: txInfo.Transaction.gas_used,
             });
           }
         }
@@ -562,6 +566,8 @@ class Account extends Bot {
             source_addresses: findTX.source_addresses,
             destination_addresses: findTX.destination_addresses,
             fee: findTX.fee,
+            gas_price: findTX.gas_price,
+            gas_used: findTX.gas_used,
           },
         });
       }

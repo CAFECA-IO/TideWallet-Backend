@@ -4,6 +4,7 @@ const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.j
 const Codes = require('./Codes');
 const Utils = require('./Utils');
 const blockchainNetworks = require('./data/blockchainNetworks');
+const fiatCurrencyRate = require('./data/fiatCurrencyRate');
 const currency = require('./data/currency');
 
 class Blockchain extends Bot {
@@ -22,12 +23,15 @@ class Blockchain extends Bot {
       this.accountModel = this.database.db.Account;
       this.blockchainModel = this.database.db.Blockchain;
       this.currencyModel = this.database.db.Currency;
+      this.fiatCurrencyRateModel = this.database.db.FiatCurrencyRate;
+
       this.sequelize = this.database.db.sequelize;
       this.Sequelize = this.database.db.Sequelize;
       return this;
     }).then(async () => {
       await this.initBlockchainNetworks();
       await this.initCurrency();
+      await this.initFiatCurrencyRate();
       return this;
     });
   }
@@ -35,7 +39,7 @@ class Blockchain extends Bot {
   async initBlockchainNetworks() {
     const networks = Object.values(blockchainNetworks);
     for (let i = 0; i < networks.length; i++) {
-      const network = networks[i];
+      const network = { ...networks[i] };
       network.bip32_public = network.bip32.public;
       network.bip32_private = network.bip32.private;
       delete network.bip32;
@@ -53,6 +57,17 @@ class Blockchain extends Bot {
       await this.currencyModel.findOrCreate({
         where: { currency_id: currencyItem.currency_id },
         defaults: currencyItem,
+      });
+    }
+  }
+
+  async initFiatCurrencyRate() {
+    for (let i = 0; i < fiatCurrencyRate.length; i++) {
+      const fiatCurrencyRateItem = fiatCurrencyRate[i];
+
+      await this.fiatCurrencyRateModel.findOrCreate({
+        where: { fiatCurrencyRate_id: fiatCurrencyRateItem.fiatCurrencyRate_id },
+        defaults: fiatCurrencyRateItem,
       });
     }
   }
@@ -213,6 +228,60 @@ class Blockchain extends Bot {
     }
   }
 
+  async GetGasLimit({ params, body }) {
+    const { blockchain_id } = params;
+    const {
+      fromAddress, toAddress, value, data: signatureData,
+    } = body;
+
+    if (!Utils.validateString(fromAddress)
+    || !Utils.validateString(toAddress)
+    || !Utils.validateString(value)
+    || !Utils.validateString(signatureData)) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+
+    try {
+      const findBlockchainInfo = await this.blockchainModel.findOne({ where: { blockchain_id }, attributes: ['avg_fee'] });
+      if (!findBlockchainInfo) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+      let gasLimit = '0';
+      if (blockchain_id === '80000060' || blockchain_id === '80000603') {
+        const option = { ...this.config.ethereum.ropsten };
+        option.data = {
+          jsonrpc: '2.0',
+          method: 'eth_estimateGas',
+          params: [{
+            from: fromAddress,
+            nonce: value,
+            to: toAddress,
+            data: signatureData,
+          }],
+          id: dvalue.randomID(),
+        };
+        // eslint-disable-next-line no-case-declarations
+        const data = await Utils.ETHRPC(option);
+
+        if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+        gasLimit = new BigNumber(data.result).toFixed();
+        return new ResponseFormat({
+          message: 'Get Gas Limit',
+          payload: {
+            gasLimit,
+          },
+        });
+      }
+      return new ResponseFormat({
+        message: 'Get Gas Limit',
+        payload: {
+          gasLimit,
+        },
+      });
+    } catch (e) {
+      this.logger.error('GetGasLimit e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
   async GetNonce({ params, token }) {
     const { blockchain_id, address } = params;
 
@@ -300,6 +369,51 @@ class Blockchain extends Bot {
       }
     } catch (e) {
       this.logger.error('PublishTransaction e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async FiatsRate() {
+    try {
+      const findRates = await this.fiatCurrencyRateModel.findAll({
+        include: [
+          {
+            model: this.currencyModel,
+            attributes: ['symbol'],
+          },
+        ],
+      });
+      const payload = [];
+      findRates.forEach((item) => {
+        payload.push({ name: item.Currency.symbol, rate: item.rate || '0' });
+      });
+      return new ResponseFormat({ message: 'List Fiat Currency Rate', payload });
+    } catch (e) {
+      this.logger.error('FiatsRate e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async CryptoRate() {
+    try {
+      const findRates = await this.currencyModel.findAll({
+        attributes: ['exchange_rate', 'symbol'],
+        where: {
+          [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
+        },
+      });
+      const payload = [];
+      findRates.forEach((item) => {
+        payload.push({
+          name: item.symbol,
+          rate: item.exchange_rate || '0',
+        });
+      });
+      return new ResponseFormat({ message: 'List Crypto Currency Rate', payload });
+    } catch (e) {
+      this.logger.error('CryptoRate e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }

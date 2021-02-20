@@ -45,6 +45,10 @@ class User extends Bot {
     }
 
     try {
+      // check user is exist
+      const findUser = await this.accountModel.findOne({ where: { extend_public_key } });
+      if (findUser) return new ResponseFormat({ message: 'user occupation', code: Codes.USER_OCCUPATION });
+
       const userID = await this.sequelize.transaction(async (transaction) => {
         const insertUser = await this.userModel.create({
           user_id: uuidv4(),

@@ -12,7 +12,9 @@
   "dependencies": {
     "base58": "^2.0.1",
     "bignumber.js": "^9.0.1",
+    "bip32": "^2.0.6",
     "bitcoinjs-lib": "^5.2.0",
+    "bs58": "^4.0.1",
     "bs58check": "^2.1.2",
     "command-line-args": "^5.0.2",
     "dvalue": "^1.0.20",
@@ -22,6 +24,7 @@
     "ethereumjs-util": "^7.0.8",
     "ethereumjs-wallet": "^1.0.1",
     "i18n": "^0.8.3",
+    "js-sha256": "^0.9.0",
     "jsonwebtoken": "^8.5.1",
     "koa": "^2.7.0",
     "koa-body": "^4.0.8",
