@@ -199,6 +199,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     try {
       let syncBlock = block;
       do {
+        const step1 = new Date().getTime();
         // 1. sync block +1
         this.logger.log(`[${this.constructor.name}] syncBlock(${syncBlock})`);
         syncBlock += 1;
@@ -209,29 +210,44 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           // end this recursive
           return Promise.resolve(syncBlock - 1);
         }
+        const step1_1 = new Date().getTime();
+        console.log(`syncBlock step:1 blockDataFromPeer: ${(step1_1 - step1) / 1000}sec`);
 
         // 2. save block data into db
         // must success
         await this.insertBlock(syncResult);
+        const step2 = new Date().getTime();
+        console.log(`syncBlock step:2 insertBlock: ${(step2 - step1_1) / 1000}sec`);
 
         // 3. sync tx and receipt
         const txs = syncResult.transactions;
         const timestamp = parseInt(syncResult.timestamp, 16);
         for (const transaction of txs) {
+          const step3_1 = new Date().getTime();
           const receipt = await this.receiptFromPeer(transaction.hash);
+          const step3_2 = new Date().getTime();
+          console.log(`syncBlock step:3_1 receiptFromPeer: ${(step3_2 - step3_1) / 1000}sec`);
 
           if (!transaction || !receipt) {
             // TODO error handle
           }
           // 4. save unparsed tx and receipt into db
           await this.insertUnparsedTransaction(transaction, receipt, timestamp);
+          const step4 = new Date().getTime();
+          console.log(`syncBlock step:4 insertUnparsedTransaction: ${(step4 - step3_2) / 1000}sec`);
         }
 
+        const step3 = new Date().getTime();
+        console.log(`syncBlock step:3 full tx receipt sync: ${(step3 - step2) / 1000}sec`);
         // 5. assign parser
         // must success
 
         // 6. after parse done update blockchain table block column
         await this.updateBlockHeight(syncBlock);
+        const step6 = new Date().getTime();
+        console.log(`syncBlock step:6 updateBlockHeight: ${(step6 - step3) / 1000}sec`);
+
+        console.log(`syncBlock whole: ${(step6 - step1) / 1000}sec`);
       } while (syncBlock < this.peerBlock);
       return Promise.resolve(syncBlock);
     } catch (error) {
