@@ -1,7 +1,9 @@
 const { v4: uuidv4 } = require('uuid');
 const BigNumber = require('bignumber.js');
+const dvalue = require('dvalue');
 
 const ParserBase = require('./ParserBase');
+const Utils = require('./Utils');
 
 class EthRopstenParser extends ParserBase {
   constructor(config, database, logger) {
@@ -10,6 +12,7 @@ class EthRopstenParser extends ParserBase {
     this.receiptModel = this.database.db.Receipt;
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
+    this.options = config.ethereum.ropsten;
     this.syncInterval = config.syncInterval.ethereum ? config.syncInterval.ethereum : 15000;
   }
 
@@ -69,20 +72,28 @@ class EthRopstenParser extends ParserBase {
     }
   }
 
+  async parseReceiptTopic(receipt) {
+    // step:
+    // 1. parse log
+    // 2. parse each logs topics
+    // 3. check topic has 'transfer'
+    // 4. if yes, find or create currency by address
+    // 5. create TokenTransaction
+    // 6. create mapping table
+
+  }
+
   async parseTx(tx, receipt, timestamp) {
     // step:
     // 1. insert tx
     // 2. insert recript
-    // 3. check from address is contract
-    // 3-1. if is contract check is in currency table
-    // 3-1-1 if no in db, create currency
-    // 4. check is regist address
+    // 3. parse receipt to check is token transfer
+    // 3-1. if yes insert token transaction
+    // 4. check from address is regist address
     // 5. add mapping table
-    // 6. check to address is contract
-    // 6-1. if is contract check is in currency table
-    // 6-1-1 if no in db, create currency
-    // 7. check is regist address
-    // 8. add mapping table
+    // 6. check to address is regist address
+    // 7. add mapping table
+
     this.logger.log(`[${this.constructor.name}] parseTx(${tx.hash})`);
     try {
       const bnGasPrice = new BigNumber(tx.gasPrice, 16);
@@ -130,19 +141,15 @@ class EthRopstenParser extends ParserBase {
       });
 
       const { from, to } = tx;
-      // 3. check from address is contract
+      // 3. parse receipt to check is token transfer
       // TODO
 
-      // 3-1. if is contract check is in currency table
+      // 3-1. if yes insert token transaction
       // TODO
 
-      // 3-1-1 if no in db, create currency
-      // TODO
-
-      // 4. check is regist address
+      // 4. check from address is regist address
       const accountAddressFrom = await this.checkRegistAddress(from);
       if (accountAddressFrom) {
-        console.log('is success from');
         // 5. add mapping table
         await this.setAddressTransaction(
           accountAddressFrom.accountAddress_id,
@@ -151,28 +158,10 @@ class EthRopstenParser extends ParserBase {
         );
       }
 
-      // 6. check to address is contract
-      // TODO
-
-      // 6-1. if is contract check is in currency table
-      // TODO
-
-      // 6-1-1 if no in db, create currency
-      // TODO
-
-      // 6-2 if is token, parse transaction
-      console.log('logs:', receipt.logs);
-      if (true) {
-        if (receipt.logs && receipt.logs.length > 0) {
-
-        }
-      }
-
-      // 7. check is regist address
+      // 6. check to address is regist address
       const accountAddressTo = await this.checkRegistAddress(to);
       if (accountAddressTo) {
-        console.log('is success to');
-        // 8. add mapping table
+        // 7. add mapping table
         await this.setAddressTransaction(
           accountAddressTo.accountAddress_id,
           insertTx[0].transaction_id,
