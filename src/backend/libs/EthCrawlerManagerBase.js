@@ -52,11 +52,11 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     return Promise.reject();
   }
 
-  async blockDataFromPeer(blockHash) {
-    this.logger.log(`[${this.constructor.name}] blockDataFromPeer(${blockHash})`);
+  async blockDataFromPeer(block) {
+    this.logger.log(`[${this.constructor.name}] blockDataFromPeer(${block})`);
     const type = 'getBlock';
     const options = dvalue.clone(this.options);
-    options.data = this.constructor.cmd({ type, blockHash });
+    options.data = this.constructor.cmd({ type, block });
     const checkId = options.data.id;
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
@@ -72,7 +72,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
   async blockHashFromPeer(block) {
     this.logger.log(`[${this.constructor.name}] blockhashFromPeer(${block})`);
-    const type = 'getBlockhash';
+    const type = 'getBlock';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, block });
     const checkId = options.data.id;
@@ -202,9 +202,8 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         // 1. sync block +1
         this.logger.log(`[${this.constructor.name}] syncBlock(${syncBlock})`);
         syncBlock += 1;
-        const syncBlockHash = await this.blockHashFromPeer(syncBlock);
-        const syncResult = await this.blockDataFromPeer(syncBlockHash);
-        if (!syncBlockHash || !syncResult) {
+        const syncResult = await this.blockDataFromPeer(syncBlock);
+        if (!syncResult) {
           // block hash or data not found
           // maybe network error or block doesn't exist
           // end this recursive
@@ -216,11 +215,10 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         await this.insertBlock(syncResult);
 
         // 3. sync tx and receipt
-        const txids = syncResult.transactions;
+        const txs = syncResult.transactions;
         const timestamp = parseInt(syncResult.timestamp, 16);
-        for (const txid of txids) {
-          const transaction = await this.transactionFromPeer(txid);
-          const receipt = await this.receiptFromPeer(txid);
+        for (const transaction of txs) {
+          const receipt = await this.receiptFromPeer(transaction.hash);
 
           if (!transaction || !receipt) {
             // TODO error handle
@@ -293,7 +291,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   static cmd({
-    type, block, blockHash, txid,
+    type, block, txid,
   }) {
     let result;
     switch (type) {
@@ -305,19 +303,11 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           id: dvalue.randomID(),
         };
         break;
-      case 'getBlockhash':
-        result = {
-          jsonrpc: '2.0',
-          method: 'eth_getBlockByNumber',
-          params: [`0x${block.toString(16)}`, false],
-          id: dvalue.randomID(),
-        };
-        break;
       case 'getBlock':
         result = {
           jsonrpc: '2.0',
-          method: 'eth_getBlockByHash',
-          params: [blockHash, false],
+          method: 'eth_getBlockByNumber',
+          params: [`0x${block.toString(16)}`, true],
           id: dvalue.randomID(),
         };
         break;
