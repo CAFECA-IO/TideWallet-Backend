@@ -67,9 +67,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                 { balance: new BigNumber(data.result).toFixed() },
                 { where: { account_id: addressInfo.account_id } },
               );
-
-              console.log(`address(${addressInfo.address}), balance:${new BigNumber(data.result).toFixed()}`);
-
             // eslint-disable-next-line no-empty
             } catch (e) {
             }
