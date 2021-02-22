@@ -1,7 +1,11 @@
 const { v4: uuidv4 } = require('uuid');
 const BigNumber = require('bignumber.js');
+const dvalue = require('dvalue');
+const Web3 = require('web3');
 
 const ParserBase = require('./ParserBase');
+const Utils = require('./Utils');
+const ethABI = require('./abi/ethABI');
 
 class EthRopstenParser extends ParserBase {
   constructor(config, database, logger) {
@@ -10,12 +14,14 @@ class EthRopstenParser extends ParserBase {
     this.receiptModel = this.database.db.Receipt;
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
+    this.options = config.ethereum.ropsten;
     this.syncInterval = config.syncInterval.ethereum ? config.syncInterval.ethereum : 15000;
   }
 
   async init() {
     await super.init();
     this.isParsing = false;
+    this.web3 = new Web3();
     setInterval(() => {
       this.doParse();
     }, this.syncInterval);
@@ -39,7 +45,7 @@ class EthRopstenParser extends ParserBase {
     try {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        // 1. load unparsed transactions per block from UnparsedTransaction
+      // 1. load unparsed transactions per block from UnparsedTransaction
         const txs = await this.getUnparsedTxs();
         if (!txs || txs.length < 1) break;
 
@@ -69,20 +75,235 @@ class EthRopstenParser extends ParserBase {
     }
   }
 
+  async findOrCreateCurrency(contractAddress) {
+    try {
+      let currencyInDb = await this.currencyModel.findOne({
+        where: { contract: contractAddress },
+      });
+      if (!currencyInDb) {
+        // const name = await this.getTokenNameFromPeer(contractAddress);
+        // const symbol = await this.getTokenSymbolFromPeer(contractAddress);
+        // const decimals = await this.getTokenDecimalFromPeer(contractAddress);
+        // const total_supply = await this.getTokenTotalSupplyFromPeer(contractAddress);
+        const tokenInfoFromPeer = await Promise.all([
+          this.getTokenNameFromPeer(contractAddress),
+          this.getTokenSymbolFromPeer(contractAddress),
+          this.getTokenDecimalFromPeer(contractAddress),
+          this.getTokenTotalSupplyFromPeer(contractAddress),
+        ]).catch((error) => Promise.reject(error));
+
+        currencyInDb = await this.currencyModel.create({
+          currency_id: uuidv4(),
+          blockchain_id: this.bcid,
+          name: tokenInfoFromPeer[0],
+          symbol: tokenInfoFromPeer[1],
+          type: 2,
+          publish: false,
+          decimals: tokenInfoFromPeer[2],
+          total_supply: tokenInfoFromPeer[3],
+          contract: contractAddress,
+        });
+      }
+      return currencyInDb;
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] findOrCreateCurrency error`);
+      this.logger.log(error);
+      return Promise.reject(error);
+    }
+  }
+
+  async getTokenNameFromPeer(address) {
+    try {
+      const type = 'callContract';
+      const options = dvalue.clone(this.options);
+      const command = '0x06fdde03'; // erc20 get name
+      options.data = this.constructor.cmd({ type, address, command });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer fail`);
+          return null;
+        }
+        const nameEncode = data.result;
+        const name = this.web3.eth.abi.decodeParameter('string', nameEncode);
+        return Promise.resolve(name);
+      }
+      this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer fail`);
+      return Promise.reject();
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer error`);
+      this.logger.log(error);
+      return null;
+    }
+  }
+
+  async getTokenSymbolFromPeer(address) {
+    try {
+      const type = 'callContract';
+      const options = dvalue.clone(this.options);
+      const command = '0x95d89b41'; // erc20 get synbol
+      options.data = this.constructor.cmd({ type, address, command });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer fail`);
+          return null;
+        }
+        const symbolEncode = data.result;
+        const symbol = this.web3.eth.abi.decodeParameter('string', symbolEncode);
+        return Promise.resolve(symbol);
+      }
+      this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer fail`);
+      return Promise.reject();
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer error`);
+      this.logger.log(error);
+      return null;
+    }
+  }
+
+  async getTokenDecimalFromPeer(address) {
+    try {
+      const type = 'callContract';
+      const options = dvalue.clone(this.options);
+      const command = '0x313ce567'; // erc20 get decimals
+      options.data = this.constructor.cmd({ type, address, command });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer fail`);
+          return null;
+        }
+        const decimals = data.result;
+        return Promise.resolve(parseInt(decimals, 16));
+      }
+      this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer fail`);
+      return Promise.reject();
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer error`);
+      this.logger.log(error);
+      return null;
+    }
+  }
+
+  async getTokenTotalSupplyFromPeer(address) {
+    try {
+      const type = 'callContract';
+      const options = dvalue.clone(this.options);
+      const command = '0x18160ddd'; // erc20 get total supply
+      options.data = this.constructor.cmd({ type, address, command });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer fail`);
+          return null;
+        }
+        if (data.result) {
+          const bnTotalSupply = new BigNumber(data.result, 16);
+          return Promise.resolve(bnTotalSupply.toFixed());
+        }
+      }
+      this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer fail`);
+      return null;
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer error`);
+      this.logger.log(error);
+      return null;
+    }
+  }
+
+  async parseReceiptTopic(receipt, transaction) {
+    this.logger.log(`[${this.constructor.name}] parseReceiptTopic`);
+    // step:
+    // 1. parse log
+    // 2. parse each logs topics
+    // 3. check topic has 'Transfer'
+    // 4. if yes, find or create currency by address
+    // 5. set TokenTransaction
+    // 6. check from address is regist address
+    // 7. add mapping table
+    // 8. check to address is regist address
+    // 9. add mapping table
+
+    try {
+      const { logs } = receipt;
+
+      for (const log of logs) {
+        const { address, data, topics } = log;
+        const abi = ethABI[topics[0]];
+
+        // 3. check topic has 'Transfer'
+        if (abi && abi.name === 'Transfer' && abi.type === 'event') {
+          // 4. if yes, find or create currency by address
+          const currency = await this.findOrCreateCurrency(address);
+
+          // 5. set TokenTransaction
+          const bnAmount = new BigNumber(data, 16);
+          const from = Utils.parse32BytesAddress(topics[1]);
+          const to = Utils.parse32BytesAddress(topics[2]);
+          const tokenTransaction = await this.tokenTransactionModel.findOrCreate({
+            where: {
+              transaction_id: transaction.transaction_id, currency_id: currency.currency_id,
+            },
+            defaults: {
+              tokenTransaction_id: uuidv4(),
+              transaction_id: transaction.transaction_id,
+              currency_id: currency.currency_id,
+              txid: transaction.txid,
+              timestamp: transaction.timestamp,
+              source_addresses: from,
+              destination_addresses: to,
+              amount: bnAmount.toFixed(),
+              result: receipt.status === '0x1',
+            },
+          });
+
+          // 6. check from address is regist address
+          const accountAddressFrom = await this.checkRegistAddress(from);
+          if (accountAddressFrom) {
+            // 7. add mapping table
+            await this.setAddressTokenTransaction(
+              currency.currency_id,
+              accountAddressFrom.accountAddress_id,
+              tokenTransaction[0].tokenTransaction_id,
+              0,
+            );
+          }
+          // 8. check to address is regist address
+          const accountAddressTo = await this.checkRegistAddress(to);
+          if (accountAddressTo) {
+            // 9. add mapping table
+            await this.setAddressTokenTransaction(
+              currency.currency_id,
+              accountAddressTo.accountAddress_id,
+              tokenTransaction[0].tokenTransaction_id,
+              1,
+            );
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] parseReceiptTopic error`);
+      this.logger.log(error);
+      Promise.reject(error);
+    }
+  }
+
   async parseTx(tx, receipt, timestamp) {
     // step:
     // 1. insert tx
     // 2. insert recript
-    // 3. check from address is contract
-    // 3-1. if is contract check is in currency table
-    // 3-1-1 if no in db, create currency
-    // 4. check is regist address
+    // 3. parse receipt to check is token transfer
+    // 3-1. if yes insert token transaction
+    // 4. check from address is regist address
     // 5. add mapping table
-    // 6. check to address is contract
-    // 6-1. if is contract check is in currency table
-    // 6-1-1 if no in db, create currency
-    // 7. check is regist address
-    // 8. add mapping table
+    // 6. check to address is regist address
+    // 7. add mapping table
+
     this.logger.log(`[${this.constructor.name}] parseTx(${tx.hash})`);
     try {
       const bnGasPrice = new BigNumber(tx.gasPrice, 16);
@@ -111,7 +332,7 @@ class EthRopstenParser extends ParserBase {
         },
       });
 
-      const insertReceipt = await this.receiptModel.findOrCreate({
+      await this.receiptModel.findOrCreate({
         where: {
           transaction_id: insertTx[0].transaction_id,
           currency_id: this.currencyInfo.currency_id,
@@ -130,19 +351,15 @@ class EthRopstenParser extends ParserBase {
       });
 
       const { from, to } = tx;
-      // 3. check from address is contract
+      // 3. parse receipt to check is token transfer
+      await this.parseReceiptTopic(receipt, insertTx[0]);
+
+      // 3-1. if yes insert token transaction
       // TODO
 
-      // 3-1. if is contract check is in currency table
-      // TODO
-
-      // 3-1-1 if no in db, create currency
-      // TODO
-
-      // 4. check is regist address
+      // 4. check from address is regist address
       const accountAddressFrom = await this.checkRegistAddress(from);
       if (accountAddressFrom) {
-        console.log('is success from');
         // 5. add mapping table
         await this.setAddressTransaction(
           accountAddressFrom.accountAddress_id,
@@ -151,22 +368,10 @@ class EthRopstenParser extends ParserBase {
         );
       }
 
-      // 6. check to address is contract
-      // TODO
-
-      // 6-1. if is contract check is in currency table
-      // TODO
-
-      // 6-1-1 if no in db, create currency
-      // TODO
-
-      // 6-2 if is token, parse transaction
-
-      // 7. check is regist address
+      // 6. check to address is regist address
       const accountAddressTo = await this.checkRegistAddress(to);
       if (accountAddressTo) {
-        console.log('is success to');
-        // 8. add mapping table
+        // 7. add mapping table
         await this.setAddressTransaction(
           accountAddressTo.accountAddress_id,
           insertTx[0].transaction_id,
@@ -179,6 +384,54 @@ class EthRopstenParser extends ParserBase {
       this.logger.log(error);
       return Promise.reject(error);
     }
+  }
+
+  async setAddressTokenTransaction(currency_id, accountAddress_id, tokenTransaction_id, direction) {
+    this.logger.log(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction})`);
+    try {
+      const result = await this.addressTokenTransactionModel.findOrCreate({
+        where: {
+          currency_id,
+          accountAddress_id,
+          tokenTransaction_id,
+          direction,
+        },
+        defaults: {
+          addressTokenTransaction_id: uuidv4(),
+          currency_id,
+          accountAddress_id,
+          tokenTransaction_id,
+          direction,
+        },
+      });
+      return result;
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction}) error`);
+      this.logger.log(error);
+      return Promise.reject(error);
+    }
+  }
+
+  static cmd({
+    type, address, command,
+  }) {
+    let result;
+    switch (type) {
+      case 'callContract':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_call',
+          params: [{
+            to: address,
+            data: command,
+          }, 'latest'],
+          id: dvalue.randomID(),
+        };
+        break;
+      default:
+        result = {};
+    }
+    return result;
   }
 }
 
