@@ -44,28 +44,28 @@ class EthRopstenParser extends ParserBase {
 
     try {
       // eslint-disable-next-line no-constant-condition
-      // while (true) {
+      while (true) {
       // 1. load unparsed transactions per block from UnparsedTransaction
-      const txs = await this.getUnparsedTxs();
-      // if (!txs || txs.length < 1) break;
+        const txs = await this.getUnparsedTxs();
+        if (!txs || txs.length < 1) break;
 
-      // 2. set queue
-      // TODO job queue
+        // 2. set queue
+        // TODO job queue
 
-      // 3. assign parser
-      // TODO get job from queue
-      // TODO multiple thread
-      for (const tx of txs) {
-        const transaction = JSON.parse(tx.transaction);
-        const receipt = JSON.parse(tx.receipt);
-        await this.parseTx(transaction, receipt, tx.timestamp);
+        // 3. assign parser
+        // TODO get job from queue
+        // TODO multiple thread
+        for (const tx of txs) {
+          const transaction = JSON.parse(tx.transaction);
+          const receipt = JSON.parse(tx.receipt);
+          await this.parseTx(transaction, receipt, tx.timestamp);
+        }
+
+        // 4. remove parsed transaction from UnparsedTransaction table
+        for (const tx of txs) {
+          await this.removeParsedTx(tx);
+        }
       }
-
-      // 4. remove parsed transaction from UnparsedTransaction table
-      //   for (const tx of txs) {
-      //     await this.removeParsedTx(tx);
-      //   }
-      // }
       this.isParsing = false;
     } catch (error) {
       this.logger.log(`[${this.constructor.name}] doParse error`);
@@ -103,8 +103,8 @@ class EthRopstenParser extends ParserBase {
           total_supply: tokenInfoFromPeer[3],
           contract: contractAddress,
         });
-        return currencyInDb;
       }
+      return currencyInDb;
     } catch (error) {
       this.logger.log(`[${this.constructor.name}] findOrCreateCurrency error`);
       this.logger.log(error);
@@ -178,7 +178,7 @@ class EthRopstenParser extends ParserBase {
           return null;
         }
         const decimals = data.result;
-        return Promise.resolve(parseInt(decimals));
+        return Promise.resolve(parseInt(decimals, 16));
       }
       this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer fail`);
       return Promise.reject();
@@ -216,28 +216,74 @@ class EthRopstenParser extends ParserBase {
     }
   }
 
-  async parseReceiptTopic(receipt, transaction_id) {
+  async parseReceiptTopic(receipt, transaction) {
     this.logger.log(`[${this.constructor.name}] parseReceiptTopic`);
     // step:
     // 1. parse log
     // 2. parse each logs topics
     // 3. check topic has 'Transfer'
     // 4. if yes, find or create currency by address
-    // 5. create TokenTransaction
-    // 6. create mapping table
+    // 5. set TokenTransaction
+    // 6. check from address is regist address
+    // 7. add mapping table
+    // 8. check to address is regist address
+    // 9. add mapping table
 
     try {
       const { logs } = receipt;
-      console.log('logs', logs);
 
       for (const log of logs) {
-        const { address, topics } = log;
+        const { address, data, topics } = log;
         const abi = ethABI[topics[0]];
 
         // 3. check topic has 'Transfer'
         if (abi && abi.name === 'Transfer' && abi.type === 'event') {
           // 4. if yes, find or create currency by address
           const currency = await this.findOrCreateCurrency(address);
+
+          // 5. set TokenTransaction
+          const bnAmount = new BigNumber(data, 16);
+          const from = Utils.parse32BytesAddress(topics[1]);
+          const to = Utils.parse32BytesAddress(topics[2]);
+          const tokenTransaction = await this.tokenTransactionModel.findOrCreate({
+            where: {
+              transaction_id: transaction.transaction_id, currency_id: currency.currency_id,
+            },
+            defaults: {
+              tokenTransaction_id: uuidv4(),
+              transaction_id: transaction.transaction_id,
+              currency_id: currency.currency_id,
+              txid: transaction.txid,
+              timestamp: transaction.timestamp,
+              source_addresses: from,
+              destination_addresses: to,
+              amount: bnAmount.toFixed(),
+              result: receipt.status === '0x1',
+            },
+          });
+
+          // 6. check from address is regist address
+          const accountAddressFrom = await this.checkRegistAddress(from);
+          if (accountAddressFrom) {
+            // 7. add mapping table
+            await this.setAddressTokenTransaction(
+              currency.currency_id,
+              accountAddressFrom.accountAddress_id,
+              tokenTransaction[0].tokenTransaction_id,
+              0,
+            );
+          }
+          // 8. check to address is regist address
+          const accountAddressTo = await this.checkRegistAddress(to);
+          if (accountAddressTo) {
+            // 9. add mapping table
+            await this.setAddressTokenTransaction(
+              currency.currency_id,
+              accountAddressTo.accountAddress_id,
+              tokenTransaction[0].tokenTransaction_id,
+              1,
+            );
+          }
         }
       }
     } catch (error) {
@@ -286,7 +332,7 @@ class EthRopstenParser extends ParserBase {
         },
       });
 
-      const insertReceipt = await this.receiptModel.findOrCreate({
+      await this.receiptModel.findOrCreate({
         where: {
           transaction_id: insertTx[0].transaction_id,
           currency_id: this.currencyInfo.currency_id,
@@ -306,7 +352,7 @@ class EthRopstenParser extends ParserBase {
 
       const { from, to } = tx;
       // 3. parse receipt to check is token transfer
-      await this.parseReceiptTopic(receipt, insertTx[0].transaction_id);
+      await this.parseReceiptTopic(receipt, insertTx[0]);
 
       // 3-1. if yes insert token transaction
       // TODO
@@ -335,6 +381,32 @@ class EthRopstenParser extends ParserBase {
       return true;
     } catch (error) {
       this.logger.log(`[${this.constructor.name}] parseTx(${tx.hash}) error`);
+      this.logger.log(error);
+      return Promise.reject(error);
+    }
+  }
+
+  async setAddressTokenTransaction(currency_id, accountAddress_id, tokenTransaction_id, direction) {
+    this.logger.log(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction})`);
+    try {
+      const result = await this.addressTokenTransactionModel.findOrCreate({
+        where: {
+          currency_id,
+          accountAddress_id,
+          tokenTransaction_id,
+          direction,
+        },
+        defaults: {
+          addressTokenTransaction_id: uuidv4(),
+          currency_id,
+          accountAddress_id,
+          tokenTransaction_id,
+          direction,
+        },
+      });
+      return result;
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction}) error`);
       this.logger.log(error);
       return Promise.reject(error);
     }
