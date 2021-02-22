@@ -107,7 +107,6 @@ class ParserBase {
     // need override
   }
 
-  // not checked
   async removeParsedTx(tx) {
     this.logger.log(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id})`);
     try {
