@@ -155,10 +155,10 @@ module.exports = [
   {
     currency_id: '8e1ea17f-38f5-42ab-a24b-82bf8abc851b',
     blockchain_id: '80000001',
-    name: 'BTC Testnet',
+    name: 'Bitcoin Testnet',
     symbol: 'BTC',
     type: 1,
-    description: 'BTC Testnet description',
+    description: 'Bitcoin Testnet description',
     publish: false,
     decimals: 18,
     icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/btc.png',

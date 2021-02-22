@@ -5,6 +5,7 @@ const level = require('level');
 const bs58check = require('bs58check');
 const EthUtils = require('ethereumjs-util');
 const crypto = require('crypto');
+const bitcoin = require('bitcoinjs-lib');
 
 const { BN } = EthUtils;
 const toml = require('toml');
@@ -693,6 +694,24 @@ class Utils {
       console.log('e', e);
       return e;
     }
+  }
+
+  static pubkeyToP2WPKHAddress(blockchainID, pubkey) {
+    let address;
+    if (blockchainID === '80000000') {
+      const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.bitcoin });
+      address = p2wpkh.address;
+    } else if (blockchainID === '80000001') {
+      const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.testnet });
+      address = p2wpkh.address;
+    }
+    return address;
+  }
+
+  static toP2wpkhAddress(blockchainID, pubkey) {
+    // Compressed Public Key to P2WPKH Address
+    const address = this.pubkeyToP2WPKHAddress(blockchainID, pubkey);
+    return address;
   }
 }
 
