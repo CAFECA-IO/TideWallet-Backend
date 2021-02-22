@@ -244,7 +244,7 @@ class Blockchain extends Bot {
       if (!findBlockchainInfo) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
       let gasLimit = '0';
-      if (blockchain_id === '80000060' || blockchain_id === '80000603') {
+      if (blockchain_id === '8000003C' || blockchain_id === '8000025B') {
         const option = { ...this.config.ethereum.ropsten };
         option.data = {
           jsonrpc: '2.0',
@@ -300,8 +300,8 @@ class Blockchain extends Bot {
       let nonce = '0';
       // TODO: support another blockchain
       switch (blockchain_id) {
-        case '80000060':
-        case '80000603':
+        case '8000003C':
+        case '8000025B':
           option = { ...this.config.ethereum.ropsten };
           option.data = {
             jsonrpc: '2.0',
@@ -342,8 +342,8 @@ class Blockchain extends Bot {
       let option = {};
       // TODO: support another blockchain
       switch (blockchain_id) {
-        case '80000060':
-        case '80000603':
+        case '8000003C':
+        case '8000025B':
           option = { ...this.config.ethereum.ropsten };
           option.data = {
             jsonrpc: '2.0',

@@ -67,7 +67,7 @@ module.exports = [
   },
   {
     currency_id: '5b755dacd5dd99000b3d92b2',
-    blockchain_id: '80000060',
+    blockchain_id: '8000003C',
     name: 'Ethereum',
     symbol: 'ETH',
     type: 1,
@@ -78,7 +78,7 @@ module.exports = [
   },
   {
     currency_id: '5b1ea92e584bf50020130617',
-    blockchain_id: '80000060',
+    blockchain_id: '8000003C',
     name: 'Tether',
     symbol: 'USDT',
     type: 2,
@@ -91,7 +91,7 @@ module.exports = [
   },
   {
     currency_id: '5b1ea92e584bf50020130685',
-    blockchain_id: '80000060',
+    blockchain_id: '8000003C',
     name: 'Chainlink',
     symbol: 'LINK',
     type: 2,
@@ -104,7 +104,7 @@ module.exports = [
   },
   {
     currency_id: '5b1ea92e584bf50020130b28',
-    blockchain_id: '80000060',
+    blockchain_id: '8000003C',
     name: 'Dai',
     symbol: 'DAI',
     type: 2,
@@ -117,7 +117,7 @@ module.exports = [
   },
   {
     currency_id: '5c0009411e24e600214f0eb1',
-    blockchain_id: '80000060',
+    blockchain_id: '8000003C',
     name: 'USD Coin',
     symbol: 'USDC',
     type: 2,
@@ -130,7 +130,7 @@ module.exports = [
   },
   {
     currency_id: '5c00093e1e24e600214f0837',
-    blockchain_id: '80000060',
+    blockchain_id: '8000003C',
     name: 'Wrapped Bitcoin',
     symbol: 'WBTC',
     type: 2,
@@ -143,7 +143,7 @@ module.exports = [
   },
   {
     currency_id: '3ab0ffc4-8cd3-4832-ab31-9d99d2691cee',
-    blockchain_id: '80000603',
+    blockchain_id: '8000025B',
     name: 'Ethereum Ropsten',
     symbol: 'ETH',
     type: 1,
@@ -151,5 +151,16 @@ module.exports = [
     publish: false,
     decimals: 18,
     icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png',
+  },
+  {
+    currency_id: '8e1ea17f-38f5-42ab-a24b-82bf8abc851b',
+    blockchain_id: '80000001',
+    name: 'BTC Testnet',
+    symbol: 'BTC',
+    type: 1,
+    description: 'BTC Testnet description',
+    publish: false,
+    decimals: 18,
+    icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/btc.png',
   },
 ];
