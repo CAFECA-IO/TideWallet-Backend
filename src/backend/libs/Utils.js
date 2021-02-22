@@ -694,6 +694,19 @@ class Utils {
       return e;
     }
   }
+
+  static is0xPrefixed(value) {
+    return value.toString().slice(0, 2) === '0x';
+  }
+
+  static parse32BytesAddress(address) {
+    if (typeof address !== 'string') return '';
+    const parsedAddr = address.slice(-40);
+    if (Utils.is0xPrefixed(address)) {
+      return `0x${parsedAddr}`;
+    }
+    return parsedAddr;
+  }
 }
 
 module.exports = Utils;
