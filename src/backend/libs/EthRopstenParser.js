@@ -1,9 +1,11 @@
 const { v4: uuidv4 } = require('uuid');
 const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue');
+const Web3 = require('web3');
 
 const ParserBase = require('./ParserBase');
 const Utils = require('./Utils');
+const ethABI = require('./abi/ethABI');
 
 class EthRopstenParser extends ParserBase {
   constructor(config, database, logger) {
@@ -19,6 +21,7 @@ class EthRopstenParser extends ParserBase {
   async init() {
     await super.init();
     this.isParsing = false;
+    this.web3 = new Web3();
     setInterval(() => {
       this.doParse();
     }, this.syncInterval);
@@ -41,28 +44,28 @@ class EthRopstenParser extends ParserBase {
 
     try {
       // eslint-disable-next-line no-constant-condition
-      while (true) {
-        // 1. load unparsed transactions per block from UnparsedTransaction
-        const txs = await this.getUnparsedTxs();
-        if (!txs || txs.length < 1) break;
+      // while (true) {
+      // 1. load unparsed transactions per block from UnparsedTransaction
+      const txs = await this.getUnparsedTxs();
+      // if (!txs || txs.length < 1) break;
 
-        // 2. set queue
-        // TODO job queue
+      // 2. set queue
+      // TODO job queue
 
-        // 3. assign parser
-        // TODO get job from queue
-        // TODO multiple thread
-        for (const tx of txs) {
-          const transaction = JSON.parse(tx.transaction);
-          const receipt = JSON.parse(tx.receipt);
-          await this.parseTx(transaction, receipt, tx.timestamp);
-        }
-
-        // 4. remove parsed transaction from UnparsedTransaction table
-        for (const tx of txs) {
-          await this.removeParsedTx(tx);
-        }
+      // 3. assign parser
+      // TODO get job from queue
+      // TODO multiple thread
+      for (const tx of txs) {
+        const transaction = JSON.parse(tx.transaction);
+        const receipt = JSON.parse(tx.receipt);
+        await this.parseTx(transaction, receipt, tx.timestamp);
       }
+
+      // 4. remove parsed transaction from UnparsedTransaction table
+      //   for (const tx of txs) {
+      //     await this.removeParsedTx(tx);
+      //   }
+      // }
       this.isParsing = false;
     } catch (error) {
       this.logger.log(`[${this.constructor.name}] doParse error`);
@@ -72,15 +75,176 @@ class EthRopstenParser extends ParserBase {
     }
   }
 
-  async parseReceiptTopic(receipt) {
+  async findOrCreateCurrency(contractAddress) {
+    try {
+      let currencyInDb = await this.currencyModel.findOne({
+        where: { contract: contractAddress },
+      });
+      if (!currencyInDb) {
+        // const name = await this.getTokenNameFromPeer(contractAddress);
+        // const symbol = await this.getTokenSymbolFromPeer(contractAddress);
+        // const decimals = await this.getTokenDecimalFromPeer(contractAddress);
+        // const total_supply = await this.getTokenTotalSupplyFromPeer(contractAddress);
+        const tokenInfoFromPeer = await Promise.all([
+          this.getTokenNameFromPeer(contractAddress),
+          this.getTokenSymbolFromPeer(contractAddress),
+          this.getTokenDecimalFromPeer(contractAddress),
+          this.getTokenTotalSupplyFromPeer(contractAddress),
+        ]).catch((error) => Promise.reject(error));
+
+        currencyInDb = await this.currencyModel.create({
+          currency_id: uuidv4(),
+          blockchain_id: this.bcid,
+          name: tokenInfoFromPeer[0],
+          symbol: tokenInfoFromPeer[1],
+          type: 2,
+          publish: false,
+          decimals: tokenInfoFromPeer[2],
+          total_supply: tokenInfoFromPeer[3],
+          contract: contractAddress,
+        });
+        return currencyInDb;
+      }
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] findOrCreateCurrency error`);
+      this.logger.log(error);
+      return Promise.reject(error);
+    }
+  }
+
+  async getTokenNameFromPeer(address) {
+    try {
+      const type = 'callContract';
+      const options = dvalue.clone(this.options);
+      const command = '0x06fdde03'; // erc20 get name
+      options.data = this.constructor.cmd({ type, address, command });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer fail`);
+          return null;
+        }
+        const nameEncode = data.result;
+        const name = this.web3.eth.abi.decodeParameter('string', nameEncode);
+        return Promise.resolve(name);
+      }
+      this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer fail`);
+      return Promise.reject();
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer error`);
+      this.logger.log(error);
+      return null;
+    }
+  }
+
+  async getTokenSymbolFromPeer(address) {
+    try {
+      const type = 'callContract';
+      const options = dvalue.clone(this.options);
+      const command = '0x95d89b41'; // erc20 get synbol
+      options.data = this.constructor.cmd({ type, address, command });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer fail`);
+          return null;
+        }
+        const symbolEncode = data.result;
+        const symbol = this.web3.eth.abi.decodeParameter('string', symbolEncode);
+        return Promise.resolve(symbol);
+      }
+      this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer fail`);
+      return Promise.reject();
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer error`);
+      this.logger.log(error);
+      return null;
+    }
+  }
+
+  async getTokenDecimalFromPeer(address) {
+    try {
+      const type = 'callContract';
+      const options = dvalue.clone(this.options);
+      const command = '0x313ce567'; // erc20 get decimals
+      options.data = this.constructor.cmd({ type, address, command });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer fail`);
+          return null;
+        }
+        const decimals = data.result;
+        return Promise.resolve(parseInt(decimals));
+      }
+      this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer fail`);
+      return Promise.reject();
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer error`);
+      this.logger.log(error);
+      return null;
+    }
+  }
+
+  async getTokenTotalSupplyFromPeer(address) {
+    try {
+      const type = 'callContract';
+      const options = dvalue.clone(this.options);
+      const command = '0x18160ddd'; // erc20 get total supply
+      options.data = this.constructor.cmd({ type, address, command });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer fail`);
+          return null;
+        }
+        if (data.result) {
+          const bnTotalSupply = new BigNumber(data.result, 16);
+          return Promise.resolve(bnTotalSupply.toFixed());
+        }
+      }
+      this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer fail`);
+      return null;
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer error`);
+      this.logger.log(error);
+      return null;
+    }
+  }
+
+  async parseReceiptTopic(receipt, transaction_id) {
+    this.logger.log(`[${this.constructor.name}] parseReceiptTopic`);
     // step:
     // 1. parse log
     // 2. parse each logs topics
-    // 3. check topic has 'transfer'
+    // 3. check topic has 'Transfer'
     // 4. if yes, find or create currency by address
     // 5. create TokenTransaction
     // 6. create mapping table
 
+    try {
+      const { logs } = receipt;
+      console.log('logs', logs);
+
+      for (const log of logs) {
+        const { address, topics } = log;
+        const abi = ethABI[topics[0]];
+
+        // 3. check topic has 'Transfer'
+        if (abi && abi.name === 'Transfer' && abi.type === 'event') {
+          // 4. if yes, find or create currency by address
+          const currency = await this.findOrCreateCurrency(address);
+        }
+      }
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] parseReceiptTopic error`);
+      this.logger.log(error);
+      Promise.reject(error);
+    }
   }
 
   async parseTx(tx, receipt, timestamp) {
@@ -142,7 +306,7 @@ class EthRopstenParser extends ParserBase {
 
       const { from, to } = tx;
       // 3. parse receipt to check is token transfer
-      // TODO
+      await this.parseReceiptTopic(receipt, insertTx[0].transaction_id);
 
       // 3-1. if yes insert token transaction
       // TODO
@@ -174,6 +338,28 @@ class EthRopstenParser extends ParserBase {
       this.logger.log(error);
       return Promise.reject(error);
     }
+  }
+
+  static cmd({
+    type, address, command,
+  }) {
+    let result;
+    switch (type) {
+      case 'callContract':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_call',
+          params: [{
+            to: address,
+            data: command,
+          }, 'latest'],
+          id: dvalue.randomID(),
+        };
+        break;
+      default:
+        result = {};
+    }
+    return result;
   }
 }
 
