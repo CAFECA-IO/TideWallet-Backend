@@ -459,7 +459,8 @@ class Utils {
 
   static initialLogger({ base }) {
     return Promise.resolve({
-      log: console.log,
+      log: () => {},
+      // log: console.log,
       error: console.error,
       debug: base.debug ? console.log : () => {},
       trace: console.trace,

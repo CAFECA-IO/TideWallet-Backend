@@ -358,7 +358,9 @@ class Blockchain extends Bot {
 
           return new ResponseFormat({
             message: 'Publish Transaction',
-            payload: {},
+            payload: {
+              txid: data.result,
+            },
           });
 
         default:

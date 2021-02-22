@@ -1,3 +1,4 @@
+const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue');
 const { v4: uuidv4 } = require('uuid');
 
@@ -9,6 +10,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     super(blockchainId, database, logger);
     this.options = {};
     this.syncInterval = 15000;
+    this.updateBalanceAddresses = {};
   }
 
   async init() {
@@ -33,6 +35,51 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     return Promise.resolve();
   }
 
+  async fullSyncAddressesBalance() {
+    const findAllAddress = await this.accountAddressModel.findAll({
+      attributes: ['account_id', 'address'],
+    });
+
+    for (const addressInfo of findAllAddress) {
+      const findAccountCurrency = await this.accountCurrencyModel.findOne({
+        where: {
+          account_id: addressInfo.account_id,
+        },
+        include: [
+          {
+            model: this.currencyModel,
+            where: { symbol: 'ETH', blockchain_id: this.bcid },
+            attributes: ['symbol'],
+          },
+        ],
+      });
+      if (findAccountCurrency) {
+        const type = 'getBalance';
+        const options = dvalue.clone(this.options);
+        options.data = this.constructor.cmd({ type, address: addressInfo.address });
+        const checkId = options.data.id;
+        const data = await Utils.ETHRPC(options);
+        if (data instanceof Object) {
+          if (data.id === checkId) {
+            // use address find account
+            try {
+              await this.accountCurrencyModel.update(
+                { balance: new BigNumber(data.result).toFixed() },
+                { where: { account_id: addressInfo.account_id } },
+              );
+
+              console.log(`address(${addressInfo.address}), balance:${new BigNumber(data.result).toFixed()}`);
+
+            // eslint-disable-next-line no-empty
+            } catch (e) {
+            }
+          }
+        }
+      }
+    }
+    return Promise.resolve();
+  }
+
   async blockNumberFromPeer() {
     this.logger.log(`[${this.constructor.name}] blockNumberFromPeer`);
     const type = 'getBlockcount';
@@ -40,7 +87,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     options.data = this.constructor.cmd({ type });
     const checkId = options.data.id;
     const data = await Utils.ETHRPC(options);
-    console.log(data);
     if (data instanceof Object) {
       if (data.id !== checkId) {
         this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock number not found\x1b[0m\x1b[21m`);
@@ -231,6 +277,9 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           if (!transaction || !receipt) {
             // TODO error handle
           }
+          this.updateBalanceAddresses[transaction.from] = '';
+          this.updateBalanceAddresses[transaction.to] = '';
+
           // 4. save unparsed tx and receipt into db
           await this.insertUnparsedTransaction(transaction, receipt, timestamp);
           const step4 = new Date().getTime();
@@ -293,7 +342,32 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   async updateBalance() {
-    // TODO
+    for (const address of Object.keys(this.updateBalanceAddresses)) {
+      const type = 'getBalance';
+      const options = dvalue.clone(this.options);
+      options.data = this.constructor.cmd({ type, address });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id === checkId) {
+          // use address find account
+          try {
+            const findAccount = await this.accountAddressModel.findOne({
+              where: { address },
+              attributes: ['accountAddress_id', 'account_id'],
+            });
+            await this.accountCurrencyModel.update(
+              { balance: new BigNumber(data.result).toFixed() },
+              { where: { account_id: findAccount.account_id } },
+            );
+
+            delete this.updateBalanceAddresses[address];
+          // eslint-disable-next-line no-empty
+          } catch (e) {
+          }
+        }
+      }
+    }
     return Promise.resolve();
   }
 
@@ -307,7 +381,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   static cmd({
-    type, block, txid,
+    type, block, txid, address,
   }) {
     let result;
     switch (type) {
@@ -340,6 +414,14 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           jsonrpc: '2.0',
           method: 'eth_getTransactionReceipt',
           params: [txid],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getBalance':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
           id: dvalue.randomID(),
         };
         break;
