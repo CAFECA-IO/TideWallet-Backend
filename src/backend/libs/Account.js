@@ -127,7 +127,7 @@ class Account extends Bot {
           include: [
             {
               model: this.currencyModel,
-              attributes: ['type'],
+              attributes: ['type', 'publish'],
               where: {
                 type: 1,
               },
@@ -142,6 +142,7 @@ class Account extends Bot {
             network_id: account.Blockchain.network_id,
             currency_id: accountCurrency.currency_id,
             balance: accountCurrency.balance,
+            publish: accountCurrency.Currency.publish,
             account_index: '0',
           });
         }
