@@ -33,6 +33,27 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     return Promise.resolve();
   }
 
+  async avgFeeFromPeer(block) {
+    this.logger.log(`[${this.constructor.name}] avgFeeFromPeer(${block})`);
+    const type = 'getFee';
+    const options = dvalue.clone(this.options);
+    options.data = this.constructor.cmd({ type, block });
+    const checkId = options.data.id;
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        this.logger.log(`[${this.constructor.name}] avgFeeFromPeer not found`);
+        return Promise.reject();
+      }
+      if (data.result) {
+        const feerate50 = data.result.feerate_percentiles[2] || '1';
+        return Promise.resolve(feerate50);
+      }
+    }
+    this.logger.log(`[${this.constructor.name}] avgFeeFromPeer not found`);
+    return Promise.reject(data.error);
+  }
+
   async blockNumberFromPeer() {
     this.logger.log(`[${this.constructor.name}] blockNumberFromPeer`);
     const type = 'getblockcount';
@@ -170,6 +191,18 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     }
   }
 
+  async syncAvgFee() {
+    this.logger.log(`[${this.constructor.name}] syncAvgFee`);
+    try {
+      const block = await this.blockNumberFromDB();
+      const avgFee = await this.avgFeeFromPeer(block);
+      await this.updateFee(avgFee);
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] syncAvgFee error`);
+      this.logger.log(error);
+    }
+  }
+
   async syncBlock(block) {
     // step
     // 1. sync block +1
@@ -255,12 +288,19 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           id: dvalue.randomID(),
         };
         break;
-
       case 'getblock':
         result = {
           jsonrpc: '1.0',
           method: 'getblock',
           params: [blockHash, 2],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getFee':
+        result = {
+          jsonrpc: '1.0',
+          method: 'getblockstats',
+          params: [block, ['feerate_percentiles']],
           id: dvalue.randomID(),
         };
         break;
