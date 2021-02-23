@@ -205,17 +205,22 @@ class Account extends Bot {
 
           // if ETH symbol, request RPC get balance
           if (account.blockchain_id === '8000025B') {
-            const findAddress = await this.accountAddressModel.findOne({
-              where: { account_id: account.account_id },
-              attributes: ['address'],
-            });
-            if (findAddress) {
-              balance = await Utils.ethGetBalanceByAddress(findAddress.address, Currency.decimals);
+            const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: account.blockchain_id } });
+            if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
+              const findAddress = await this.accountAddressModel.findOne({
+                where: { account_id: account.account_id },
+                attributes: ['address'],
+              });
+              if (findAddress) {
+                balance = await Utils.ethGetBalanceByAddress(findAddress.address, Currency.decimals);
 
-              await this.database.db.AccountCurrency.update(
-                { balance },
-                { where: { account_id: accountCurrency_id } },
-              );
+                await this.accountCurrencyModel.update(
+                  { balance, balance_sync_block: findBlockHeight.block },
+                  { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
+                );
+              }
+            } else {
+              balance = accountCurrency.balance;
             }
           }
 
@@ -287,15 +292,24 @@ class Account extends Bot {
         let { balance = '0' } = accountCurrency;
         // if ETH symbol, request RPC get balance
         if (findAccount.blockchain_id === '8000025B') {
-          const findAddress = await this.accountAddressModel.findOne({
-            where: { account_id: findAccount.account_id },
-            attributes: ['address'],
-          });
-          if (findAddress) {
-            if (accountCurrency.Currency.contract) {
-              balance = await Utils.getERC20Token(findAddress.address, accountCurrency.Currency.contract, accountCurrency.Currency.decimals);
+          const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
+          if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
+            const findAddress = await this.accountAddressModel.findOne({
+              where: { account_id: findAccount.account_id },
+              attributes: ['address'],
+            });
+            if (findAddress) {
+              if (accountCurrency.Currency.contract) {
+                balance = await Utils.getERC20Token(findAddress.address, accountCurrency.Currency.contract, accountCurrency.Currency.decimals);
+              } else {
+                balance = await Utils.ethGetBalanceByAddress(findAddress.address, accountCurrency.Currency.decimals);
+              }
+              await this.accountCurrencyModel.update(
+                { balance, balance_sync_block: findBlockHeight.block },
+                { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
+              );
             } else {
-              balance = await Utils.ethGetBalanceByAddress(findAddress.address, accountCurrency.Currency.decimals);
+              balance = accountCurrency.balance;
             }
           }
         }

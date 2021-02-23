@@ -30,11 +30,6 @@ class CrawlerManagerBase {
     return Promise.resolve();
   }
 
-  async fullSyncAddressesBalance() {
-    // need override
-    return Promise.resolve();
-  }
-
   async getBlockInfo() {
     this.logger.log(`[${this.constructor.name}] getBlockInfo`);
     try {

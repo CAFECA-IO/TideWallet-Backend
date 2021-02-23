@@ -1,4 +1,3 @@
-const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue');
 const { v4: uuidv4 } = require('uuid');
 
@@ -32,48 +31,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
   async assignParser() {
     // TODO
-    return Promise.resolve();
-  }
-
-  async fullSyncAddressesBalance() {
-    const findAllAddress = await this.accountAddressModel.findAll({
-      attributes: ['account_id', 'address'],
-    });
-
-    for (const addressInfo of findAllAddress) {
-      const findAccountCurrency = await this.accountCurrencyModel.findOne({
-        where: {
-          account_id: addressInfo.account_id,
-        },
-        include: [
-          {
-            model: this.currencyModel,
-            where: { symbol: 'ETH', blockchain_id: this.bcid },
-            attributes: ['symbol'],
-          },
-        ],
-      });
-      if (findAccountCurrency) {
-        const type = 'getBalance';
-        const options = dvalue.clone(this.options);
-        options.data = this.constructor.cmd({ type, address: addressInfo.address });
-        const checkId = options.data.id;
-        const data = await Utils.ETHRPC(options);
-        if (data instanceof Object) {
-          if (data.id === checkId) {
-            // use address find account
-            try {
-              await this.accountCurrencyModel.update(
-                { balance: new BigNumber(data.result).toFixed() },
-                { where: { account_id: addressInfo.account_id } },
-              );
-            // eslint-disable-next-line no-empty
-            } catch (e) {
-            }
-          }
-        }
-      }
-    }
     return Promise.resolve();
   }
 
@@ -339,32 +296,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   async updateBalance() {
-    for (const address of Object.keys(this.updateBalanceAddresses)) {
-      const type = 'getBalance';
-      const options = dvalue.clone(this.options);
-      options.data = this.constructor.cmd({ type, address });
-      const checkId = options.data.id;
-      const data = await Utils.ETHRPC(options);
-      if (data instanceof Object) {
-        if (data.id === checkId) {
-          // use address find account
-          try {
-            const findAccount = await this.accountAddressModel.findOne({
-              where: { address },
-              attributes: ['accountAddress_id', 'account_id'],
-            });
-            await this.accountCurrencyModel.update(
-              { balance: new BigNumber(data.result).toFixed() },
-              { where: { account_id: findAccount.account_id } },
-            );
-
-            delete this.updateBalanceAddresses[address];
-          // eslint-disable-next-line no-empty
-          } catch (e) {
-          }
-        }
-      }
-    }
     return Promise.resolve();
   }
 

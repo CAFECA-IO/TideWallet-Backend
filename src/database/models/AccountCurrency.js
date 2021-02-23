@@ -20,6 +20,11 @@ module.exports = (sequelize, DataTypes) => sequelize.define('AccountCurrency', {
     allowNull: false,
     defaultValue: '0',
   },
+  balance_sync_block: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+  },
   number_of_external_key: {
     type: DataTypes.INTEGER,
     allowNull: false,

@@ -1,4 +1,3 @@
-const schedule = require('node-schedule');
 const Bot = require('./Bot');
 const BtcCrawlerManager = require('./BtcCrawlerManager');
 const CrawlerManagerBase = require('./CrawlerManagerBase');
@@ -32,7 +31,6 @@ class Manager extends Bot {
       return super.start()
         .then(() => {
           this.initManager();
-          this.initSchedule();
           return this;
         });
     }
@@ -52,19 +50,6 @@ class Manager extends Bot {
   initManager() {
     this._crawlerManagers.forEach((manager) => {
       manager.init();
-    });
-  }
-
-  initSchedule() {
-    // sync all address balance form db
-    schedule.scheduleJob({
-      hour: 0, minute: 0, second: 0, tz: 'Asia/Taipei',
-    }, async () => {
-      for (const currency of this._crawlerManagers) {
-        if (currency instanceof CrawlerManagerBase) {
-          await currency.fullSyncAddressesBalance();
-        }
-      }
     });
   }
 }
