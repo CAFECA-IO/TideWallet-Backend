@@ -6,6 +6,7 @@ const bs58check = require('bs58check');
 const EthUtils = require('ethereumjs-util');
 const crypto = require('crypto');
 const bitcoin = require('bitcoinjs-lib');
+const BigNumber = require('bignumber.js');
 
 const { BN } = EthUtils;
 const toml = require('toml');
@@ -725,6 +726,64 @@ class Utils {
       return `0x${parsedAddr}`;
     }
     return parsedAddr;
+  }
+
+  static async ethGetBalanceByAddress(address, decimals = 18) {
+    const option = { ...this.config.ethereum.ropsten };
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_getBalance',
+      params: [address, 'latest'],
+      id: dvalue.randomID(),
+    };
+
+    const checkId = option.data.id;
+    const data = await this.ETHRPC(option);
+    if (data instanceof Object) {
+      if (data.id === checkId) {
+        // use address find account
+        try {
+          return new BigNumber(data.result).dividedBy(new BigNumber(10 ** decimals)).toFixed();
+
+          // eslint-disable-next-line no-empty
+        } catch (e) {
+          return '0';
+        }
+      }
+    }
+  }
+
+  static async getRRC20Token(address, contract, decimals = 18) {
+    const _address = address.replace('0x', '').padStart(64, '0');
+    const command = `0x70a08231${_address}`;
+    console.log('command:', command);
+    const option = { ...this.config.ethereum.ropsten };
+    console.log('contract:', contract);
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_call',
+      params: [{
+        to: contract,
+        data: command,
+      },
+      'latest'],
+      id: dvalue.randomID(),
+    };
+
+    const checkId = option.data.id;
+    const data = await this.ETHRPC(option);
+    if (data instanceof Object) {
+      if (data.id === checkId) {
+        // use address find account
+        try {
+          return new BigNumber(data.result).dividedBy(new BigNumber(10 ** decimals)).toFixed();
+
+          // eslint-disable-next-line no-empty
+        } catch (e) {
+          return '0';
+        }
+      }
+    }
   }
 }
 

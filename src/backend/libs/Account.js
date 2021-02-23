@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const dvalue = require('dvalue');
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Utils = require('./Utils');
@@ -127,7 +128,7 @@ class Account extends Bot {
           include: [
             {
               model: this.currencyModel,
-              attributes: ['type', 'publish'],
+              attributes: ['type', 'publish', 'decimals'],
               where: {
                 type: 1,
               },
@@ -136,13 +137,32 @@ class Account extends Bot {
         });
         for (let j = 0; j < findAccountCurrencies.length; j++) {
           const accountCurrency = findAccountCurrencies[j];
+          let { balance } = accountCurrency;
+          const { Currency, currency_id, accountCurrency_id } = accountCurrency;
+
+          // if ETH symbol, request RPC get balance
+          if (account.blockchain_id === '8000025B') {
+            const findAddress = await this.accountAddressModel.findOne({
+              where: { account_id: account.account_id },
+              attributes: ['address'],
+            });
+            if (findAddress) {
+              balance = await Utils.ethGetBalanceByAddress(findAddress.address, Currency.decimals);
+
+              await this.database.db.AccountCurrency.update(
+                { balance },
+                { where: { account_id: accountCurrency_id } },
+              );
+            }
+          }
+
           payload.push({
-            account_id: accountCurrency.accountCurrency_id,
+            account_id: accountCurrency_id,
             blockchain_id: account.blockchain_id,
             network_id: account.Blockchain.network_id,
-            currency_id: accountCurrency.currency_id,
-            balance: accountCurrency.balance,
-            publish: accountCurrency.Currency.publish,
+            currency_id,
+            balance,
+            publish: Currency.publish,
             account_index: '0',
           });
         }
@@ -201,6 +221,22 @@ class Account extends Bot {
       });
       for (let j = 0; j < findAccountCurrencies.length; j++) {
         const accountCurrency = findAccountCurrencies[j];
+        let { balance = '0' } = accountCurrency;
+        // if ETH symbol, request RPC get balance
+        if (findAccount.blockchain_id === '8000025B') {
+          const findAddress = await this.accountAddressModel.findOne({
+            where: { account_id: findAccount.account_id },
+            attributes: ['address'],
+          });
+          if (findAddress) {
+            if (accountCurrency.Currency.contract) {
+              balance = await Utils.getRRC20Token(findAddress.address, accountCurrency.Currency.contract, accountCurrency.Currency.decimals);
+            } else {
+              balance = await Utils.ethGetBalanceByAddress(findAddress.address, accountCurrency.Currency.decimals);
+            }
+          }
+        }
+
         if (accountCurrency.Currency && accountCurrency.Currency.type === 1) {
           payload.blockchain_id = findAccount.blockchain_id;
           payload.currency_id = accountCurrency.currency_id;
@@ -210,7 +246,7 @@ class Account extends Bot {
           payload.curve_type = findAccount.curve_type;
           payload.number_of_external_key = findAccount.number_of_external_key;
           payload.number_of_internal_key = findAccount.number_of_internal_key;
-          payload.balance = accountCurrency.balance;
+          payload.balance = balance;
           payload.symbol = accountCurrency.Currency.symbol;
           payload.icon = accountCurrency.Currency.icon;
         } else if (accountCurrency.Currency && accountCurrency.Currency.type === 2) {
@@ -225,7 +261,7 @@ class Account extends Bot {
             decimals: accountCurrency.Currency.decimals,
             total_supply: accountCurrency.Currency.total_supply,
             contract: accountCurrency.Currency.contract,
-            balance: accountCurrency.balance,
+            balance,
           });
         }
       }
