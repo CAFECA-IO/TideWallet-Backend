@@ -20,7 +20,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     super(blockchainId, database, logger);
     this.options = {};
     this.syncInterval = 15000;
-    this.updateBalanceAddresses = {};
   }
 
   async init() {
