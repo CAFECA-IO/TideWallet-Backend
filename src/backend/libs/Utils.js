@@ -753,7 +753,7 @@ class Utils {
     }
   }
 
-  static async getRRC20Token(address, contract, decimals = 18) {
+  static async getERC20Token(address, contract, decimals = 18) {
     const _address = address.replace('0x', '').padStart(64, '0');
     const command = `0x70a08231${_address}`;
     console.log('command:', command);

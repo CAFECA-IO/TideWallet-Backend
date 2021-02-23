@@ -1,5 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
-const dvalue = require('dvalue');
+const Web3 = require('web3');
+const BigNumber = require('bignumber.js');
+const ecrequest = require('ecrequest');
+const EthRopstenParser = require('./EthRopstenParser');
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Utils = require('./Utils');
@@ -39,11 +42,12 @@ class Account extends Bot {
     });
   }
 
-  async TokenRegist({ params, token }) {
+  async TokenRegist({ params, token, body }) {
     try {
-      const { blockchain_id, currency_id } = params;
-
-      if (!Utils.validateString(blockchain_id) || !Utils.validateString(currency_id)) {
+      const { blockchain_id } = params;
+      let { currency_id = '' } = body;
+      const { contract } = body;
+      if (!Utils.validateString(currency_id) && !Utils.validateString(contract)) {
         return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
       }
 
@@ -51,49 +55,108 @@ class Account extends Bot {
       const tokenInfo = await Utils.verifyToken(token);
 
       // find Token is exist
-      const findTokenItem = await this.currencyModel.findOne({
+      let findTokenItem = await this.currencyModel.findOne({
         where: { type: 2, currency_id },
       });
 
-      if (findTokenItem) {
-        // check token x blockchain mapping
-        if (findTokenItem.blockchain_id !== blockchain_id) return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
-
-        // check account token is exist
-        const findUserAccountData = await this.accountModel.findOne({
-          where: {
-            user_id: tokenInfo.userID, blockchain_id,
-          },
+      if (!findTokenItem) {
+        // use contract check Token is exist
+        findTokenItem = await this.currencyModel.findOne({
+          where: { type: 2, contract },
         });
-        if (!findUserAccountData) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
-
-        const findUserAccountToken = await this.accountCurrencyModel.findOne({
-          where: {
-            account_id: findUserAccountData.account_id, currency_id,
-          },
-        });
-        if (findUserAccountToken) return new ResponseFormat({ message: 'account token exist', code: Codes.ACCOUNT_TOKEN_EXIST });
-
-        // create token data to db
-        try {
-          const token_account_id = uuidv4();
-          await this.accountCurrencyModel.create({
-            accountCurrency_id: token_account_id,
-            account_id: findUserAccountData.account_id,
-            currency_id,
-            balance: '0',
-            number_of_external_key: '0',
-            number_of_internal_key: '0',
+        if (findTokenItem) {
+          // check account token is exist
+          const findUserAccountData = await this.accountModel.findOne({
+            where: {
+              user_id: tokenInfo.userID, blockchain_id,
+            },
           });
 
-          return new ResponseFormat({ message: 'Account Token Regist', payload: { token_account_id } });
-        } catch (e) {
-          return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+          if (!findUserAccountData) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+          // check account currency
+          const findUserAccountToken = await this.accountCurrencyModel.findOne({
+            where: {
+              account_id: findUserAccountData.account_id, currency_id: findTokenItem.currency_id,
+            },
+          });
+          if (findUserAccountToken) return new ResponseFormat({ message: 'account token exist', code: Codes.ACCOUNT_TOKEN_EXIST });
+        } else {
+          // if not found token in DB, parse token contract info from blockchain
+          const _ethRopstenParser = new EthRopstenParser(this.config, this.database, this.logger);
+          _ethRopstenParser.web3 = new Web3();
+          const tokenInfoFromPeer = await Promise.all([
+            _ethRopstenParser.getTokenNameFromPeer(contract),
+            _ethRopstenParser.getTokenSymbolFromPeer(contract),
+            _ethRopstenParser.getTokenDecimalFromPeer(contract),
+            _ethRopstenParser.getTokenTotalSupplyFromPeer(contract),
+          ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+          if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
+
+          let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
+          try {
+            const checkIcon = await ecrequest.get({
+              protocol: 'https:',
+              hostname: 'cdn.jsdelivr.net',
+              port: '',
+              path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
+              timeout: 1000,
+            });
+            if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
+          } catch (e) {
+            icon = `${this.config.base.domain}/icon/ERC20.png`;
+          }
+
+          const newCurrencyID = uuidv4();
+          if (!tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !tokenInfoFromPeer[2] || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
+          findTokenItem = await this.currencyModel.create({
+            currency_id: newCurrencyID,
+            blockchain_id,
+            name: tokenInfoFromPeer[0],
+            symbol: tokenInfoFromPeer[1],
+            type: 2,
+            publish: false,
+            decimals: tokenInfoFromPeer[2],
+            total_supply: tokenInfoFromPeer[3],
+            contract,
+            icon,
+          });
         }
       }
+      // check token x blockchain mapping
+      if (findTokenItem.blockchain_id !== blockchain_id) return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
 
-      // TODO: if not found token in DB, parse token contract info from blockchain
-      return new ResponseFormat({ message: 'Account Token Regist', payload: {} });
+      // check account token is exist
+      const findUserAccountData = await this.accountModel.findOne({
+        where: {
+          user_id: tokenInfo.userID, blockchain_id,
+        },
+      });
+      if (!findUserAccountData) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+
+      const findUserAccountToken = await this.accountCurrencyModel.findOne({
+        where: {
+          account_id: findUserAccountData.account_id, currency_id,
+        },
+      });
+      if (findUserAccountToken) return new ResponseFormat({ message: 'account token exist', code: Codes.ACCOUNT_TOKEN_EXIST });
+      currency_id = findTokenItem.currency_id;
+
+      // create token data to db
+      try {
+        const token_account_id = uuidv4();
+        await this.accountCurrencyModel.create({
+          accountCurrency_id: token_account_id,
+          account_id: findUserAccountData.account_id,
+          currency_id,
+          balance: '0',
+          number_of_external_key: '0',
+          number_of_internal_key: '0',
+        });
+
+        return new ResponseFormat({ message: 'Account Token Regist', payload: { token_account_id } });
+      } catch (e) {
+        return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+      }
     } catch (e) {
       this.logger.error('TokenRegist e:', e);
       if (e.code) return e;
@@ -230,7 +293,7 @@ class Account extends Bot {
           });
           if (findAddress) {
             if (accountCurrency.Currency.contract) {
-              balance = await Utils.getRRC20Token(findAddress.address, accountCurrency.Currency.contract, accountCurrency.Currency.decimals);
+              balance = await Utils.getERC20Token(findAddress.address, accountCurrency.Currency.contract, accountCurrency.Currency.decimals);
             } else {
               balance = await Utils.ethGetBalanceByAddress(findAddress.address, accountCurrency.Currency.decimals);
             }
