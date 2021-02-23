@@ -374,7 +374,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   static cmd({
-    type, block, txid, address,
+    type, block, txid,
   }) {
     let result;
     switch (type) {
@@ -415,14 +415,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           jsonrpc: '2.0',
           method: 'eth_getTransactionReceipt',
           params: [txid],
-          id: dvalue.randomID(),
-        };
-        break;
-      case 'getBalance':
-        result = {
-          jsonrpc: '2.0',
-          method: 'eth_getBalance',
-          params: [address, 'latest'],
           id: dvalue.randomID(),
         };
         break;
