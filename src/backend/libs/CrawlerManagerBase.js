@@ -11,6 +11,7 @@ class CrawlerManagerBase {
     this.currencyModel = this.database.db.Currency;
     this.sequelize = this.database.db.sequelize;
     this.unparsedTxModel = this.database.db.UnparsedTransaction;
+    this.feeSyncInterval = 3600000;
   }
 
   async init() {
@@ -19,10 +20,19 @@ class CrawlerManagerBase {
     if (this.blockInfo.start_block > this.blockInfo.block) {
       await this.updateBlockHeight(this.blockInfo.start_block);
     }
+    setInterval(() => {
+      this.syncAvgFee();
+    }, this.feeSyncInterval);
+    this.syncAvgFee();
     return this;
   }
 
   async assignParser() {
+    // need override
+    return Promise.resolve();
+  }
+
+  async avgFeeFromPeer() {
     // need override
     return Promise.resolve();
   }
@@ -150,6 +160,11 @@ class CrawlerManagerBase {
     return Promise.resolve();
   }
 
+  async syncAvgFee() {
+    // need override
+    return Promise.resolve();
+  }
+
   async updateBalance() {
     // need override
     return Promise.resolve();
@@ -159,6 +174,15 @@ class CrawlerManagerBase {
     this.logger.log(`[${this.constructor.name}] updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(
       { block },
+      { where: { blockchain_id: this.bcid } },
+    );
+    return insertResult;
+  }
+
+  async updateFee(avgFee) {
+    this.logger.log(`[${this.constructor.name}] updateFee(${avgFee})`);
+    const insertResult = await this.blockchainModel.update(
+      { avg_fee: avgFee },
       { where: { blockchain_id: this.bcid } },
     );
     return insertResult;
