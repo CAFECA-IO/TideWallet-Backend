@@ -1,5 +1,6 @@
 const Bot = require('./Bot');
 const BtcCrawlerManager = require('./BtcCrawlerManager');
+const CrawlerManagerBase = require('./CrawlerManagerBase');
 const BtcTestnetCrawlerManager = require('./BtcTestnetCrawlerManager');
 const EthCrawlerManager = require('./EthCrawlerManager');
 const EthRopstenCrawlerManager = require('./EthRopstenCrawlerManager');
@@ -11,6 +12,7 @@ class Manager extends Bot {
   constructor() {
     super();
     this.name = 'Manager';
+    this._crawlerManagers = [];
   }
 
   init({
@@ -28,14 +30,14 @@ class Manager extends Bot {
     if (!this.config.bitcoin.noScan) {
       return super.start()
         .then(() => {
-          this._crawlerManagers = this.initManager();
+          this.initManager();
           return this;
         });
     }
   }
 
   createManager() {
-    console.log('createManager');
+    this.logger.log('createManager');
     const result = [];
     // result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
     result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));

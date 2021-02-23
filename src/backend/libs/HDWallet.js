@@ -1,6 +1,7 @@
 const { hdkey } = require('ethereumjs-wallet');
 const bs58 = require('bs58');
 const sha256 = require('js-sha256');
+const bitcoin = require('bitcoinjs-lib');
 const blockchainNetworks = require('./data/blockchainNetworks');
 const Utils = require('./Utils');
 
@@ -24,9 +25,10 @@ class HDWallet {
   /**
     see: https://learnmeabitcoin.com/guide/extended-keys
   */
-  serializedExtendPublicKey(network) {
-    const MAINNET_PUB = '0488b21e';
-    const version = (network.bip32.public) ? network.bip32.public.toString(16).padStart(8, 0) : MAINNET_PUB;
+  serializedExtendPublicKey(coinType = 0) {
+    const MAINNET_PUB = '0488B21E';
+    const TESTNET_PUB = '043587CF';
+    const version = coinType === 1 ? TESTNET_PUB : MAINNET_PUB;
     const _depth = '03'.toString(16);
     const _index = '00000000'.toString(16);
 
@@ -45,17 +47,21 @@ class HDWallet {
   }
 
   getWalletInfo({
-    coinType = '0', change = '0', index = '0', blockchainID,
+    coinType = 0, change = 0, index = 0, blockchainID,
   }) {
-    const findNetwork = Object.values(blockchainNetworks).find((value) => value.coin_type === coinType);
-    const _serializedExtendPublicKey = this.serializedExtendPublicKey(findNetwork);
-    const node = hdkey.fromExtendedKey(_serializedExtendPublicKey);
-    this.hdWallet = node.deriveChild(change).deriveChild(index).getWallet();
-    const publicKey = this.hdWallet.getPublicKeyString();
-
-    let address = this.hdWallet.getAddressString();
+    const _serializedExtendPublicKey = this.serializedExtendPublicKey(coinType);
+    let publicKey = '';
+    let address = '';
     if (coinType === 0 || coinType === 1) {
-      address = Utils.toP2pkhAddress(blockchainID, publicKey);
+      let _node = bitcoin.bip32.fromBase58(_serializedExtendPublicKey, bitcoin.networks[coinType === 0 ? 'bitcoin' : 'testnet']); // don't change this
+      _node = _node.derive(change).derive(index);
+      publicKey = _node.publicKey.toString('hex');
+      address = Utils.toP2wpkhAddress(blockchainID, _node.publicKey);
+    } else {
+      const node = hdkey.fromExtendedKey(_serializedExtendPublicKey);
+      this.hdWallet = node.deriveChild(change).deriveChild(index).getWallet();
+      publicKey = this.hdWallet.getPublicKeyString();
+      address = this.hdWallet.getAddressString();
     }
 
     return ({

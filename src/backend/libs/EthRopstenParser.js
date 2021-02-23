@@ -9,7 +9,7 @@ const ethABI = require('./abi/ethABI');
 
 class EthRopstenParser extends ParserBase {
   constructor(config, database, logger) {
-    super('80000603', database, logger);
+    super('8000025B', database, logger);
 
     this.receiptModel = this.database.db.Receipt;
     this.tokenTransactionModel = this.database.db.TokenTransaction;

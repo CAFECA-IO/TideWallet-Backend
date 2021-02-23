@@ -6,6 +6,9 @@ class CrawlerManagerBase {
     this.database = database;
     this.logger = logger;
 
+    this.accountModel = this.database.db.Account;
+    this.accountCurrencyModel = this.database.db.AccountCurrency;
+    this.accountAddressModel = this.database.db.AccountAddress;
     this.blockchainModel = this.database.db.Blockchain;
     this.blockScannedModel = this.database.db.BlockScanned;
     this.currencyModel = this.database.db.Currency;

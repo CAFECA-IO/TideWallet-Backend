@@ -94,7 +94,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"List Supported Blockchains\",\n    \"payload\": [\n        {\n            \"blockchain_id\": \"80000000\",\n            \"name\": \"Bitcoin\",\n            \"coin_type\": 0,\n            \"network_id\": 0,\n            \"publish\": true\n        },\n        {\n            \"blockchain_id\": \"80000001\",\n            \"name\": \"Bitcoin Testnet\",\n            \"coinType\": 1,\n            \"network_id\": 0,\n            \"publish\": false\n        },\n        {\n            \"blockchain_id\": \"80000060\",\n            \"name\": \"Ethereum\",\n            \"coinType\": 60,\n            \"network_id\": 0,\n            \"publish\": true\n        },\n        {\n            \"blockchain_id\": \"80000603\",\n            \"name\": \"Ropsten\",\n            \"coinType\": 603,\n            \"network_id\": 3,\n            \"publish\": false\n        },\n        {\n            \"blockchain_id\": \"80003324\",\n            \"name\": \"Cafeca\",\n            \"coinType\": 3324,\n            \"network_id\": 0,\n            \"publish\": true\n        }\n    ]\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"List Supported Blockchains\",\n    \"payload\": [\n        {\n            \"blockchain_id\": \"80000000\",\n            \"name\": \"Bitcoin\",\n            \"coin_type\": 0,\n            \"network_id\": 0,\n            \"publish\": true\n        },\n        {\n            \"blockchain_id\": \"80000001\",\n            \"name\": \"Bitcoin Testnet\",\n            \"coinType\": 1,\n            \"network_id\": 0,\n            \"publish\": false\n        },\n        {\n            \"blockchain_id\": \"8000003C\",\n            \"name\": \"Ethereum\",\n            \"coinType\": 60,\n            \"network_id\": 0,\n            \"publish\": true\n        },\n        {\n            \"blockchain_id\": \"8000025B\",\n            \"name\": \"Ropsten\",\n            \"coinType\": 603,\n            \"network_id\": 3,\n            \"publish\": false\n        },\n        {\n            \"blockchain_id\": \"80003324\",\n            \"name\": \"Cafeca\",\n            \"coinType\": 3324,\n            \"network_id\": 0,\n            \"publish\": true\n        }\n    ]\n}"
 				}
 			]
 		},
@@ -427,7 +427,7 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000060",
+							"value": "8000003C",
 							"type": "string"
 						}
 					]
@@ -454,7 +454,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "80000060"
+									"value": "8000003C"
 								}
 							]
 						}
@@ -513,7 +513,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"List Supported Tokens\",\n    \"payload\": [\n        {\n            \"token_id\": \"5b1ea92e584bf50020130617\",\n            \"blockchain_id\": \"80000060\",\n            \"name\": \"Tether\",\n            \"symbol\": \"USDT\",\n            \"type\": 2,\n            \"publish\": true,\n            \"decimals\": 2,\n            \"total_supply\": \"26,310,299,179\",\n            \"contract\": \"0x123456789...\"\n        },\n        {\n            \"token_id\": \"5b1ea92e584bf50020130685\",\n            \"blockchain_id\": \"80000060\",\n            \"name\": \"Chainlink\",\n            \"symbol\": \"LINK\",\n            \"type\": 2,\n            \"publish\": true,\n            \"decimals\": 2,\n            \"total_supply\": \"1,000,000,000\",\n            \"contract\": \"0x123456789...\"\n        },\n        {\n            \"token_id\": \"5b1ea92e584bf50020130b28\",\n            \"blockchain_id\": \"80000060\",\n            \"name\": \"Dai\",\n            \"symbol\": \"DAI\",\n            \"type\": 2,\n            \"publish\": true,\n            \"decimals\": 2,\n            \"total_supply\": \"1,619,686,135\",\n            \"contract\": \"0x123456789...\"\n        },\n        {\n            \"token_id\": \"5c0009411e24e600214f0eb1\",\n            \"blockchain_id\": \"80000060\",\n            \"name\": \"USD Coin\",\n            \"symbol\": \"USDC\",\n            \"type\": 2,\n            \"publish\": true,\n            \"decimals\": 2,\n            \"total_supply\": \"5,767,712,364\",\n            \"contract\": \"0x123456789...\"\n        },\n        {\n            \"token_id\": \"5c00093e1e24e600214f0837\",\n            \"blockchain_id\": \"80000060\",\n            \"name\": \"Wrapped Bitcoin\",\n            \"symbol\": \"WBTC\",\n            \"type\": 2,\n            \"publish\": true,\n            \"decimals\": 2,\n            \"total_supply\": \"115,721\",\n            \"contract\": \"0x123456789...\"\n        }\n    ]\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"List Supported Tokens\",\n    \"payload\": [\n        {\n            \"token_id\": \"5b1ea92e584bf50020130617\",\n            \"blockchain_id\": \"8000003C\",\n            \"name\": \"Tether\",\n            \"symbol\": \"USDT\",\n            \"type\": 2,\n            \"publish\": true,\n            \"decimals\": 2,\n            \"total_supply\": \"26,310,299,179\",\n            \"contract\": \"0x123456789...\"\n        },\n        {\n            \"token_id\": \"5b1ea92e584bf50020130685\",\n            \"blockchain_id\": \"8000003C\",\n            \"name\": \"Chainlink\",\n            \"symbol\": \"LINK\",\n            \"type\": 2,\n            \"publish\": true,\n            \"decimals\": 2,\n            \"total_supply\": \"1,000,000,000\",\n            \"contract\": \"0x123456789...\"\n        },\n        {\n            \"token_id\": \"5b1ea92e584bf50020130b28\",\n            \"blockchain_id\": \"8000003C\",\n            \"name\": \"Dai\",\n            \"symbol\": \"DAI\",\n            \"type\": 2,\n            \"publish\": true,\n            \"decimals\": 2,\n            \"total_supply\": \"1,619,686,135\",\n            \"contract\": \"0x123456789...\"\n        },\n        {\n            \"token_id\": \"5c0009411e24e600214f0eb1\",\n            \"blockchain_id\": \"8000003C\",\n            \"name\": \"USD Coin\",\n            \"symbol\": \"USDC\",\n            \"type\": 2,\n            \"publish\": true,\n            \"decimals\": 2,\n            \"total_supply\": \"5,767,712,364\",\n            \"contract\": \"0x123456789...\"\n        },\n        {\n            \"token_id\": \"5c00093e1e24e600214f0837\",\n            \"blockchain_id\": \"8000003C\",\n            \"name\": \"Wrapped Bitcoin\",\n            \"symbol\": \"WBTC\",\n            \"type\": 2,\n            \"publish\": true,\n            \"decimals\": 2,\n            \"total_supply\": \"115,721\",\n            \"contract\": \"0x123456789...\"\n        }\n    ]\n}"
 				}
 			]
 		},
@@ -541,7 +541,7 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000060",
+							"value": "8000003C",
 							"type": "string"
 						},
 						{
@@ -574,7 +574,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "80000060"
+									"value": "8000003C"
 								},
 								{
 									"key": "token_id",
@@ -637,7 +637,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Token Detail\",\n    \"payload\": {\n        \"token_id\": \"5b1ea92e584bf50020130617\",\n        \"blockchain_id\": \"80000060\",\n        \"name\": \"Tether\",\n        \"symbol\": \"USDT\",\n        \"type\": 1,\n        \"description\": \".....\",\n        \"publish\": true,\n        \"decimals\": 2,\n        \"total_supply\": \"26,310,299,179\",\n        \"exchange_rate\": \"1\",\n        \"contract\": \"0x123456789...\"\n    }\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Token Detail\",\n    \"payload\": {\n        \"token_id\": \"5b1ea92e584bf50020130617\",\n        \"blockchain_id\": \"8000003C\",\n        \"name\": \"Tether\",\n        \"symbol\": \"USDT\",\n        \"type\": 1,\n        \"description\": \".....\",\n        \"publish\": true,\n        \"decimals\": 2,\n        \"total_supply\": \"26,310,299,179\",\n        \"exchange_rate\": \"1\",\n        \"contract\": \"0x123456789...\"\n    }\n}"
 				}
 			]
 		},
@@ -1111,7 +1111,7 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000060",
+							"value": "8000003C",
 							"type": "string"
 						},
 						{
@@ -1151,7 +1151,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "80000060"
+									"value": "8000003C"
 								},
 								{
 									"key": "currency_id",
@@ -1321,7 +1321,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Account List\",\n    \"payload\": {\n        \"blockchain_id\": \"80000060\",\n        \"currency_id\": \"5b755dacd5dd99000b3d92b2\",\n        \"account_id\": \"925016db-727d-412f-a68f-81db8a8e05ea\",\n        \"purpose\": 44,\n        \"account_index\": \"0\",\n        \"curve_type\": 0,\n        \"balance\": \"0\",\n        \"symbol\": \"ETH\",\n        \"icon\": \"https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png\",\n        \"tokens\": [\n            {\n                \"account_token_id\": \"488c3047-ced5-4049-9967-8ececb41ced1\",\n                \"token_id\": \"5b1ea92e584bf50020130617\",\n                \"blockchain_id\": \"80000060\",\n                \"name\": \"Tether\",\n                \"symbol\": \"USDT\",\n                \"type\": 2,\n                \"publish\": true,\n                \"decimals\": 2,\n                \"total_supply\": \"26,310,299,179\",\n                \"contract\": \"0xdAC17F958D2ee523a2206206994597C13D831ec7\",\n                \"balance\": \"0\"\n            },\n            {\n                \"account_token_id\": \"7c04dd7f-8f00-4e05-b681-0b334a30ce0d\",\n                \"token_id\": \"5c00093e1e24e600214f0837\",\n                \"blockchain_id\": \"80000060\",\n                \"name\": \"Wrapped Bitcoin\",\n                \"symbol\": \"WBTC\",\n                \"type\": 2,\n                \"publish\": true,\n                \"decimals\": 2,\n                \"total_supply\": \"115,721\",\n                \"contract\": \"0x2260fac5e5542a773aa44fbcfedf7c193bc2c599\",\n                \"balance\": \"0\"\n            }\n        ]\n    }\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Account List\",\n    \"payload\": {\n        \"blockchain_id\": \"8000003C\",\n        \"currency_id\": \"5b755dacd5dd99000b3d92b2\",\n        \"account_id\": \"925016db-727d-412f-a68f-81db8a8e05ea\",\n        \"purpose\": 44,\n        \"account_index\": \"0\",\n        \"curve_type\": 0,\n        \"balance\": \"0\",\n        \"symbol\": \"ETH\",\n        \"icon\": \"https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png\",\n        \"tokens\": [\n            {\n                \"account_token_id\": \"488c3047-ced5-4049-9967-8ececb41ced1\",\n                \"token_id\": \"5b1ea92e584bf50020130617\",\n                \"blockchain_id\": \"8000003C\",\n                \"name\": \"Tether\",\n                \"symbol\": \"USDT\",\n                \"type\": 2,\n                \"publish\": true,\n                \"decimals\": 2,\n                \"total_supply\": \"26,310,299,179\",\n                \"contract\": \"0xdAC17F958D2ee523a2206206994597C13D831ec7\",\n                \"balance\": \"0\"\n            },\n            {\n                \"account_token_id\": \"7c04dd7f-8f00-4e05-b681-0b334a30ce0d\",\n                \"token_id\": \"5c00093e1e24e600214f0837\",\n                \"blockchain_id\": \"8000003C\",\n                \"name\": \"Wrapped Bitcoin\",\n                \"symbol\": \"WBTC\",\n                \"type\": 2,\n                \"publish\": true,\n                \"decimals\": 2,\n                \"total_supply\": \"115,721\",\n                \"contract\": \"0x2260fac5e5542a773aa44fbcfedf7c193bc2c599\",\n                \"balance\": \"0\"\n            }\n        ]\n    }\n}"
 				}
 			]
 		},
@@ -1442,7 +1442,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Account Detail\",\n    \"payload\": [\n        {\n            \"blockchain_id\": \"80000000\",\n            \"currency_id\": \"5b1ea92e584bf50020130615\",\n            \"purpose\": 44,\n            \"account_index\": \"0\",\n            \"curve_type\": 0,\n            \"number_of_external_key\": 0,\n            \"number_of_internal_key\": 0,\n            \"balance\": \"1000\",\n            \"tokens\": [\n                {\n                    \"token_id\": \"5c0009411e24e600214f0eb1\",\n                    \"blockchain_id\": \"80000060\",\n                    \"name\": \"USD Coin\",\n                    \"symbol\": \"USDC\",\n                    \"type\": 2,\n                    \"publish\": true,\n                    \"decimals\": 2,\n                    \"total_supply\": \"5,767,712,364\",\n                    \"contract\": \"0x123456789...\",\n                    \"balance\": \"1000\"\n                },\n                {\n                    \"token_id\": \"5b1ea92e584bf50020130b28\",\n                    \"blockchain_id\": \"80000060\",\n                    \"name\": \"Dai\",\n                    \"symbol\": \"DAI\",\n                    \"type\": 2,\n                    \"publish\": true,\n                    \"decimals\": 2,\n                    \"total_supply\": \"1,619,686,135\",\n                    \"contract\": \"0x123456789...\",\n                    \"balance\": \"1000\"\n                }\n            ]\n        }\n    ]\n}"
+					"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Account Detail\",\n    \"payload\": [\n        {\n            \"blockchain_id\": \"80000000\",\n            \"currency_id\": \"5b1ea92e584bf50020130615\",\n            \"purpose\": 44,\n            \"account_index\": \"0\",\n            \"curve_type\": 0,\n            \"number_of_external_key\": 0,\n            \"number_of_internal_key\": 0,\n            \"balance\": \"1000\",\n            \"tokens\": [\n                {\n                    \"token_id\": \"5c0009411e24e600214f0eb1\",\n                    \"blockchain_id\": \"8000003C\",\n                    \"name\": \"USD Coin\",\n                    \"symbol\": \"USDC\",\n                    \"type\": 2,\n                    \"publish\": true,\n                    \"decimals\": 2,\n                    \"total_supply\": \"5,767,712,364\",\n                    \"contract\": \"0x123456789...\",\n                    \"balance\": \"1000\"\n                },\n                {\n                    \"token_id\": \"5b1ea92e584bf50020130b28\",\n                    \"blockchain_id\": \"8000003C\",\n                    \"name\": \"Dai\",\n                    \"symbol\": \"DAI\",\n                    \"type\": 2,\n                    \"publish\": true,\n                    \"decimals\": 2,\n                    \"total_supply\": \"1,619,686,135\",\n                    \"contract\": \"0x123456789...\",\n                    \"balance\": \"1000\"\n                }\n            ]\n        }\n    ]\n}"
 				}
 			]
 		},
@@ -2336,7 +2336,7 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000060",
+							"value": "8000003C",
 							"type": "string"
 						},
 						{
@@ -2466,7 +2466,7 @@
 					"variable": [
 						{
 							"key": "blockchain_id",
-							"value": "80000060",
+							"value": "8000003C",
 							"type": "string"
 						}
 					]

@@ -361,7 +361,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   async updateBalance() {
-    // TODO
     return Promise.resolve();
   }
 

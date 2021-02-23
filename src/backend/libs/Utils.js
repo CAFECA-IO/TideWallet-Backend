@@ -5,6 +5,8 @@ const level = require('level');
 const bs58check = require('bs58check');
 const EthUtils = require('ethereumjs-util');
 const crypto = require('crypto');
+const bitcoin = require('bitcoinjs-lib');
+const BigNumber = require('bignumber.js');
 
 const { BN } = EthUtils;
 const toml = require('toml');
@@ -695,6 +697,24 @@ class Utils {
     }
   }
 
+  static pubkeyToP2WPKHAddress(blockchainID, pubkey) {
+    let address;
+    if (blockchainID === '80000000') {
+      const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.bitcoin });
+      address = p2wpkh.address;
+    } else if (blockchainID === '80000001') {
+      const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.testnet });
+      address = p2wpkh.address;
+    }
+    return address;
+  }
+
+  static toP2wpkhAddress(blockchainID, pubkey) {
+    // Compressed Public Key to P2WPKH Address
+    const address = this.pubkeyToP2WPKHAddress(blockchainID, pubkey);
+    return address;
+  }
+
   static is0xPrefixed(value) {
     return value.toString().slice(0, 2) === '0x';
   }
@@ -706,6 +726,62 @@ class Utils {
       return `0x${parsedAddr}`;
     }
     return parsedAddr;
+  }
+
+  static async ethGetBalanceByAddress(address, decimals = 18) {
+    const option = { ...this.config.ethereum.ropsten };
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_getBalance',
+      params: [address, 'latest'],
+      id: dvalue.randomID(),
+    };
+
+    const checkId = option.data.id;
+    const data = await this.ETHRPC(option);
+    if (data instanceof Object) {
+      if (data.id === checkId) {
+        // use address find account
+        try {
+          return new BigNumber(data.result).dividedBy(new BigNumber(10 ** decimals)).toFixed();
+
+          // eslint-disable-next-line no-empty
+        } catch (e) {
+          return '0';
+        }
+      }
+    }
+  }
+
+  static async getERC20Token(address, contract, decimals = 18) {
+    const _address = address.replace('0x', '').padStart(64, '0');
+    const command = `0x70a08231${_address}`;
+    const option = { ...this.config.ethereum.ropsten };
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_call',
+      params: [{
+        to: contract,
+        data: command,
+      },
+      'latest'],
+      id: dvalue.randomID(),
+    };
+
+    const checkId = option.data.id;
+    const data = await this.ETHRPC(option);
+    if (data instanceof Object) {
+      if (data.id === checkId) {
+        // use address find account
+        try {
+          return new BigNumber(data.result).dividedBy(new BigNumber(10 ** decimals)).toFixed();
+
+          // eslint-disable-next-line no-empty
+        } catch (e) {
+          return '0';
+        }
+      }
+    }
   }
 }
 
