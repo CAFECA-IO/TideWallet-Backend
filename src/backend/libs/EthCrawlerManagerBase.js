@@ -1,8 +1,18 @@
 const dvalue = require('dvalue');
 const { v4: uuidv4 } = require('uuid');
 
+const fs = require('fs');
+const util = require('util');
 const CrawlerManagerBase = require('./CrawlerManagerBase');
 const Utils = require('./Utils');
+
+const log_file = fs.createWriteStream(`${__dirname}/debug.log`, { flags: 'w' });
+const log_stdout = process.stdout;
+
+console.log = function (d) { //
+  log_file.write(`${util.format(d)}\n`);
+  log_stdout.write(`${util.format(d)}\n`);
+};
 
 class EthCrawlerManagerBase extends CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
@@ -211,43 +221,69 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           return Promise.resolve(syncBlock - 1);
         }
         const step1_1 = new Date().getTime();
-        console.log(`syncBlock step:1 blockDataFromPeer: ${(step1_1 - step1) / 1000}sec`);
+        console.log(`syncBlock ${syncBlock} step:1 blockDataFromPeer: ${(step1_1 - step1) / 1000}sec`);
 
         // 2. save block data into db
         // must success
         await this.insertBlock(syncResult);
         const step2 = new Date().getTime();
-        console.log(`syncBlock step:2 insertBlock: ${(step2 - step1_1) / 1000}sec`);
+        console.log(`syncBlock ${syncBlock} step:2 insertBlock: ${(step2 - step1_1) / 1000}sec`);
 
         // 3. sync tx and receipt
         const txs = syncResult.transactions;
         const timestamp = parseInt(syncResult.timestamp, 16);
-        for (const transaction of txs) {
+        // slice job to speed up
+        const requestsPerJob = 20;
+        for (let i = 0; i < txs.length; i += requestsPerJob) {
+          const transactions = txs.slice(i, i + requestsPerJob);
+          const requests = [];
+          for (const transaction of transactions) {
+            const receipt = this.receiptFromPeer(transaction.hash);
+            requests.push(receipt);
+          }
           const step3_1 = new Date().getTime();
-          const receipt = await this.receiptFromPeer(transaction.hash);
+          const receipts = await Promise.all(requests).catch((error) => Promise.reject(error));
           const step3_2 = new Date().getTime();
-          console.log(`syncBlock step:3_1 receiptFromPeer: ${(step3_2 - step3_1) / 1000}sec`);
+          console.log(`syncBlock ${syncBlock} step:3_1 receiptFromPeer: ${(step3_2 - step3_1) / 1000}sec`);
 
-          if (!transaction || !receipt) {
+          if (!requests || !receipts) {
             // TODO error handle
           }
+
           // 4. save unparsed tx and receipt into db
-          await this.insertUnparsedTransaction(transaction, receipt, timestamp);
+          for (let j = 0; j < transactions.length; j++) {
+            await this.insertUnparsedTransaction(transactions[j], receipts[j], timestamp);
+          }
           const step4 = new Date().getTime();
-          console.log(`syncBlock step:4 insertUnparsedTransaction: ${(step4 - step3_2) / 1000}sec`);
+          console.log(`syncBlock ${syncBlock} step:4 insertUnparsedTransaction: ${(step4 - step3_2) / 1000}sec`);
         }
+        // for (const transaction of txs) {
+        //   const step3_1 = new Date().getTime();
+        //   const receipt = await this.receiptFromPeer(transaction.hash);
+        //   const step3_2 = new Date().getTime();
+        //   console.log(`syncBlock ${syncBlock} step:3_1 receiptFromPeer: ${(step3_2 - step3_1) / 1000}sec`);
+
+        //   if (!transaction || !receipt) {
+        //     // TODO error handle
+        //   }
+        //   // 4. save unparsed tx and receipt into db
+        //   await this.insertUnparsedTransaction(transaction, receipt, timestamp);
+        //   const step4 = new Date().getTime();
+        //   console.log(`syncBlock ${syncBlock} step:4 insertUnparsedTransaction: ${(step4 - step3_2) / 1000}sec`);
+        // }
 
         const step3 = new Date().getTime();
-        console.log(`syncBlock step:3 full tx receipt sync: ${(step3 - step2) / 1000}sec`);
+        console.log(`syncBlock ${syncBlock} step:3 full tx receipt sync: ${(step3 - step2) / 1000}sec`);
         // 5. assign parser
         // must success
 
         // 6. after parse done update blockchain table block column
         await this.updateBlockHeight(syncBlock);
         const step6 = new Date().getTime();
-        console.log(`syncBlock step:6 updateBlockHeight: ${(step6 - step3) / 1000}sec`);
+        console.log(`syncBlock ${syncBlock} step:6 updateBlockHeight: ${(step6 - step3) / 1000}sec`);
 
-        console.log(`syncBlock whole: ${(step6 - step1) / 1000}sec`);
+        console.log(`syncBlock ${syncBlock} total receipts sync: ${txs.length}`);
+        console.log(`syncBlock ${syncBlock} whole: ${(step6 - step1) / 1000}sec`);
       } while (syncBlock < this.peerBlock);
       return Promise.resolve(syncBlock);
     } catch (error) {
