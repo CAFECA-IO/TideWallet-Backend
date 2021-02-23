@@ -39,6 +39,7 @@ password = ''
 [syncInterval]
 ethereum = 15000
 bitcoin = 900000
+fee = 3600000
 
 [database]
 protocol = "postgres"

@@ -1,5 +1,6 @@
 const dvalue = require('dvalue');
 const { v4: uuidv4 } = require('uuid');
+const BigNumber = require('bignumber.js');
 
 const fs = require('fs');
 const util = require('util');
@@ -43,6 +44,27 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     return Promise.resolve();
   }
 
+  async avgFeeFromPeer() {
+    this.logger.log(`[${this.constructor.name}] avgFeeFromPeer`);
+    const type = 'getFee';
+    const options = dvalue.clone(this.options);
+    options.data = this.constructor.cmd({ type });
+    const checkId = options.data.id;
+    const data = await Utils.ETHRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        this.logger.log(`[${this.constructor.name}] avgFeeFromPeer not found`);
+        return Promise.reject();
+      }
+      if (data.result) {
+        const bnGasPrice = new BigNumber(data.result, 16);
+        return Promise.resolve(bnGasPrice.toFixed());
+      }
+    }
+    this.logger.log(`[${this.constructor.name}] avgFeeFromPeer not found`);
+    return Promise.reject(data.error);
+  }
+
   async blockNumberFromPeer() {
     this.logger.log(`[${this.constructor.name}] blockNumberFromPeer`);
     const type = 'getBlockcount';
@@ -50,7 +72,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     options.data = this.constructor.cmd({ type });
     const checkId = options.data.id;
     const data = await Utils.ETHRPC(options);
-    console.log(data);
     if (data instanceof Object) {
       if (data.id !== checkId) {
         this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock number not found\x1b[0m\x1b[21m`);
@@ -191,6 +212,17 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       this.isSyncing = false;
       this.logger.log(error);
       return Promise.resolve();
+    }
+  }
+
+  async syncAvgFee() {
+    this.logger.log(`[${this.constructor.name}] syncAvgFee`);
+    try {
+      const avgFee = await this.avgFeeFromPeer();
+      await this.updateFee(avgFee);
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] syncAvgFee error`);
+      this.logger.log(error);
     }
   }
 
@@ -360,6 +392,14 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           jsonrpc: '2.0',
           method: 'eth_getBlockByNumber',
           params: [`0x${block.toString(16)}`, true],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getFee':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_gasPrice',
+          params: [],
           id: dvalue.randomID(),
         };
         break;
