@@ -756,9 +756,7 @@ class Utils {
   static async getERC20Token(address, contract, decimals = 18) {
     const _address = address.replace('0x', '').padStart(64, '0');
     const command = `0x70a08231${_address}`;
-    console.log('command:', command);
     const option = { ...this.config.ethereum.ropsten };
-    console.log('contract:', contract);
     option.data = {
       jsonrpc: '2.0',
       method: 'eth_call',

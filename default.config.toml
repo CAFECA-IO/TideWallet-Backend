@@ -73,7 +73,7 @@ pathname = [
   "post | /api/v1/user | Bot.User.UserRegist",
   "get | /api/v1/token/verify | Bot.User.AccessTokenVerify",
   "post | /api/v1/token/renew | Bot.User.AccessTokenRenew",
-  "post | /api/v1/wallet/blockchain/:blockchain_id/token | Bot.Account.TokenRegist",
+  "post | /api/v1/wallet/blockchain/:blockchain_id/contract/:contract | Bot.Account.TokenRegist",
   "get | /api/v1/wallet/accounts | Bot.Account.AccountList",
   "get | /api/v1/wallet/account/:account_id | Bot.Account.AccountDetail",
   "get | /api/v1/wallet/account/address/:account_id/receive | Bot.Account.AccountReceive",

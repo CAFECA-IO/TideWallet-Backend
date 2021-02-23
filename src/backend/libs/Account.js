@@ -42,12 +42,10 @@ class Account extends Bot {
     });
   }
 
-  async TokenRegist({ params, token, body }) {
+  async TokenRegist({ params, token }) {
     try {
-      const { blockchain_id } = params;
-      let { currency_id = '' } = body;
-      const { contract } = body;
-      if (!Utils.validateString(currency_id) && !Utils.validateString(contract)) {
+      const { blockchain_id, contract = '' } = params;
+      if (!Utils.validateString(contract)) {
         return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
       }
 
@@ -56,7 +54,7 @@ class Account extends Bot {
 
       // find Token is exist
       let findTokenItem = await this.currencyModel.findOne({
-        where: { type: 2, currency_id },
+        where: { type: 2, contract },
       });
 
       if (!findTokenItem) {
@@ -122,9 +120,6 @@ class Account extends Bot {
           });
         }
       }
-      // check token x blockchain mapping
-      if (findTokenItem.blockchain_id !== blockchain_id) return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
-
       // check account token is exist
       const findUserAccountData = await this.accountModel.findOne({
         where: {
@@ -133,21 +128,20 @@ class Account extends Bot {
       });
       if (!findUserAccountData) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
+      const { currency_id } = findTokenItem;
       const findUserAccountToken = await this.accountCurrencyModel.findOne({
         where: {
           account_id: findUserAccountData.account_id, currency_id,
         },
       });
       if (findUserAccountToken) return new ResponseFormat({ message: 'account token exist', code: Codes.ACCOUNT_TOKEN_EXIST });
-      currency_id = findTokenItem.currency_id;
-
       // create token data to db
       try {
         const token_account_id = uuidv4();
         await this.accountCurrencyModel.create({
           accountCurrency_id: token_account_id,
           account_id: findUserAccountData.account_id,
-          currency_id,
+          currency_id: findTokenItem.currency_id,
           balance: '0',
           number_of_external_key: '0',
           number_of_internal_key: '0',
