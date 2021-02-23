@@ -125,12 +125,14 @@ class EthRopstenParser extends ParserBase {
           this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer fail`);
           return null;
         }
-        const nameEncode = data.result;
-        const name = this.web3.eth.abi.decodeParameter('string', nameEncode);
-        return Promise.resolve(name);
+        if (data.result) {
+          const nameEncode = data.result;
+          const name = this.web3.eth.abi.decodeParameter('string', nameEncode);
+          return Promise.resolve(name);
+        }
       }
-      this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer fail`);
-      return Promise.reject();
+      this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer fail, ${data.error}`);
+      return null;
     } catch (error) {
       this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer error`);
       this.logger.log(error);
@@ -151,12 +153,14 @@ class EthRopstenParser extends ParserBase {
           this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer fail`);
           return null;
         }
-        const symbolEncode = data.result;
-        const symbol = this.web3.eth.abi.decodeParameter('string', symbolEncode);
-        return Promise.resolve(symbol);
+        if (data.result) {
+          const symbolEncode = data.result;
+          const symbol = this.web3.eth.abi.decodeParameter('string', symbolEncode);
+          return Promise.resolve(symbol);
+        }
       }
-      this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer fail`);
-      return Promise.reject();
+      this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer fail, ${data.error}`);
+      return null;
     } catch (error) {
       this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer error`);
       this.logger.log(error);
@@ -178,10 +182,10 @@ class EthRopstenParser extends ParserBase {
           return null;
         }
         const decimals = data.result;
-        return Promise.resolve(parseInt(decimals, 16));
+        if (data.result) { return Promise.resolve(parseInt(decimals, 16)); }
       }
-      this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer fail`);
-      return Promise.reject();
+      this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer fail, ${data.error}`);
+      return null;
     } catch (error) {
       this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer error`);
       this.logger.log(error);
@@ -207,7 +211,7 @@ class EthRopstenParser extends ParserBase {
           return Promise.resolve(bnTotalSupply.toFixed());
         }
       }
-      this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer fail`);
+      this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer fail, ${data.error}`);
       return null;
     } catch (error) {
       this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer error`);
