@@ -25,7 +25,7 @@ class ParserBase {
   }
 
   async checkRegistAddress(address) {
-    this.logger.log(`[${this.constructor.name}] checkRegistAddress(${address})`);
+    this.logger.debug(`[${this.constructor.name}] checkRegistAddress(${address})`);
 
     try {
       const accountAddress = await this.accountAddressModel.findOne({
@@ -33,27 +33,26 @@ class ParserBase {
       });
       return accountAddress;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] checkRegistAddress(${address}) error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] checkRegistAddress(${address}) error: ${error}`);
       return Promise.reject(error);
     }
   }
 
   async getCurrencyInfo() {
-    this.logger.log(`[${this.constructor.name}] getCurrencyInfo`);
+    this.logger.debug(`[${this.constructor.name}] getCurrencyInfo`);
     try {
       const result = await this.currencyModel.findOne({
         where: { blockchain_id: this.bcid },
       });
       return result;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] currencyModel error ${error}`);
+      this.logger.error(`[${this.constructor.name}] currencyModel error ${error}`);
       return {};
     }
   }
 
   async getUnparsedTxs() {
-    this.logger.log(`[${this.constructor.name}] getUnparsedTxs`);
+    this.logger.debug(`[${this.constructor.name}] getUnparsedTxs`);
     try {
       const oldest = await this.unparsedTxModel.findAll({
         limit: 1,
@@ -62,7 +61,7 @@ class ParserBase {
       });
 
       if (!oldest || oldest.length === 0) {
-        this.logger.log(`[${this.constructor.name}] getUnparsedTxs not found`);
+        this.logger.error(`[${this.constructor.name}] getUnparsedTxs not found`);
         return [];
       }
 
@@ -72,13 +71,13 @@ class ParserBase {
       });
       return result;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] getUnparsedTxs error ${error}`);
+      this.logger.error(`[${this.constructor.name}] getUnparsedTxs error ${error}`);
       return {};
     }
   }
 
   async setAddressTransaction(accountAddress_id, transaction_id, direction) {
-    this.logger.log(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction})`);
+    this.logger.debug(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction})`);
     try {
       const result = await this.addressTransactionModel.findOrCreate({
         where: {
@@ -97,8 +96,7 @@ class ParserBase {
       });
       return result;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction}) error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction}) error: ${error}`);
       return Promise.reject(error);
     }
   }
@@ -108,14 +106,13 @@ class ParserBase {
   }
 
   async removeParsedTx(tx) {
-    this.logger.log(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id})`);
+    this.logger.debug(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id})`);
     try {
       return await this.unparsedTxModel.destroy({
         where: { unparsedTransaction_id: tx.unparsedTransaction_id },
       });
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id})`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id}) error: ${error}`);
       return Promise.reject(error);
     }
   }
