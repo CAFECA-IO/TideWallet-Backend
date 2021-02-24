@@ -40,7 +40,8 @@ class EthRopstenParser extends ParserBase {
     // 1. load unparsed transactions per block from UnparsedTransaction
     // 2. set queue
     // 3. assign parser
-    // 4. remove parsed transaction from UnparsedTransaction table
+    // 4. update failed unparsed retry
+    // 5. remove parsed transaction from UnparsedTransaction table
 
     try {
       // eslint-disable-next-line no-constant-condition
@@ -55,21 +56,33 @@ class EthRopstenParser extends ParserBase {
         // 3. assign parser
         // TODO get job from queue
         // TODO multiple thread
+        const failedList = [];
         for (const tx of txs) {
-          const transaction = JSON.parse(tx.transaction);
-          const receipt = JSON.parse(tx.receipt);
-          await this.parseTx(transaction, receipt, tx.timestamp);
+          try {
+            const transaction = JSON.parse(tx.transaction);
+            const receipt = JSON.parse(tx.receipt);
+            await this.parseTx(transaction, receipt, tx.timestamp);
+          } catch (error) {
+            failedList.push(tx);
+          }
         }
 
-        // 4. remove parsed transaction from UnparsedTransaction table
-        for (const tx of txs) {
+        // 4. update failed unparsed retry
+        let successParsedTxs = txs;
+        successParsedTxs = successParsedTxs.filter((tx) => failedList.every((failedTx) => tx.unparsedTransaction_id !== failedTx.unparsedTransaction_id));
+
+        for (const failedTx of failedList) {
+          await this.updateRetry(failedTx);
+        }
+
+        // 5. remove parsed transaction from UnparsedTransaction table
+        for (const tx of successParsedTxs) {
           await this.removeParsedTx(tx);
         }
       }
       this.isParsing = false;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] doParse error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
       this.isParsing = false;
       return Promise.resolve();
     }
@@ -117,8 +130,7 @@ class EthRopstenParser extends ParserBase {
       }
       return currencyInDb;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] findOrCreateCurrency error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] findOrCreateCurrency error: ${error}`);
       return Promise.reject(error);
     }
   }
@@ -133,7 +145,7 @@ class EthRopstenParser extends ParserBase {
       const data = await Utils.ETHRPC(options);
       if (data instanceof Object) {
         if (data.id !== checkId) {
-          this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer fail`);
+          this.logger.error(`[${this.constructor.name}] getTokenNameFromPeer fail`);
           return null;
         }
         if (data.result) {
@@ -142,11 +154,10 @@ class EthRopstenParser extends ParserBase {
           return Promise.resolve(name);
         }
       }
-      this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer fail, ${data.error}`);
+      this.logger.error(`[${this.constructor.name}] getTokenNameFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
       return null;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] getTokenNameFromPeer error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] getTokenNameFromPeer(${address}) error: ${error}`);
       return null;
     }
   }
@@ -161,7 +172,7 @@ class EthRopstenParser extends ParserBase {
       const data = await Utils.ETHRPC(options);
       if (data instanceof Object) {
         if (data.id !== checkId) {
-          this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer fail`);
+          this.logger.error(`[${this.constructor.name}] getTokenSymbolFromPeer fail`);
           return null;
         }
         if (data.result) {
@@ -170,11 +181,10 @@ class EthRopstenParser extends ParserBase {
           return Promise.resolve(symbol);
         }
       }
-      this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer fail, ${data.error}`);
+      this.logger.error(`[${this.constructor.name}] getTokenSymbolFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
       return null;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] getTokenSymbolFromPeer error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] getTokenSymbolFromPeer(${address}) error: ${error}`);
       return null;
     }
   }
@@ -189,17 +199,16 @@ class EthRopstenParser extends ParserBase {
       const data = await Utils.ETHRPC(options);
       if (data instanceof Object) {
         if (data.id !== checkId) {
-          this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer fail`);
+          this.logger.error(`[${this.constructor.name}] getTokenDecimalFromPeer fail`);
           return null;
         }
         const decimals = data.result;
         if (data.result) { return Promise.resolve(parseInt(decimals, 16)); }
       }
-      this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer fail, ${data.error}`);
+      this.logger.error(`[${this.constructor.name}] getTokenDecimalFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
       return null;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] getTokenDecimalFromPeer error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] getTokenDecimalFromPeer(${address}) error: ${error}`);
       return null;
     }
   }
@@ -214,7 +223,7 @@ class EthRopstenParser extends ParserBase {
       const data = await Utils.ETHRPC(options);
       if (data instanceof Object) {
         if (data.id !== checkId) {
-          this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer fail`);
+          this.logger.error(`[${this.constructor.name}] getTokenTotalSupplyFromPeer fail`);
           return null;
         }
         if (data.result) {
@@ -222,17 +231,16 @@ class EthRopstenParser extends ParserBase {
           return Promise.resolve(bnTotalSupply.toFixed());
         }
       }
-      this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer fail, ${data.error}`);
+      this.logger.error(`[${this.constructor.name}] getTokenTotalSupplyFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
       return null;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] getTokenTotalSupplyFromPeer error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] getTokenTotalSupplyFromPeer(${address}) error: ${error}`);
       return null;
     }
   }
 
   async parseReceiptTopic(receipt, transaction) {
-    this.logger.log(`[${this.constructor.name}] parseReceiptTopic`);
+    this.logger.debug(`[${this.constructor.name}] parseReceiptTopic`);
     // step:
     // 1. parse log
     // 2. parse each logs topics
@@ -302,9 +310,8 @@ class EthRopstenParser extends ParserBase {
         }
       }
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] parseReceiptTopic error`);
-      this.logger.log(error);
-      Promise.reject(error);
+      this.logger.error(`[${this.constructor.name}] parseReceiptTopic error: ${error}`);
+      return Promise.resolve(error);
     }
   }
 
@@ -319,7 +326,7 @@ class EthRopstenParser extends ParserBase {
     // 6. check to address is regist address
     // 7. add mapping table
 
-    this.logger.log(`[${this.constructor.name}] parseTx(${tx.hash})`);
+    this.logger.debug(`[${this.constructor.name}] parseTx(${tx.hash})`);
     try {
       const bnGasPrice = new BigNumber(tx.gasPrice, 16);
       const bnGasUsed = new BigNumber(receipt.gasUsed, 16);
@@ -395,14 +402,13 @@ class EthRopstenParser extends ParserBase {
       }
       return true;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] parseTx(${tx.hash}) error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] parseTx(${tx.hash}) error: ${error}`);
       return Promise.reject(error);
     }
   }
 
   async setAddressTokenTransaction(currency_id, accountAddress_id, tokenTransaction_id, direction) {
-    this.logger.log(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction})`);
+    this.logger.debug(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction})`);
     try {
       const result = await this.addressTokenTransactionModel.findOrCreate({
         where: {
@@ -421,8 +427,7 @@ class EthRopstenParser extends ParserBase {
       });
       return result;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction}) error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction}) error: ${error}`);
       return Promise.reject(error);
     }
   }

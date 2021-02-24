@@ -41,33 +41,33 @@ class CrawlerManagerBase {
   }
 
   async getBlockInfo() {
-    this.logger.log(`[${this.constructor.name}] getBlockInfo`);
+    this.logger.debug(`[${this.constructor.name}] getBlockInfo`);
     try {
       const result = await this.blockchainModel.findOne({
         where: { blockchain_id: this.bcid },
       });
       return result;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
+      this.logger.error(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
       return {};
     }
   }
 
   async blockNumberFromDB() {
-    this.logger.log(`[${this.constructor.name}] blockNumberFromDB`);
+    this.logger.debug(`[${this.constructor.name}] blockNumberFromDB`);
     try {
       const result = await this.blockchainModel.findOne({
         where: { blockchain_id: this.bcid },
       });
       return result.block;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
+      this.logger.error(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
       return 0;
     }
   }
 
   async blockHashFromDB(block) {
-    this.logger.log(`[${this.constructor.name}] blockHashFromDB(${block})`);
+    this.logger.debug(`[${this.constructor.name}] blockHashFromDB(${block})`);
     const result = await this.blockScannedModel.findOne({
       where: { blockchain_id: this.bcid, block },
     });
@@ -92,23 +92,22 @@ class CrawlerManagerBase {
   }
 
   async checkBlockNumberLess() {
-    this.logger.log(`[${this.constructor.name}] checkBlockNumberLess`);
+    this.logger.debug(`[${this.constructor.name}] checkBlockNumberLess`);
     this.dbBlock = await this.blockNumberFromDB();
     this.peerBlock = await this.blockNumberFromPeer();
-    this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${this.dbBlock}, currentBlockNumber: ${this.peerBlock}`);
+    let intPeerBlock = this.peerBlock;
     if (typeof this.peerBlock === 'string') {
-      this.peerBlock = parseInt(this.peerBlock, 16);
-      this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${this.dbBlock}, this.peerBlock: ${this.peerBlock}`);
+      intPeerBlock = parseInt(this.peerBlock, 16);
     }
-    if (typeof this.dbBlock !== 'number' || typeof this.peerBlock !== 'number') {
+    if (typeof this.dbBlock !== 'number' || typeof intPeerBlock !== 'number') {
       return false;
     }
-    return this.dbBlock < this.peerBlock;
+    return this.dbBlock < intPeerBlock;
   }
 
   async checkBlockHash(block) {
     try {
-      this.logger.log(`[${this.constructor.name}] checkBlockHash(${block})`);
+      this.logger.debug(`[${this.constructor.name}] checkBlockHash(${block})`);
       const dbBlockHash = await this.blockHashFromDB(block);
       const peerBlockHash = await this.blockHashFromPeer(block);
       if (typeof dbBlockHash !== 'string' || typeof peerBlockHash !== 'string') {
@@ -117,15 +116,13 @@ class CrawlerManagerBase {
 
       return dbBlockHash === peerBlockHash;
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] checkBlockHash(${block}) error ${error}`);
+      this.logger.error(`[${this.constructor.name}] checkBlockHash(${block}) error ${error}`);
       return false;
     }
   }
 
   async insertBlock(blockData) {
-    this.logger.log(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
-    this.logger.log(`[${this.constructor.name}] this.bcid: ${this.bcid}`);
-    this.logger.log(`[${this.constructor.name}] blockData.height: ${blockData.height}`);
+    this.logger.debug(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
 
     const insertResult = await this.blockScannedModel.findOrCreate({
       where: { blockchain_id: this.bcid, block: blockData.height },
@@ -153,7 +150,7 @@ class CrawlerManagerBase {
 
   async rollbackBlock() {
     // TODO
-    this.logger.log('rollbackBlock()');
+    this.logger.debug('rollbackBlock()');
     return Promise.resolve();
   }
 
@@ -174,7 +171,7 @@ class CrawlerManagerBase {
   }
 
   async updateBlockHeight(block) {
-    this.logger.log(`[${this.constructor.name}] updateBlockHeight(${block})`);
+    this.logger.debug(`[${this.constructor.name}] updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(
       { block },
       { where: { blockchain_id: this.bcid } },
@@ -183,7 +180,7 @@ class CrawlerManagerBase {
   }
 
   async updateFee(avgFee) {
-    this.logger.log(`[${this.constructor.name}] updateFee(${avgFee})`);
+    this.logger.debug(`[${this.constructor.name}] updateFee(${avgFee})`);
     const insertResult = await this.blockchainModel.update(
       { avg_fee: avgFee },
       { where: { blockchain_id: this.bcid } },

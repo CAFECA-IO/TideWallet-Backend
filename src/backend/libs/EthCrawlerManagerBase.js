@@ -46,7 +46,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   async avgFeeFromPeer() {
-    this.logger.log(`[${this.constructor.name}] avgFeeFromPeer`);
+    this.logger.debug(`[${this.constructor.name}] avgFeeFromPeer`);
     const type = 'getFee';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type });
@@ -54,7 +54,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
-        this.logger.log(`[${this.constructor.name}] avgFeeFromPeer not found`);
+        this.logger.error(`[${this.constructor.name}] avgFeeFromPeer not found`);
         return Promise.reject();
       }
       if (data.result) {
@@ -63,12 +63,12 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         return Promise.resolve(bnGasPrice.toFixed());
       }
     }
-    this.logger.log(`[${this.constructor.name}] avgFeeFromPeer not found`);
+    this.logger.error(`[${this.constructor.name}] avgFeeFromPeer not found`);
     return Promise.reject(data.error);
   }
 
   async blockNumberFromPeer() {
-    this.logger.log(`[${this.constructor.name}] blockNumberFromPeer`);
+    this.logger.error(`[${this.constructor.name}] blockNumberFromPeer`);
     const type = 'getBlockcount';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type });
@@ -76,17 +76,17 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
-        this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock number not found\x1b[0m\x1b[21m`);
+        this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mblock number not found\x1b[0m\x1b[21m`);
         return Promise.reject();
       }
       return Promise.resolve(data.result);
     }
-    this.logger.log(`[${this.constructor.name}]\x1b[1m\x1b[90m block number not found\x1b[0m\x1b[21m`);
+    this.logger.error(`[${this.constructor.name}]\x1b[1m\x1b[90m block number not found\x1b[0m\x1b[21m`);
     return Promise.reject();
   }
 
   async blockDataFromPeer(block) {
-    this.logger.log(`[${this.constructor.name}] blockDataFromPeer(${block})`);
+    this.logger.debug(`[${this.constructor.name}] blockDataFromPeer(${block})`);
     const type = 'getBlock';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, block });
@@ -94,17 +94,17 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
-        this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock data not found\x1b[0m\x1b[21m`);
+        this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mblock data not found\x1b[0m\x1b[21m`);
         return Promise.reject();
       }
       return Promise.resolve(data.result);
     }
-    this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock data not found\x1b[0m\x1b[21m`);
+    this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mblock data not found\x1b[0m\x1b[21m`);
     return Promise.reject();
   }
 
   async blockHashFromPeer(block) {
-    this.logger.log(`[${this.constructor.name}] blockhashFromPeer(${block})`);
+    this.logger.debug(`[${this.constructor.name}] blockhashFromPeer(${block})`);
     const type = 'getBlock';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, block });
@@ -112,20 +112,18 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
-        this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock hash not found\x1b[0m\x1b[21m`);
+        this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mblock hash not found\x1b[0m\x1b[21m`);
         return Promise.reject();
       }
       const blockData = data.result;
       return Promise.resolve(blockData.hash);
     }
-    this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mblock hash not found\x1b[0m\x1b[21m`);
+    this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mblock hash not found\x1b[0m\x1b[21m`);
     return Promise.reject();
   }
 
   async insertBlock(blockData) {
-    this.logger.log(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
-    this.logger.log(`[${this.constructor.name}] this.bcid: ${this.bcid}`);
-    this.logger.log(`[${this.constructor.name}] blockData.number: ${blockData.number}`);
+    this.logger.debug(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
 
     try {
       const insertResult = await this.blockScannedModel.findOrCreate({
@@ -142,16 +140,13 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       return insertResult;
     } catch (error) {
       const e = new Error(`[${this.constructor.name}] insertBlock(${blockData.hash}) error: ${error}`);
-      this.logger.log(e);
+      this.logger.error(e);
       return Promise.reject(e);
     }
   }
 
   async insertUnparsedTransaction(transaction, receipt, timestamp) {
-    this.logger.log(`[${this.constructor.name}] insertUnparsedTransaction`);
-    this.logger.log(`[${this.constructor.name}] transaction: ${transaction}`);
-    this.logger.log(`[${this.constructor.name}] receipt: ${receipt}`);
-    this.logger.log(`[${this.constructor.name}] timestamp: ${timestamp}`);
+    this.logger.debug(`[${this.constructor.name}] insertUnparsedTransaction`);
 
     try {
       const insertResult = await this.unparsedTxModel.findOrCreate({
@@ -163,12 +158,13 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           transaction: JSON.stringify(transaction),
           receipt: JSON.stringify(receipt),
           timestamp,
+          retry: 0,
         },
       });
       return insertResult;
     } catch (error) {
       const e = new Error(`[${this.constructor.name}] insertUnparsedTransaction(${transaction.hash}) error: ${error}`);
-      this.logger.log(e);
+      this.logger.error(e);
       return Promise.reject(e);
     }
   }
@@ -210,19 +206,18 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       return Promise.resolve();
     } catch (error) {
       this.isSyncing = false;
-      this.logger.log(error);
+      this.logger.error(error);
       return Promise.resolve();
     }
   }
 
   async syncAvgFee() {
-    this.logger.log(`[${this.constructor.name}] syncAvgFee`);
+    this.logger.debug(`[${this.constructor.name}] syncAvgFee`);
     try {
       const avgFee = await this.avgFeeFromPeer();
       await this.updateFee(avgFee);
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] syncAvgFee error`);
-      this.logger.log(error);
+      this.logger.error(`[${this.constructor.name}] syncAvgFee error ${error}`);
     }
   }
 
@@ -243,7 +238,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       do {
         const step1 = new Date().getTime();
         // 1. sync block +1
-        this.logger.log(`[${this.constructor.name}] syncBlock(${syncBlock})`);
+        this.logger.debug(`[${this.constructor.name}] syncBlock(${syncBlock})`);
         syncBlock += 1;
         const syncResult = await this.blockDataFromPeer(syncBlock);
         if (!syncResult) {
@@ -298,6 +293,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                 transaction: JSON.stringify(transactions[j]),
                 receipt: JSON.stringify(receipts[j]),
                 timestamp,
+                retry: 0,
               });
             }
           }
@@ -336,13 +332,13 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       } while (syncBlock < this.peerBlock);
       return Promise.resolve(syncBlock);
     } catch (error) {
-      this.logger.log(`[${this.constructor.name}] syncBlock() error: ${error}`);
+      this.logger.error(`[${this.constructor.name}] syncBlock() error: ${error}`);
       return Promise.reject();
     }
   }
 
   async receiptFromPeer(txid) {
-    this.logger.log(`[${this.constructor.name}] receiptFromPeer(${txid})`);
+    this.logger.debug(`[${this.constructor.name}] receiptFromPeer(${txid})`);
     const type = 'getReceipt';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, txid });
@@ -350,17 +346,17 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
-        this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
+        this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
         return Promise.reject();
       }
       return Promise.resolve(data.result);
     }
-    this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
+    this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
     return Promise.reject();
   }
 
   async transactionFromPeer(txid) {
-    this.logger.log(`[${this.constructor.name}] transactionFromPeer(${txid})`);
+    this.logger.debug(`[${this.constructor.name}] transactionFromPeer(${txid})`);
     const type = 'getTransaction';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, txid });
@@ -368,12 +364,12 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
-        this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mtransaction not found\x1b[0m\x1b[21m`);
+        this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mtransaction not found\x1b[0m\x1b[21m`);
         return Promise.reject();
       }
       return Promise.resolve(data.result);
     }
-    this.logger.log(`[${this.constructor.name}] \x1b[1m\x1b[90mtransaction not found\x1b[0m\x1b[21m`);
+    this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mtransaction not found\x1b[0m\x1b[21m`);
     return Promise.reject();
   }
 
@@ -382,7 +378,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   async updateBlockHeight(block) {
-    this.logger.log(`[${this.constructor.name}] updateBlockHeight(${block})`);
+    this.logger.debug(`[${this.constructor.name}] updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(
       { block },
       { where: { blockchain_id: this.bcid } },
