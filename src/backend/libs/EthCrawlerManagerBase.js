@@ -283,11 +283,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           }
 
           // 4. save unparsed tx and receipt into db
-          // for (let j = 0; j < transactions.length; j++) {
-          //   await this.insertUnparsedTransaction(transactions[j], receipts[j], timestamp);
-          // }
-
-          // where: { blockchain_id: this.bcid, txid: transaction.hash },
           const insertTx = [];
 
           for (let j = 0; j < transactions.length; j++) {
