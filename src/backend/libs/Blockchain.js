@@ -172,7 +172,7 @@ class Blockchain extends Bot {
           publish: item.publish,
           decimals: item.decimals,
           exchange_rate: item.exchange_rate,
-          icon: item.icon,
+          icon: item.icon || `${this.config.base.domain}/icon/ERC20.png`,
         }));
       } else {
         payload = [];
@@ -443,7 +443,7 @@ class Blockchain extends Bot {
             decimal: findTokenItem.decimal,
             total_supply: findTokenItem.total_supply,
             description: findTokenItem.description,
-            imageUrl: findTokenItem.icon,
+            imageUrl: findTokenItem.icon || `${this.config.base.domain}/icon/ERC20.png`,
           },
         });
       }
@@ -475,6 +475,15 @@ class Blockchain extends Bot {
 
       const newCurrencyID = uuidv4();
       if (!tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !tokenInfoFromPeer[2] || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
+      console.log('tokenInfoFromPeer:', tokenInfoFromPeer);
+      let total_supply = tokenInfoFromPeer[3];
+      try {
+        total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
+          groupSeparator: ',', groupSize: 3,
+        });
+      // eslint-disable-next-line no-empty
+      } catch (e) {
+      }
       await this.currencyModel.create({
         currency_id: newCurrencyID,
         blockchain_id,
@@ -483,9 +492,7 @@ class Blockchain extends Bot {
         type: 2,
         publish: false,
         decimals: tokenInfoFromPeer[2],
-        total_supply: new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
-          groupSeparator: ',', groupSize: 3,
-        }),
+        total_supply,
         contract,
         icon,
       });
