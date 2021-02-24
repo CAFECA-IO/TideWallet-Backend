@@ -1,10 +1,11 @@
 const { v4: uuidv4 } = require('uuid');
 
 class ParserBase {
-  constructor(blockchainId, database, logger) {
+  constructor(blockchainId, database, logger, config) {
     this.bcid = blockchainId;
     this.database = database;
     this.logger = logger;
+    this.config = config;
 
     this.blockchainModel = this.database.db.Blockchain;
     this.blockScannedModel = this.database.db.BlockScanned;
