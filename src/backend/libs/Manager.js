@@ -1,10 +1,12 @@
+const ecrequest = require('ecrequest');
+const { v4: uuidv4 } = require('uuid');
+const { default: BigNumber } = require('bignumber.js');
 const Bot = require('./Bot');
 const BtcCrawlerManager = require('./BtcCrawlerManager');
 const CrawlerManagerBase = require('./CrawlerManagerBase');
 const BtcTestnetCrawlerManager = require('./BtcTestnetCrawlerManager');
 const EthCrawlerManager = require('./EthCrawlerManager');
 const EthRopstenCrawlerManager = require('./EthRopstenCrawlerManager');
-
 // test
 const EthRopstenParser = require('./EthRopstenParser');
 
@@ -13,6 +15,7 @@ class Manager extends Bot {
     super();
     this.name = 'Manager';
     this._crawlerManagers = [];
+    this.rateSyncInterval = 86400000;
   }
 
   init({
@@ -22,6 +25,14 @@ class Manager extends Bot {
       config, database, logger, i18n,
     }).then(() => {
       if (!this.config.bitcoin.noScan) this._crawlerManagers = this.createManager();
+
+      this.fiatCurrencyRateModel = this.database.db.FiatCurrencyRate;
+      this.currencyModel = this.database.db.Currency;
+
+      setInterval(() => {
+        this.syncRate();
+      }, this.rateSyncInterval);
+      this.syncRate();
       return this;
     });
   }
@@ -34,6 +45,44 @@ class Manager extends Bot {
           return this;
         });
     }
+  }
+
+  syncRate() {
+    const opt = {
+      protocol: 'https:',
+      port: '',
+      hostname: 'rate.bot.com.tw',
+      path: '/xrt/fltxt/0/day',
+    };
+
+    ecrequest.get(opt).then(async (rs) => {
+      const parseObject = rs.data.toString().split('\n').map((item) => item.split(/[ ]+/));
+
+      for (const item of parseObject) {
+        const findCurrency = await this.currencyModel.findOne({
+          where: { symbol: item[0], type: 0 },
+        });
+        if (findCurrency) {
+          const findRate = await this.fiatCurrencyRateModel.findOne({
+            where: { currency_id: findCurrency.currency_id },
+          });
+          if (findRate) {
+            // if found, update it
+            await this.fiatCurrencyRateModel.update(
+              { balance: new BigNumber(item[3]).toFixed() },
+              { where: { fiatCurrencyRate_id: findRate.fiatCurrencyRate_id, currency_id: findCurrency.currency_id } },
+            );
+          } else {
+            // if not found, create
+            await this.fiatCurrencyRateModel.create({
+              fiatCurrencyRate_id: uuidv4(),
+              currency_id: findCurrency.currency_id,
+              rate: new BigNumber(item[3]).toFixed(),
+            });
+          }
+        }
+      }
+    });
   }
 
   createManager() {

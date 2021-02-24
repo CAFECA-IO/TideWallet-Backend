@@ -2,7 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue');
 const Web3 = require('web3');
-
+const ecrequest = require('ecrequest');
 const ParserBase = require('./ParserBase');
 const Utils = require('./Utils');
 const ethABI = require('./abi/ethABI');
@@ -81,16 +81,26 @@ class EthRopstenParser extends ParserBase {
         where: { contract: contractAddress },
       });
       if (!currencyInDb) {
-        // const name = await this.getTokenNameFromPeer(contractAddress);
-        // const symbol = await this.getTokenSymbolFromPeer(contractAddress);
-        // const decimals = await this.getTokenDecimalFromPeer(contractAddress);
-        // const total_supply = await this.getTokenTotalSupplyFromPeer(contractAddress);
         const tokenInfoFromPeer = await Promise.all([
           this.getTokenNameFromPeer(contractAddress),
           this.getTokenSymbolFromPeer(contractAddress),
           this.getTokenDecimalFromPeer(contractAddress),
           this.getTokenTotalSupplyFromPeer(contractAddress),
         ]).catch((error) => Promise.reject(error));
+
+        let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
+        try {
+          const checkIcon = await ecrequest.get({
+            protocol: 'https:',
+            hostname: 'cdn.jsdelivr.net',
+            port: '',
+            path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
+            timeout: 1000,
+          });
+          if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
+        } catch (e) {
+          icon = `${this.config.base.domain}/icon/ERC20.png`;
+        }
 
         currencyInDb = await this.currencyModel.create({
           currency_id: uuidv4(),
@@ -102,6 +112,7 @@ class EthRopstenParser extends ParserBase {
           decimals: tokenInfoFromPeer[2],
           total_supply: tokenInfoFromPeer[3],
           contract: contractAddress,
+          icon,
         });
       }
       return currencyInDb;
