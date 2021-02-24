@@ -10,6 +10,7 @@ class ParserBase {
     this.blockScannedModel = this.database.db.BlockScanned;
     this.currencyModel = this.database.db.Currency;
     this.sequelize = this.database.db.sequelize;
+    this.Sequelize = this.database.db.Sequelize;
     this.unparsedTxModel = this.database.db.UnparsedTransaction;
 
     this.transactionModel = this.database.db.Transaction;
@@ -21,6 +22,7 @@ class ParserBase {
 
   async init() {
     this.currencyInfo = await this.getCurrencyInfo();
+    this.maxRetry = 3;
     return this;
   }
 
@@ -54,20 +56,21 @@ class ParserBase {
   async getUnparsedTxs() {
     this.logger.debug(`[${this.constructor.name}] getUnparsedTxs`);
     try {
+      const { Op } = this.Sequelize;
       const oldest = await this.unparsedTxModel.findAll({
         limit: 1,
-        where: { blockchain_id: this.bcid },
+        where: { blockchain_id: this.bcid, retry: { [Op.lt]: this.maxRetry } },
         order: [['timestamp', 'ASC']],
       });
 
       if (!oldest || oldest.length === 0) {
-        this.logger.error(`[${this.constructor.name}] getUnparsedTxs not found`);
+        this.logger.log(`[${this.constructor.name}] getUnparsedTxs not found`);
         return [];
       }
 
       const { timestamp } = oldest[0];
       const result = await this.unparsedTxModel.findAll({
-        where: { blockchain_id: this.bcid, timestamp },
+        where: { blockchain_id: this.bcid, timestamp, retry: { [Op.lt]: this.maxRetry } },
       });
       return result;
     } catch (error) {
@@ -113,6 +116,22 @@ class ParserBase {
       });
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id}) error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
+  async updateRetry(tx) {
+    this.logger.debug(`[${this.constructor.name}] updateRetry(${tx.unparsedTransaction_id})`);
+    try {
+      return await this.unparsedTxModel.update(
+        {
+          retry: tx.retry + 1,
+          last_retry: Math.floor(Date.now() / 1000),
+        },
+        { where: { unparsedTransaction_id: tx.unparsedTransaction_id } },
+      );
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] updateRetry(${tx.unparsedTransaction_id}) error: ${error}`);
       return Promise.reject(error);
     }
   }

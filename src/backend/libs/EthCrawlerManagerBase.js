@@ -156,6 +156,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           transaction: JSON.stringify(transaction),
           receipt: JSON.stringify(receipt),
           timestamp,
+          retry: 0,
         },
       });
       return insertResult;

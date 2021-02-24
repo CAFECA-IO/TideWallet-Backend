@@ -26,6 +26,13 @@ module.exports = (sequelize, DataTypes) => sequelize.define('UnparsedTransaction
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  retry: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  last_retry: {
+    type: DataTypes.INTEGER,
+  },
 }, {
   timestamps: false,
   tableName: 'UnparsedTransaction',

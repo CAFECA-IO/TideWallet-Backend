@@ -40,7 +40,8 @@ class EthRopstenParser extends ParserBase {
     // 1. load unparsed transactions per block from UnparsedTransaction
     // 2. set queue
     // 3. assign parser
-    // 4. remove parsed transaction from UnparsedTransaction table
+    // 4. update failed unparsed retry
+    // 5. remove parsed transaction from UnparsedTransaction table
 
     try {
       // eslint-disable-next-line no-constant-condition
@@ -55,14 +56,27 @@ class EthRopstenParser extends ParserBase {
         // 3. assign parser
         // TODO get job from queue
         // TODO multiple thread
+        const failedList = [];
         for (const tx of txs) {
-          const transaction = JSON.parse(tx.transaction);
-          const receipt = JSON.parse(tx.receipt);
-          await this.parseTx(transaction, receipt, tx.timestamp);
+          try {
+            const transaction = JSON.parse(tx.transaction);
+            const receipt = JSON.parse(tx.receipt);
+            await this.parseTx(transaction, receipt, tx.timestamp);
+          } catch (error) {
+            failedList.push(tx);
+          }
         }
 
-        // 4. remove parsed transaction from UnparsedTransaction table
-        for (const tx of txs) {
+        // 4. update failed unparsed retry
+        let successParsedTxs = txs;
+        successParsedTxs = successParsedTxs.filter((tx) => failedList.every((failedTx) => tx.unparsedTransaction_id !== failedTx.unparsedTransaction_id));
+
+        for (const failedTx of failedList) {
+          await this.updateRetry(failedTx);
+        }
+
+        // 5. remove parsed transaction from UnparsedTransaction table
+        for (const tx of successParsedTxs) {
           await this.removeParsedTx(tx);
         }
       }

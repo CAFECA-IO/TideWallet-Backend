@@ -134,6 +134,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           transaction: JSON.stringify(transaction),
           receipt: '',
           timestamp,
+          retry: 0,
         },
       });
       return insertResult;
