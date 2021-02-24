@@ -114,7 +114,9 @@ class Account extends Bot {
             type: 2,
             publish: false,
             decimals: tokenInfoFromPeer[2],
-            total_supply: tokenInfoFromPeer[3],
+            total_supply: new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFormat({
+              groupSeparator: ',', groupSize: 3,
+            }),
             contract,
             icon,
           });

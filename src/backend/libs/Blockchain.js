@@ -1,5 +1,8 @@
 const BigNumber = require('bignumber.js');
-const dvalue = require('dvalue');
+const dvalue = require('dvalue'); const { v4: uuidv4 } = require('uuid');
+const Web3 = require('web3');
+const ecrequest = require('ecrequest');
+const EthRopstenParser = require('./EthRopstenParser');
 const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
 const Codes = require('./Codes');
 const Utils = require('./Utils');
@@ -284,6 +287,7 @@ class Blockchain extends Bot {
 
   async GetNonce({ params, token }) {
     const { blockchain_id, address } = params;
+    console.log('params:', params);
 
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
     const tokenInfo = await Utils.verifyToken(token);
@@ -317,7 +321,7 @@ class Blockchain extends Bot {
 
           return new ResponseFormat({
             message: 'Get Nonce',
-            payload: { nonce: '0' },
+            payload: { nonce },
           });
 
         default:
@@ -416,6 +420,77 @@ class Blockchain extends Bot {
       return new ResponseFormat({ message: 'List Crypto Currency Rate', payload });
     } catch (e) {
       this.logger.error('CryptoRate e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async TokenInfo({ params }) {
+    try {
+      const { contract, blockchain_id } = params;
+      // use contract check Token is exist
+      const findTokenItem = await this.currencyModel.findOne({
+        where: { type: 2, contract },
+      });
+
+      if (findTokenItem) {
+        return new ResponseFormat({
+          message: 'Get Token Info',
+          payload: {
+            symbol: findTokenItem.symbol,
+            name: findTokenItem.name,
+            contract: findTokenItem.contract,
+            decimal: findTokenItem.decimal,
+            total_supply: findTokenItem.total_supply,
+            description: findTokenItem.description,
+            imageUrl: findTokenItem.icon,
+          },
+        });
+      }
+
+      // if not found token in DB, parse token contract info from blockchain
+      const _ethRopstenParser = new EthRopstenParser(this.config, this.database, this.logger);
+      _ethRopstenParser.web3 = new Web3();
+      const tokenInfoFromPeer = await Promise.all([
+        _ethRopstenParser.getTokenNameFromPeer(contract),
+        _ethRopstenParser.getTokenSymbolFromPeer(contract),
+        _ethRopstenParser.getTokenDecimalFromPeer(contract),
+        _ethRopstenParser.getTokenTotalSupplyFromPeer(contract),
+      ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+      if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
+
+      let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
+      try {
+        const checkIcon = await ecrequest.get({
+          protocol: 'https:',
+          hostname: 'cdn.jsdelivr.net',
+          port: '',
+          path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
+          timeout: 1000,
+        });
+        if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
+      } catch (e) {
+        icon = `${this.config.base.domain}/icon/ERC20.png`;
+      }
+
+      const newCurrencyID = uuidv4();
+      if (!tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !tokenInfoFromPeer[2] || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
+      await this.currencyModel.create({
+        currency_id: newCurrencyID,
+        blockchain_id,
+        name: tokenInfoFromPeer[0],
+        symbol: tokenInfoFromPeer[1],
+        type: 2,
+        publish: false,
+        decimals: tokenInfoFromPeer[2],
+        total_supply: new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
+          groupSeparator: ',', groupSize: 3,
+        }),
+        contract,
+        icon,
+      });
+    } catch (e) {
+      this.logger.error('TokenInfo e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }

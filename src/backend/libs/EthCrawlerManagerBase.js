@@ -10,9 +10,9 @@ const Utils = require('./Utils');
 const log_file = fs.createWriteStream(`${__dirname}/debug.log`, { flags: 'w' });
 const log_stdout = process.stdout;
 
-console.log = function (d) { //
-  log_file.write(`${util.format(d)}\n`);
-  log_stdout.write(`${util.format(d)}\n`);
+console.log = function (...d) { //
+  log_file.write(`${util.format(...d)}\n`);
+  log_stdout.write(`${util.format(...d)}\n`);
 };
 
 class EthCrawlerManagerBase extends CrawlerManagerBase {
@@ -20,6 +20,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     super(blockchainId, database, logger);
     this.options = {};
     this.syncInterval = 15000;
+    this.decimals = 18;
   }
 
   async init() {
@@ -57,7 +58,8 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         return Promise.reject();
       }
       if (data.result) {
-        const bnGasPrice = new BigNumber(data.result, 16);
+        const bnGasPrice = new BigNumber(data.result, 16).dividedBy(new BigNumber(10 ** this.decimals));
+
         return Promise.resolve(bnGasPrice.toFixed());
       }
     }
