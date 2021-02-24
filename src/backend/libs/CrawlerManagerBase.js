@@ -93,15 +93,16 @@ class CrawlerManagerBase {
 
   async checkBlockNumberLess() {
     this.logger.debug(`[${this.constructor.name}] checkBlockNumberLess`);
-    const dbBlockNumber = await this.blockNumberFromDB();
-    let currentBlockNumber = await this.blockNumberFromPeer();
-    if (typeof currentBlockNumber === 'string') {
-      currentBlockNumber = parseInt(currentBlockNumber, 16);
+    this.dbBlock = await this.blockNumberFromDB();
+    this.peerBlock = await this.blockNumberFromPeer();
+    let intPeerBlock = this.peerBlock;
+    if (typeof this.peerBlock === 'string') {
+      intPeerBlock = parseInt(this.peerBlock, 16);
     }
-    if (typeof dbBlockNumber !== 'number' || typeof currentBlockNumber !== 'number') {
+    if (typeof this.dbBlock !== 'number' || typeof intPeerBlock !== 'number') {
       return false;
     }
-    return dbBlockNumber < currentBlockNumber;
+    return this.dbBlock < intPeerBlock;
   }
 
   async checkBlockHash(block) {

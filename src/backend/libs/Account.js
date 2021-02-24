@@ -104,6 +104,15 @@ class Account extends Bot {
             icon = `${this.config.base.domain}/icon/ERC20.png`;
           }
 
+          let total_supply = tokenInfoFromPeer[3];
+          try {
+            total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
+              groupSeparator: ',', groupSize: 3,
+            });
+            // eslint-disable-next-line no-empty
+          } catch (e) {
+          }
+
           const newCurrencyID = uuidv4();
           if (!tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !tokenInfoFromPeer[2] || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
           findTokenItem = await this.currencyModel.create({
@@ -114,7 +123,7 @@ class Account extends Bot {
             type: 2,
             publish: false,
             decimals: tokenInfoFromPeer[2],
-            total_supply: tokenInfoFromPeer[3],
+            total_supply,
             contract,
             icon,
           });

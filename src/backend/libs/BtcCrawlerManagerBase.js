@@ -162,21 +162,19 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       // 9. updateBalance
       // 10. wait to next cycle
 
-      const dbBlock = await this.blockNumberFromDB();
-      this.peerBlock = await this.blockNumberFromPeer();
       if (!await this.checkBlockNumberLess()) {
-        this.logger.log(`[${this.constructor.name}] block height ${dbBlock} is top now.`);
+        this.logger.log(`[${this.constructor.name}] block height ${this.dbBlock} is top now.`);
         this.isSyncing = false;
         return Promise.resolve();
       }
 
-      if (!await this.checkBlockHash(dbBlock)) {
-        this.logger.log(`[${this.constructor.name}] block ${dbBlock} in db not the same as peer.`);
+      if (!await this.checkBlockHash(this.dbBlock)) {
+        this.logger.log(`[${this.constructor.name}] block ${this.dbBlock} in db not the same as peer.`);
         // TODO
         // dbBlock = await this.rollbackBlock();
       }
 
-      await this.syncBlock(dbBlock);
+      await this.syncBlock(this.dbBlock);
 
       await this.updateBalance();
 
