@@ -93,17 +93,17 @@ class CrawlerManagerBase {
 
   async checkBlockNumberLess() {
     this.logger.log(`[${this.constructor.name}] checkBlockNumberLess`);
-    const dbBlockNumber = await this.blockNumberFromDB();
-    let currentBlockNumber = await this.blockNumberFromPeer();
-    this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${dbBlockNumber}, currentBlockNumber: ${currentBlockNumber}`);
-    if (typeof currentBlockNumber === 'string') {
-      currentBlockNumber = parseInt(currentBlockNumber, 16);
-      this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${dbBlockNumber}, currentBlockNumber: ${currentBlockNumber}`);
+    this.dbBlock = await this.blockNumberFromDB();
+    this.peerBlock = await this.blockNumberFromPeer();
+    this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${this.dbBlock}, currentBlockNumber: ${this.peerBlock}`);
+    if (typeof this.peerBlock === 'string') {
+      this.peerBlock = parseInt(this.peerBlock, 16);
+      this.logger.log(`[${this.constructor.name}] checkBlockNumberLess dbBlockNumber: ${this.dbBlock}, this.peerBlock: ${this.peerBlock}`);
     }
-    if (typeof dbBlockNumber !== 'number' || typeof currentBlockNumber !== 'number') {
+    if (typeof this.dbBlock !== 'number' || typeof this.peerBlock !== 'number') {
       return false;
     }
-    return dbBlockNumber < currentBlockNumber;
+    return this.dbBlock < this.peerBlock;
   }
 
   async checkBlockHash(block) {

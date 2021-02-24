@@ -69,7 +69,7 @@ class Blockchain extends Bot {
       const fiatCurrencyRateItem = fiatCurrencyRate[i];
 
       await this.fiatCurrencyRateModel.findOrCreate({
-        where: { fiatCurrencyRate_id: fiatCurrencyRateItem.fiatCurrencyRate_id },
+        where: { currency_id: fiatCurrencyRateItem.currency_id },
         defaults: fiatCurrencyRateItem,
       });
     }

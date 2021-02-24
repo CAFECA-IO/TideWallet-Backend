@@ -190,21 +190,19 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       // 9. updateBalance
       // 10. wait to next cycle
 
-      const dbBlock = await this.blockNumberFromDB();
-      this.peerBlock = await this.blockNumberFromPeer();
       if (!await this.checkBlockNumberLess()) {
-        this.logger.log(`[${this.constructor.name}] block height ${dbBlock} is top now.`);
+        this.logger.log(`[${this.constructor.name}] block height ${this.dbBlock} is top now.`);
         this.isSyncing = false;
         return Promise.resolve();
       }
 
-      if (!await this.checkBlockHash(dbBlock)) {
-        this.logger.log(`[${this.constructor.name}] block ${dbBlock} in db not the same as peer.`);
+      if (!await this.checkBlockHash(this.dbBlock)) {
+        this.logger.log(`[${this.constructor.name}] block ${this.dbBlock} in db not the same as peer.`);
         // TODO
         // dbBlock = await this.rollbackBlock();
       }
 
-      await this.syncBlock(dbBlock);
+      await this.syncBlock(this.dbBlock);
 
       await this.updateBalance();
 
@@ -285,9 +283,31 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           }
 
           // 4. save unparsed tx and receipt into db
+          // for (let j = 0; j < transactions.length; j++) {
+          //   await this.insertUnparsedTransaction(transactions[j], receipts[j], timestamp);
+          // }
+
+          // where: { blockchain_id: this.bcid, txid: transaction.hash },
+          const insertTx = [];
+
           for (let j = 0; j < transactions.length; j++) {
-            await this.insertUnparsedTransaction(transactions[j], receipts[j], timestamp);
+            // check tx is not in db
+            const findTX = await this.unparsedTxModel.findOne({
+              where: { blockchain_id: this.bcid, txid: transactions[j].hash },
+            });
+            if (!findTX) {
+              insertTx.push({
+                unparsedTransaction_id: uuidv4(),
+                blockchain_id: this.bcid,
+                txid: transactions[j].hash,
+                transaction: JSON.stringify(transactions[j]),
+                receipt: JSON.stringify(receipts[j]),
+                timestamp,
+              });
+            }
           }
+          await this.unparsedTxModel.bulkCreate(insertTx);
+
           const step4 = new Date().getTime();
           console.log(`syncBlock ${syncBlock} step:4 insertUnparsedTransaction: ${(step4 - step3_2) / 1000}sec`);
         }
