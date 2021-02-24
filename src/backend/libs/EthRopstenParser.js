@@ -100,6 +100,7 @@ class EthRopstenParser extends ParserBase {
           this.getTokenDecimalFromPeer(contractAddress),
           this.getTokenTotalSupplyFromPeer(contractAddress),
         ]).catch((error) => Promise.reject(error));
+        if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !tokenInfoFromPeer[2] || !tokenInfoFromPeer[3]) throw tokenInfoFromPeer;
 
         let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
         try {
