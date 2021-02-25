@@ -3,6 +3,7 @@ const Web3 = require('web3');
 const BigNumber = require('bignumber.js');
 const ecrequest = require('ecrequest');
 const EthRopstenParser = require('./EthRopstenParser');
+const EthParser = require('./EthParser');
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Utils = require('./Utils');
@@ -80,13 +81,28 @@ class Account extends Bot {
           if (findUserAccountToken) return new ResponseFormat({ message: 'account token exist', code: Codes.ACCOUNT_TOKEN_EXIST });
         } else {
           // if not found token in DB, parse token contract info from blockchain
-          const _ethRopstenParser = new EthRopstenParser(this.config, this.database, this.logger);
-          _ethRopstenParser.web3 = new Web3();
+
+          let ParserClass = '';
+          if (blockchain_id === '8000003C') ParserClass = EthParser;
+          if (blockchain_id === '8000025B') ParserClass = EthRopstenParser;
+          switch (blockchain_id) {
+            case '8000003C':
+              ParserClass = EthParser;
+              break;
+            case '8000025B':
+              ParserClass = EthRopstenParser;
+              break;
+            default:
+              return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
+          }
+
+          const _parserInstance = new ParserClass(this.config, this.database, this.logger);
+          _parserInstance.web3 = new Web3();
           const tokenInfoFromPeer = await Promise.all([
-            _ethRopstenParser.getTokenNameFromPeer(contract),
-            _ethRopstenParser.getTokenSymbolFromPeer(contract),
-            _ethRopstenParser.getTokenDecimalFromPeer(contract),
-            _ethRopstenParser.getTokenTotalSupplyFromPeer(contract),
+            _parserInstance.getTokenNameFromPeer(contract),
+            _parserInstance.getTokenSymbolFromPeer(contract),
+            _parserInstance.getTokenDecimalFromPeer(contract),
+            _parserInstance.getTokenTotalSupplyFromPeer(contract),
           ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
           if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
 

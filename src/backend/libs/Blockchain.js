@@ -2,6 +2,7 @@ const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue'); const { v4: uuidv4 } = require('uuid');
 const Web3 = require('web3');
 const ecrequest = require('ecrequest');
+const EthParser = require('./EthParser');
 const EthRopstenParser = require('./EthRopstenParser');
 const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
 const Codes = require('./Codes');
@@ -290,7 +291,6 @@ class Blockchain extends Bot {
 
   async GetNonce({ params, token }) {
     const { blockchain_id, address } = params;
-    console.log('params:', params);
 
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
     const tokenInfo = await Utils.verifyToken(token);
@@ -440,7 +440,7 @@ class Blockchain extends Bot {
       const { contract, blockchain_id } = params;
       // use contract check Token is exist
       const findTokenItem = await this.currencyModel.findOne({
-        where: { type: 2, contract },
+        where: { type: 2, contract, blockchain_id },
       });
 
       if (findTokenItem) {
@@ -459,13 +459,26 @@ class Blockchain extends Bot {
       }
 
       // if not found token in DB, parse token contract info from blockchain
-      const _ethRopstenParser = new EthRopstenParser(this.config, this.database, this.logger);
-      _ethRopstenParser.web3 = new Web3();
+      let ParserClass = '';
+      if (blockchain_id === '8000003C') ParserClass = EthParser;
+      if (blockchain_id === '8000025B') ParserClass = EthRopstenParser;
+      switch (blockchain_id) {
+        case '8000003C':
+          ParserClass = EthParser;
+          break;
+        case '8000025B':
+          ParserClass = EthRopstenParser;
+          break;
+        default:
+          return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
+      }
+      const _parserInstance = new ParserClass(this.config, this.database, this.logger);
+      _parserInstance.web3 = new Web3();
       const tokenInfoFromPeer = await Promise.all([
-        _ethRopstenParser.getTokenNameFromPeer(contract),
-        _ethRopstenParser.getTokenSymbolFromPeer(contract),
-        _ethRopstenParser.getTokenDecimalFromPeer(contract),
-        _ethRopstenParser.getTokenTotalSupplyFromPeer(contract),
+        _parserInstance.getTokenNameFromPeer(contract),
+        _parserInstance.getTokenSymbolFromPeer(contract),
+        _parserInstance.getTokenDecimalFromPeer(contract),
+        _parserInstance.getTokenTotalSupplyFromPeer(contract),
       ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
       if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
 
