@@ -128,7 +128,7 @@ class Account extends Bot {
           }
 
           const newCurrencyID = uuidv4();
-          if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !tokenInfoFromPeer[2] || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
+          if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
           findTokenItem = await this.currencyModel.create({
             currency_id: newCurrencyID,
             blockchain_id,
