@@ -100,7 +100,7 @@ class EthParserBase extends ParserBase {
           this.getTokenDecimalFromPeer(contractAddress),
           this.getTokenTotalSupplyFromPeer(contractAddress),
         ]).catch((error) => Promise.reject(error));
-        if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !tokenInfoFromPeer[2] || !tokenInfoFromPeer[3]) throw tokenInfoFromPeer;
+        if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) throw tokenInfoFromPeer;
 
         let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
         try {
@@ -151,6 +151,7 @@ class EthParserBase extends ParserBase {
         }
         if (data.result) {
           const nameEncode = data.result;
+          if (nameEncode.length !== 194) return nameEncode;
           const name = this.web3.eth.abi.decodeParameter('string', nameEncode);
           return Promise.resolve(name);
         }
@@ -178,6 +179,7 @@ class EthParserBase extends ParserBase {
         }
         if (data.result) {
           const symbolEncode = data.result;
+          if (symbolEncode.length !== 194) return symbolEncode;
           const symbol = this.web3.eth.abi.decodeParameter('string', symbolEncode);
           return Promise.resolve(symbol);
         }
