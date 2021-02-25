@@ -3,6 +3,7 @@ const Web3 = require('web3');
 const BigNumber = require('bignumber.js');
 const ecrequest = require('ecrequest');
 const EthRopstenParser = require('./EthRopstenParser');
+const EthParser = require('./EthParser');
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Utils = require('./Utils');
@@ -80,13 +81,26 @@ class Account extends Bot {
           if (findUserAccountToken) return new ResponseFormat({ message: 'account token exist', code: Codes.ACCOUNT_TOKEN_EXIST });
         } else {
           // if not found token in DB, parse token contract info from blockchain
-          const _ethRopstenParser = new EthRopstenParser(this.config, this.database, this.logger);
-          _ethRopstenParser.web3 = new Web3();
+
+          let ParserClass = '';
+          switch (blockchain_id) {
+            case '8000003C':
+              ParserClass = EthParser;
+              break;
+            case '8000025B':
+              ParserClass = EthRopstenParser;
+              break;
+            default:
+              return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
+          }
+
+          const _parserInstance = new ParserClass(this.config, this.database, this.logger);
+          _parserInstance.web3 = new Web3();
           const tokenInfoFromPeer = await Promise.all([
-            _ethRopstenParser.getTokenNameFromPeer(contract),
-            _ethRopstenParser.getTokenSymbolFromPeer(contract),
-            _ethRopstenParser.getTokenDecimalFromPeer(contract),
-            _ethRopstenParser.getTokenTotalSupplyFromPeer(contract),
+            _parserInstance.getTokenNameFromPeer(contract),
+            _parserInstance.getTokenSymbolFromPeer(contract),
+            _parserInstance.getTokenDecimalFromPeer(contract),
+            _parserInstance.getTokenTotalSupplyFromPeer(contract),
           ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
           if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
 
@@ -156,7 +170,7 @@ class Account extends Bot {
           number_of_internal_key: '0',
         });
 
-        return new ResponseFormat({ message: 'Account Token Regist', payload: { token_account_id } });
+        return new ResponseFormat({ message: 'Account Token Regist', payload: { token_id: currency_id } });
       } catch (e) {
         return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
       }
@@ -207,7 +221,7 @@ class Account extends Bot {
           const { Currency, currency_id, accountCurrency_id } = accountCurrency;
 
           // if ETH symbol, request RPC get balance
-          if (account.blockchain_id === '8000025B') {
+          if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C') {
             const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: account.blockchain_id } });
             if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
               const findAddress = await this.accountAddressModel.findOne({
@@ -215,7 +229,7 @@ class Account extends Bot {
                 attributes: ['address'],
               });
               if (findAddress) {
-                balance = await Utils.ethGetBalanceByAddress(findAddress.address, Currency.decimals);
+                balance = await Utils.ethGetBalanceByAddress(account.blockchain_id, findAddress.address, Currency.decimals);
 
                 await this.accountCurrencyModel.update(
                   { balance, balance_sync_block: findBlockHeight.block },
@@ -294,7 +308,7 @@ class Account extends Bot {
         const accountCurrency = findAccountCurrencies[j];
         let { balance = '0' } = accountCurrency;
         // if ETH symbol, request RPC get balance
-        if (findAccount.blockchain_id === '8000025B') {
+        if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C') {
           const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
           if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
             const findAddress = await this.accountAddressModel.findOne({
@@ -303,9 +317,9 @@ class Account extends Bot {
             });
             if (findAddress) {
               if (accountCurrency.Currency.contract) {
-                balance = await Utils.getERC20Token(findAddress.address, accountCurrency.Currency.contract, accountCurrency.Currency.decimals);
+                balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, accountCurrency.Currency.contract, accountCurrency.Currency.decimals);
               } else {
-                balance = await Utils.ethGetBalanceByAddress(findAddress.address, accountCurrency.Currency.decimals);
+                balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, accountCurrency.Currency.decimals);
               }
               await this.accountCurrencyModel.update(
                 { balance, balance_sync_block: findBlockHeight.block },

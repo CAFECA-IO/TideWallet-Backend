@@ -230,9 +230,27 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
         // 3. save unparsed transaction into db
         const txs = syncResult.tx;
         const timestamp = syncResult.time;
-        for (const transaction of txs) {
-          await this.insertUnparsedTransaction(transaction, timestamp);
+        const insertTx = [];
+
+        for (let j = 0; j < txs.length; j++) {
+          // check tx is not in db
+          const findTX = await this.unparsedTxModel.findOne({
+            where: { blockchain_id: this.bcid, txid: txs[j].hash },
+          });
+
+          if (!findTX) {
+            insertTx.push({
+              unparsedTransaction_id: uuidv4(),
+              blockchain_id: this.bcid,
+              txid: txs[j].hash,
+              transaction: JSON.stringify(txs[j]),
+              receipt: '',
+              timestamp,
+              retry: 0,
+            });
+          }
         }
+        await this.unparsedTxModel.bulkCreate(insertTx);
 
         // 4. assign parser
         // must success

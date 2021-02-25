@@ -728,8 +728,11 @@ class Utils {
     return parsedAddr;
   }
 
-  static async ethGetBalanceByAddress(address, decimals = 18) {
-    const option = { ...this.config.ethereum.ropsten };
+  static async ethGetBalanceByAddress(blockchain_id, address, decimals = 18) {
+    const blockchainConfig = this.getBlockchainConfig(blockchain_id);
+    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+    const option = { ...blockchainConfig };
     option.data = {
       jsonrpc: '2.0',
       method: 'eth_getBalance',
@@ -753,10 +756,13 @@ class Utils {
     }
   }
 
-  static async getERC20Token(address, contract, decimals = 18) {
+  static async getERC20Token(blockchain_id, address, contract, decimals = 18) {
     const _address = address.replace('0x', '').padStart(64, '0');
     const command = `0x70a08231${_address}`;
-    const option = { ...this.config.ethereum.ropsten };
+
+    const blockchainConfig = this.getBlockchainConfig(blockchain_id);
+    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    const option = { ...blockchainConfig };
     option.data = {
       jsonrpc: '2.0',
       method: 'eth_call',
@@ -782,6 +788,10 @@ class Utils {
         }
       }
     }
+  }
+
+  static getBlockchainConfig(blockchain_id) {
+    return Object.values(this.config.blockchain).find((info) => info.blockchain_id === blockchain_id) || false;
   }
 }
 

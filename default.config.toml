@@ -9,19 +9,22 @@ static = "./public/"
 token_secret_expire_time = 31536000 # 365 * 24 * 60 * 60 (expires in 365 day)
 debug = false
 
-[ethereum]
+[blockchain.ethereum_mainnet]
+blockchain_id = "8000003C"
 protocol = "http:"
 hostname = "127.0.0.1"
 port = 8545
 path = "/"
 
-[ethereum.ropsten]
+[blockchain.ethereum_ropsten]
+blockchain_id = "8000025B"
 protocol = "http:"
 hostname = "127.0.0.1"
 port = 8545
 path = "/"
 
-[bitcoin]
+[blockchain.bitcoin_mainnet]
+blockchain_id = "80000000"
 protocol = "http:"
 hostname = "127.0.0.1"
 port = 18332
@@ -29,7 +32,8 @@ path = "/"
 user = ''
 password = ''
 
-[bitcoin.testnet]
+[blockchain.bitcoin_testnet]
+blockchain_id = "80000001"
 protocol = "http:"
 hostname = "127.0.0.1"
 port = 18332

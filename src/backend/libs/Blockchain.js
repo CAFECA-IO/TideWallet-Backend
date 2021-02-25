@@ -2,6 +2,7 @@ const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue'); const { v4: uuidv4 } = require('uuid');
 const Web3 = require('web3');
 const ecrequest = require('ecrequest');
+const EthParser = require('./EthParser');
 const EthRopstenParser = require('./EthRopstenParser');
 const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
 const Codes = require('./Codes');
@@ -246,9 +247,12 @@ class Blockchain extends Bot {
       const findBlockchainInfo = await this.blockchainModel.findOne({ where: { blockchain_id }, attributes: ['avg_fee'] });
       if (!findBlockchainInfo) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
+      const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+      if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
       let gasLimit = '0';
       if (blockchain_id === '8000003C' || blockchain_id === '8000025B') {
-        const option = { ...this.config.ethereum.ropsten };
+        const option = { ...blockchainConfig };
         option.data = {
           jsonrpc: '2.0',
           method: 'eth_estimateGas',
@@ -287,7 +291,6 @@ class Blockchain extends Bot {
 
   async GetNonce({ params, token }) {
     const { blockchain_id, address } = params;
-    console.log('params:', params);
 
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
     const tokenInfo = await Utils.verifyToken(token);
@@ -306,7 +309,11 @@ class Blockchain extends Bot {
       switch (blockchain_id) {
         case '8000003C':
         case '8000025B':
-          option = { ...this.config.ethereum.ropsten };
+          // eslint-disable-next-line no-case-declarations
+          const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+          if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+          option = { ...blockchainConfig };
           option.data = {
             jsonrpc: '2.0',
             method: 'eth_getTransactionCount',
@@ -344,11 +351,14 @@ class Blockchain extends Bot {
 
     try {
       let option = {};
-      // TODO: support another blockchain
       switch (blockchain_id) {
         case '8000003C':
         case '8000025B':
-          option = { ...this.config.ethereum.ropsten };
+          // eslint-disable-next-line no-case-declarations
+          const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+          if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+          option = { ...blockchainConfig };
           option.data = {
             jsonrpc: '2.0',
             method: 'eth_sendRawTransaction',
@@ -430,7 +440,7 @@ class Blockchain extends Bot {
       const { contract, blockchain_id } = params;
       // use contract check Token is exist
       const findTokenItem = await this.currencyModel.findOne({
-        where: { type: 2, contract },
+        where: { type: 2, contract, blockchain_id },
       });
 
       if (findTokenItem) {
@@ -449,13 +459,24 @@ class Blockchain extends Bot {
       }
 
       // if not found token in DB, parse token contract info from blockchain
-      const _ethRopstenParser = new EthRopstenParser(this.config, this.database, this.logger);
-      _ethRopstenParser.web3 = new Web3();
+      let ParserClass = '';
+      switch (blockchain_id) {
+        case '8000003C':
+          ParserClass = EthParser;
+          break;
+        case '8000025B':
+          ParserClass = EthRopstenParser;
+          break;
+        default:
+          return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
+      }
+      const _parserInstance = new ParserClass(this.config, this.database, this.logger);
+      _parserInstance.web3 = new Web3();
       const tokenInfoFromPeer = await Promise.all([
-        _ethRopstenParser.getTokenNameFromPeer(contract),
-        _ethRopstenParser.getTokenSymbolFromPeer(contract),
-        _ethRopstenParser.getTokenDecimalFromPeer(contract),
-        _ethRopstenParser.getTokenTotalSupplyFromPeer(contract),
+        _parserInstance.getTokenNameFromPeer(contract),
+        _parserInstance.getTokenSymbolFromPeer(contract),
+        _parserInstance.getTokenDecimalFromPeer(contract),
+        _parserInstance.getTokenTotalSupplyFromPeer(contract),
       ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
       if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
 
@@ -475,7 +496,7 @@ class Blockchain extends Bot {
 
       const newCurrencyID = uuidv4();
       if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
-      console.log('tokenInfoFromPeer:', tokenInfoFromPeer);
+      this.logger.debug('tokenInfoFromPeer:', tokenInfoFromPeer);
       let total_supply = tokenInfoFromPeer[3];
       try {
         total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
@@ -495,6 +516,19 @@ class Blockchain extends Bot {
         total_supply,
         contract,
         icon,
+      });
+
+      return new ResponseFormat({
+        message: 'Get Token Info',
+        payload: {
+          symbol: tokenInfoFromPeer[1],
+          name: tokenInfoFromPeer[0],
+          contract,
+          decimal: tokenInfoFromPeer[2],
+          total_supply,
+          description: '',
+          imageUrl: icon,
+        },
       });
     } catch (e) {
       this.logger.error('TokenInfo e:', e);

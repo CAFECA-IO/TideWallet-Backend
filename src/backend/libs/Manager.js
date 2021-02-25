@@ -28,7 +28,7 @@ class Manager extends Bot {
     return super.init({
       config, database, logger, i18n,
     }).then(() => {
-      if (!this.config.bitcoin.noScan) this._crawlerManagers = this.createManager();
+      this._crawlerManagers = this.createManager();
 
       this.fiatCurrencyRateModel = this.database.db.FiatCurrencyRate;
       this.currencyModel = this.database.db.Currency;
@@ -42,13 +42,11 @@ class Manager extends Bot {
   }
 
   start() {
-    if (!this.config.bitcoin.noScan) {
-      return super.start()
-        .then(() => {
-          this.initManager();
-          return this;
-        });
-    }
+    return super.start()
+      .then(() => {
+        this.initManager();
+        return this;
+      });
   }
 
   syncRate() {
