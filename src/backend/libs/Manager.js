@@ -2,13 +2,17 @@ const ecrequest = require('ecrequest');
 const { v4: uuidv4 } = require('uuid');
 const { default: BigNumber } = require('bignumber.js');
 const Bot = require('./Bot');
+
+// crawler
 const BtcCrawlerManager = require('./BtcCrawlerManager');
 const CrawlerManagerBase = require('./CrawlerManagerBase');
 const BtcTestnetCrawlerManager = require('./BtcTestnetCrawlerManager');
 const EthCrawlerManager = require('./EthCrawlerManager');
 const EthRopstenCrawlerManager = require('./EthRopstenCrawlerManager');
-// test
+
+// parser
 const EthRopstenParser = require('./EthRopstenParser');
+const EthParser = require('./EthParser');
 
 class Manager extends Bot {
   constructor() {
@@ -86,11 +90,15 @@ class Manager extends Bot {
   createManager() {
     this.logger.log('createManager');
     const result = [];
+    // crawler
     // result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
-    // result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
-    // result.push(new EthCrawlerManager(this.config, this.database, this.logger));
-    // result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
-    // result.push(new EthRopstenParser(this.config, this.database, this.logger));
+    result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
+    result.push(new EthCrawlerManager(this.config, this.database, this.logger));
+    result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
+
+    // parser
+    result.push(new EthRopstenParser(this.config, this.database, this.logger));
+    result.push(new EthParser(this.config, this.database, this.logger));
     return result;
   }
 

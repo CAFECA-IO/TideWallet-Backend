@@ -351,11 +351,14 @@ class Blockchain extends Bot {
 
     try {
       let option = {};
-      // TODO: support another blockchain
       switch (blockchain_id) {
         case '8000003C':
         case '8000025B':
-          option = { ...this.config.ethereum.ropsten };
+          // eslint-disable-next-line no-case-declarations
+          const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+          if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+          option = { ...blockchainConfig };
           option.data = {
             jsonrpc: '2.0',
             method: 'eth_sendRawTransaction',
