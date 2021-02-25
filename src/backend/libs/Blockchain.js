@@ -460,8 +460,6 @@ class Blockchain extends Bot {
 
       // if not found token in DB, parse token contract info from blockchain
       let ParserClass = '';
-      if (blockchain_id === '8000003C') ParserClass = EthParser;
-      if (blockchain_id === '8000025B') ParserClass = EthRopstenParser;
       switch (blockchain_id) {
         case '8000003C':
           ParserClass = EthParser;
