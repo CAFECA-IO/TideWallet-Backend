@@ -246,9 +246,12 @@ class Blockchain extends Bot {
       const findBlockchainInfo = await this.blockchainModel.findOne({ where: { blockchain_id }, attributes: ['avg_fee'] });
       if (!findBlockchainInfo) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
+      const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+      if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
       let gasLimit = '0';
       if (blockchain_id === '8000003C' || blockchain_id === '8000025B') {
-        const option = { ...this.config.ethereum.ropsten };
+        const option = { ...blockchainConfig };
         option.data = {
           jsonrpc: '2.0',
           method: 'eth_estimateGas',
@@ -306,7 +309,11 @@ class Blockchain extends Bot {
       switch (blockchain_id) {
         case '8000003C':
         case '8000025B':
-          option = { ...this.config.ethereum.ropsten };
+          // eslint-disable-next-line no-case-declarations
+          const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+          if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+          option = { ...blockchainConfig };
           option.data = {
             jsonrpc: '2.0',
             method: 'eth_getTransactionCount',
@@ -475,7 +482,6 @@ class Blockchain extends Bot {
 
       const newCurrencyID = uuidv4();
       if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !tokenInfoFromPeer[2] || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
-      console.log('tokenInfoFromPeer:', tokenInfoFromPeer);
       let total_supply = tokenInfoFromPeer[3];
       try {
         total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
@@ -495,6 +501,19 @@ class Blockchain extends Bot {
         total_supply,
         contract,
         icon,
+      });
+
+      return new ResponseFormat({
+        message: 'Get Token Info',
+        payload: {
+          symbol: tokenInfoFromPeer[1],
+          name: tokenInfoFromPeer[0],
+          contract,
+          decimal: tokenInfoFromPeer[2],
+          total_supply,
+          description: '',
+          imageUrl: icon,
+        },
       });
     } catch (e) {
       this.logger.error('TokenInfo e:', e);

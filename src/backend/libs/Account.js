@@ -207,7 +207,7 @@ class Account extends Bot {
           const { Currency, currency_id, accountCurrency_id } = accountCurrency;
 
           // if ETH symbol, request RPC get balance
-          if (account.blockchain_id === '8000025B') {
+          if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C') {
             const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: account.blockchain_id } });
             if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
               const findAddress = await this.accountAddressModel.findOne({
@@ -215,7 +215,7 @@ class Account extends Bot {
                 attributes: ['address'],
               });
               if (findAddress) {
-                balance = await Utils.ethGetBalanceByAddress(findAddress.address, Currency.decimals);
+                balance = await Utils.ethGetBalanceByAddress(account.blockchain_id, findAddress.address, Currency.decimals);
 
                 await this.accountCurrencyModel.update(
                   { balance, balance_sync_block: findBlockHeight.block },
@@ -294,7 +294,7 @@ class Account extends Bot {
         const accountCurrency = findAccountCurrencies[j];
         let { balance = '0' } = accountCurrency;
         // if ETH symbol, request RPC get balance
-        if (findAccount.blockchain_id === '8000025B') {
+        if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C') {
           const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
           if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
             const findAddress = await this.accountAddressModel.findOne({
@@ -303,9 +303,9 @@ class Account extends Bot {
             });
             if (findAddress) {
               if (accountCurrency.Currency.contract) {
-                balance = await Utils.getERC20Token(findAddress.address, accountCurrency.Currency.contract, accountCurrency.Currency.decimals);
+                balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, accountCurrency.Currency.contract, accountCurrency.Currency.decimals);
               } else {
-                balance = await Utils.ethGetBalanceByAddress(findAddress.address, accountCurrency.Currency.decimals);
+                balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, accountCurrency.Currency.decimals);
               }
               await this.accountCurrencyModel.update(
                 { balance, balance_sync_block: findBlockHeight.block },

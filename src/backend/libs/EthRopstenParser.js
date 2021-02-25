@@ -14,7 +14,7 @@ class EthRopstenParser extends ParserBase {
     this.receiptModel = this.database.db.Receipt;
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
-    this.options = config.ethereum.ropsten;
+    this.options = config.blockchain.ethereum_ropsten;
     this.syncInterval = config.syncInterval.ethereum ? config.syncInterval.ethereum : 15000;
   }
 
