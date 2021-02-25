@@ -156,7 +156,7 @@ class Account extends Bot {
           number_of_internal_key: '0',
         });
 
-        return new ResponseFormat({ message: 'Account Token Regist', payload: { token_account_id } });
+        return new ResponseFormat({ message: 'Account Token Regist', payload: { token_id: currency_id } });
       } catch (e) {
         return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
       }
