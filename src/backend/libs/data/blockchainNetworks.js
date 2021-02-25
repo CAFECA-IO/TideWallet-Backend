@@ -72,7 +72,7 @@ module.exports = {
     avg_fee: '0',
   },
   CAFECA: {
-    blockchain_id: '80003324',
+    blockchain_id: '80000CFC',
     name: 'Cafeca',
     coin_type: 3324,
     network_id: 0,
