@@ -573,6 +573,7 @@ class Account extends Bot {
               fee: txInfo.TokenTransaction.Transaction.fee,
               gas_price,
               gas_used: txInfo.TokenTransaction.Transaction.gas_used,
+              note: txInfo.TokenTransaction.Transaction.note,
             });
           }
         }
@@ -608,6 +609,7 @@ class Account extends Bot {
               fee: txInfo.Transaction.fee,
               gas_price,
               gas_used: txInfo.Transaction.gas_used,
+              note: txInfo.Transaction.note,
             });
           }
         }
