@@ -331,6 +331,7 @@ class EthParserBase extends ParserBase {
 
     this.logger.debug(`[${this.constructor.name}] parseTx(${tx.hash})`);
     try {
+      const bnAmount = new BigNumber(tx.value, 16);
       const bnGasPrice = new BigNumber(tx.gasPrice, 16);
       const bnGasUsed = new BigNumber(receipt.gasUsed, 16);
       const fee = bnGasPrice.multipliedBy(bnGasUsed).toFixed();
@@ -346,13 +347,13 @@ class EthParserBase extends ParserBase {
           timestamp,
           source_addresses: tx.from,
           destination_addresses: tx.to ? tx.to : '',
-          amount: tx.value,
+          amount: bnAmount.toFixed(),
           fee,
           note: tx.input,
           block: parseInt(tx.blockNumber, 16),
           nonce: parseInt(tx.nonce, 16),
-          gas_price: tx.gasPrice,
-          gas_used: parseInt(receipt.gasUsed, 16),
+          gas_price: bnGasPrice.toFixed(),
+          gas_used: bnGasUsed.toFixed(),
           result: receipt.status === '0x1',
         },
       });
@@ -368,7 +369,7 @@ class EthParserBase extends ParserBase {
           currency_id: this.currencyInfo.currency_id,
           contract_address: receipt.contractAddress,
           cumulative_gas_used: parseInt(receipt.cumulativeGasUsed, 16),
-          gas_used: parseInt(receipt.gasUsed, 16),
+          gas_used: bnGasUsed.toFixed(),
           logs: JSON.stringify(receipt.logs),
           logsBloom: receipt.logsBloom,
           status: parseInt(receipt.status, 16),

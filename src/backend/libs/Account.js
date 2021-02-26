@@ -558,10 +558,12 @@ class Account extends Bot {
         if (findTxByAddress && findTxByAddress.length > 0) {
           for (let j = 0; j < findTxByAddress.length; j++) {
             const txInfo = findTxByAddress[j];
+            const bnAmount = ((txInfo.TokenTransaction.amount).indexOf('0x') !== -1) ? new BigNumber(txInfo.TokenTransaction.amount, 16) : new BigNumber(txInfo.TokenTransaction.amount);
+            const bnGasPrice = ((txInfo.TokenTransaction.Transaction.gas_price).indexOf('0x') !== -1) ? new BigNumber(txInfo.TokenTransaction.Transaction.gas_price, 16) : new BigNumber(txInfo.TokenTransaction.Transaction.gas_price);
             txs.push({
               txid: txInfo.TokenTransaction.Transaction.txid,
               status: (isToken) ? findTxByAddress.result : 'success',
-              amount: txInfo.TokenTransaction.amount,
+              amount: bnAmount.toFixed(),
               symbol: findAccountCurrency.Currency.symbol, // "unit"
               direction: txInfo.TokenTransaction.direction === 0 ? 'send' : 'receive',
               confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.TokenTransaction.Transaction.block,
@@ -569,7 +571,7 @@ class Account extends Bot {
               source_addresses: txInfo.TokenTransaction.source_addresses,
               destination_addresses: txInfo.TokenTransaction.destination_addresses,
               fee: txInfo.TokenTransaction.Transaction.fee,
-              gas_price: txInfo.TokenTransaction.Transaction.gas_price,
+              gas_price: bnGasPrice.toFixed(),
               gas_used: txInfo.TokenTransaction.Transaction.gas_used,
             });
           }
@@ -589,11 +591,13 @@ class Account extends Bot {
         if (findTxByAddress) {
           for (let j = 0; j < findTxByAddress.length; j++) {
             const txInfo = findTxByAddress[j];
+            const bnAmount = ((txInfo.Transaction.amount).indexOf('0x') !== -1) ? new BigNumber(txInfo.Transaction.amount, 16) : new BigNumber(txInfo.Transaction.amount);
+            const bnGasPrice = ((txInfo.Transaction.gas_price).indexOf('0x') !== -1) ? new BigNumber(txInfo.Transaction.gas_price, 16) : new BigNumber(txInfo.Transaction.gas_price);
             txs.push({
               txid: txInfo.Transaction.txid,
               // eslint-disable-next-line no-nested-ternary
               status: (isToken) ? findTxByAddress.result ? 'success' : 'failed' : 'success',
-              amount: txInfo.Transaction.amount,
+              amount: bnAmount.toFixed(),
               symbol: findAccountCurrency.Currency.symbol, // "unit"
               direction: txInfo.direction === 0 ? 'send' : 'receive',
               confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.Transaction.block,
@@ -601,7 +605,7 @@ class Account extends Bot {
               source_addresses: txInfo.Transaction.source_addresses,
               destination_addresses: txInfo.Transaction.destination_addresses,
               fee: txInfo.Transaction.fee,
-              gas_price: txInfo.Transaction.gas_price,
+              gas_price: bnGasPrice.toFixed(),
               gas_used: txInfo.Transaction.gas_used,
             });
           }
@@ -677,7 +681,7 @@ class Account extends Bot {
     const { txid } = params;
 
     try {
-    // find Transaction table
+      // find Transaction table
       const findTX = await this.transactionModel.findOne({
         where: { txid },
         include: [
@@ -694,13 +698,15 @@ class Account extends Bot {
         ],
       });
       if (findTX) {
+        const bnAmount = ((findTX.amount).indexOf('0x') !== -1) ? new BigNumber(findTX.amount, 16) : new BigNumber(findTX.amount);
+        const bnGasPrice = ((findTX.gas_price).indexOf('0x') !== -1) ? new BigNumber(findTX.gas_price, 16) : new BigNumber(findTX.gas_price);
         return new ResponseFormat({
           message: 'Get Transaction Detail',
           payload: {
             txid: findTX.txid,
             status: findTX.result ? 'success' : 'failed',
             confirmations: findTX.Currency.Blockchain.block - findTX.block,
-            amount: findTX.amount,
+            amount: bnAmount.toFixed(),
             blockchain_id: findTX.Currency.Blockchain.blockchain_id,
             symbol: findTX.Currency.symbol,
             direction: findTX.direction === 0 ? 'send' : 'receive',
@@ -708,7 +714,7 @@ class Account extends Bot {
             source_addresses: findTX.source_addresses,
             destination_addresses: findTX.destination_addresses,
             fee: findTX.fee,
-            gas_price: findTX.gas_price,
+            gas_price: bnGasPrice.toFixed(),
             gas_used: findTX.gas_used,
           },
         });
