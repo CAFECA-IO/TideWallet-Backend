@@ -812,6 +812,12 @@ class Utils {
     }
   }
 
+  static dividedByDecimal(amount, decimal) {
+    let _amount = new BigNumber(amount);
+    if (typeof amount === 'string' && (amount).indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
+    return _amount.dividedBy(new BigNumber(10 ** decimal)).toFixed();
+  }
+
   static getBlockchainConfig(blockchain_id) {
     return Object.values(this.config.blockchain).find((info) => info.blockchain_id === blockchain_id) || false;
   }
