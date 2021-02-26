@@ -33,6 +33,13 @@ class ParserBase {
     try {
       const accountAddress = await this.accountAddressModel.findOne({
         where: { address },
+        include: [
+          {
+            model: this.accountModel,
+            attributes: ['blockchain_id'],
+            where: { blockchain_id: this.bcid },
+          },
+        ],
       });
       return accountAddress;
     } catch (error) {
