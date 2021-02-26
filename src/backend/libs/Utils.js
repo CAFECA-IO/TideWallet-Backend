@@ -183,8 +183,19 @@ class Utils {
       path,
       headers: { 'content-type': 'application/json', Authorization: `Basic ${basicAuth}` },
       data,
+      timeout: 1000,
     };
-    return ecRequest.post(opt).then((rs) => Promise.resolve(JSON.parse(rs.data)));
+    return ecRequest.post(opt).then((rs) => {
+      let response = '';
+      try {
+        response = JSON.parse(rs.data);
+      } catch (e) {
+        this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
+        this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+        return false;
+      }
+      return Promise.resolve(response);
+    });
   }
 
   static ETHRPC({
@@ -198,8 +209,19 @@ class Utils {
       path,
       headers: { 'content-type': 'application/json' },
       data,
+      timeout: 1000,
     };
-    return ecRequest.post(opt).then((rs) => Promise.resolve(JSON.parse(rs.data)));
+    return ecRequest.post(opt).then((rs) => {
+      let response = '';
+      try {
+        response = JSON.parse(rs.data);
+      } catch (e) {
+        this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
+        this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+        return false;
+      }
+      return Promise.resolve(response);
+    });
   }
 
   static initialAll({ configPath }) {
