@@ -9,10 +9,12 @@ const CrawlerManagerBase = require('./CrawlerManagerBase');
 const BtcTestnetCrawlerManager = require('./BtcTestnetCrawlerManager');
 const EthCrawlerManager = require('./EthCrawlerManager');
 const EthRopstenCrawlerManager = require('./EthRopstenCrawlerManager');
+const CfcCrawlerManager = require('./CfcCrawlerManager');
 
 // parser
 const EthRopstenParser = require('./EthRopstenParser');
 const EthParser = require('./EthParser');
+const CfcParser = require('./CfcParser');
 
 class Manager extends Bot {
   constructor() {
@@ -95,10 +97,12 @@ class Manager extends Bot {
     result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
     result.push(new EthCrawlerManager(this.config, this.database, this.logger));
     result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
+    result.push(new CfcCrawlerManager(this.config, this.database, this.logger));
 
     // parser
     result.push(new EthRopstenParser(this.config, this.database, this.logger));
     result.push(new EthParser(this.config, this.database, this.logger));
+    result.push(new CfcParser(this.config, this.database, this.logger));
     return result;
   }
 

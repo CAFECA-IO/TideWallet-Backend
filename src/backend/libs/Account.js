@@ -558,10 +558,12 @@ class Account extends Bot {
         if (findTxByAddress && findTxByAddress.length > 0) {
           for (let j = 0; j < findTxByAddress.length; j++) {
             const txInfo = findTxByAddress[j];
+            const amount = Utils.dividedByDecimal(txInfo.TokenTransaction.amount, findAccountCurrency.Currency.decimals);
+            const gas_price = Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.gas_price, findAccountCurrency.Currency.decimals);
             txs.push({
               txid: txInfo.TokenTransaction.Transaction.txid,
               status: (isToken) ? findTxByAddress.result : 'success',
-              amount: txInfo.TokenTransaction.amount,
+              amount,
               symbol: findAccountCurrency.Currency.symbol, // "unit"
               direction: txInfo.TokenTransaction.direction === 0 ? 'send' : 'receive',
               confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.TokenTransaction.Transaction.block,
@@ -569,8 +571,9 @@ class Account extends Bot {
               source_addresses: txInfo.TokenTransaction.source_addresses,
               destination_addresses: txInfo.TokenTransaction.destination_addresses,
               fee: txInfo.TokenTransaction.Transaction.fee,
-              gas_price: txInfo.TokenTransaction.Transaction.gas_price,
+              gas_price,
               gas_used: txInfo.TokenTransaction.Transaction.gas_used,
+              note: txInfo.TokenTransaction.Transaction.note,
             });
           }
         }
@@ -589,11 +592,14 @@ class Account extends Bot {
         if (findTxByAddress) {
           for (let j = 0; j < findTxByAddress.length; j++) {
             const txInfo = findTxByAddress[j];
+            const amount = Utils.dividedByDecimal(txInfo.Transaction.amount, findAccountCurrency.Currency.decimals);
+            const gas_price = Utils.dividedByDecimal(txInfo.Transaction.gas_price, findAccountCurrency.Currency.decimals);
+
             txs.push({
               txid: txInfo.Transaction.txid,
               // eslint-disable-next-line no-nested-ternary
               status: (isToken) ? findTxByAddress.result ? 'success' : 'failed' : 'success',
-              amount: txInfo.Transaction.amount,
+              amount,
               symbol: findAccountCurrency.Currency.symbol, // "unit"
               direction: txInfo.direction === 0 ? 'send' : 'receive',
               confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.Transaction.block,
@@ -601,8 +607,9 @@ class Account extends Bot {
               source_addresses: txInfo.Transaction.source_addresses,
               destination_addresses: txInfo.Transaction.destination_addresses,
               fee: txInfo.Transaction.fee,
-              gas_price: txInfo.Transaction.gas_price,
+              gas_price,
               gas_used: txInfo.Transaction.gas_used,
+              note: txInfo.Transaction.note,
             });
           }
         }
@@ -635,7 +642,7 @@ class Account extends Bot {
           },
           {
             model: this.currencyModel,
-            attributes: ['type', 'symbol'],
+            attributes: ['type', 'symbol', 'decimals'],
           },
         ],
       });
@@ -677,13 +684,13 @@ class Account extends Bot {
     const { txid } = params;
 
     try {
-    // find Transaction table
+      // find Transaction table
       const findTX = await this.transactionModel.findOne({
         where: { txid },
         include: [
           {
             model: this.currencyModel,
-            attributes: ['currency_id', 'symbol'],
+            attributes: ['currency_id', 'symbol', 'decimals'],
             include: [
               {
                 model: this.blockchainModel,
@@ -694,13 +701,15 @@ class Account extends Bot {
         ],
       });
       if (findTX) {
+        const amount = Utils.dividedByDecimal(findTX.amount, findTX.Currency.decimals);
+        const gas_price = Utils.dividedByDecimal(findTX.gas_price, findTX.Currency.decimals);
         return new ResponseFormat({
           message: 'Get Transaction Detail',
           payload: {
             txid: findTX.txid,
             status: findTX.result ? 'success' : 'failed',
             confirmations: findTX.Currency.Blockchain.block - findTX.block,
-            amount: findTX.amount,
+            amount,
             blockchain_id: findTX.Currency.Blockchain.blockchain_id,
             symbol: findTX.Currency.symbol,
             direction: findTX.direction === 0 ? 'send' : 'receive',
@@ -708,7 +717,7 @@ class Account extends Bot {
             source_addresses: findTX.source_addresses,
             destination_addresses: findTX.destination_addresses,
             fee: findTX.fee,
-            gas_price: findTX.gas_price,
+            gas_price,
             gas_used: findTX.gas_used,
           },
         });

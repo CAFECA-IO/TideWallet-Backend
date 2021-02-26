@@ -183,8 +183,19 @@ class Utils {
       path,
       headers: { 'content-type': 'application/json', Authorization: `Basic ${basicAuth}` },
       data,
+      timeout: 1000,
     };
-    return ecRequest.post(opt).then((rs) => Promise.resolve(JSON.parse(rs.data)));
+    return ecRequest.post(opt).then((rs) => {
+      let response = '';
+      try {
+        response = JSON.parse(rs.data);
+      } catch (e) {
+        this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
+        this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+        return false;
+      }
+      return Promise.resolve(response);
+    });
   }
 
   static ETHRPC({
@@ -198,8 +209,19 @@ class Utils {
       path,
       headers: { 'content-type': 'application/json' },
       data,
+      timeout: 1000,
     };
-    return ecRequest.post(opt).then((rs) => Promise.resolve(JSON.parse(rs.data)));
+    return ecRequest.post(opt).then((rs) => {
+      let response = '';
+      try {
+        response = JSON.parse(rs.data);
+      } catch (e) {
+        this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
+        this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+        return false;
+      }
+      return Promise.resolve(response);
+    });
   }
 
   static initialAll({ configPath }) {
@@ -788,6 +810,12 @@ class Utils {
         }
       }
     }
+  }
+
+  static dividedByDecimal(amount, decimal) {
+    let _amount = new BigNumber(amount);
+    if (typeof amount === 'string' && (amount).indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
+    return _amount.dividedBy(new BigNumber(10 ** decimal)).toFixed();
   }
 
   static getBlockchainConfig(blockchain_id) {

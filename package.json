@@ -18,7 +18,7 @@
     "bs58check": "^2.1.2",
     "command-line-args": "^5.0.2",
     "dvalue": "^1.0.20",
-    "ecrequest": "^1.1.3",
+    "ecrequest": "^1.1.4",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.22.1",
     "ethereumjs-util": "^7.0.8",

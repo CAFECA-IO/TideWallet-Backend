@@ -23,6 +23,13 @@ hostname = "127.0.0.1"
 port = 8545
 path = "/"
 
+[blockchain.cafeca]
+blockchain_id = "80000CFC"
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 8545
+path = "/"
+
 [blockchain.bitcoin_mainnet]
 blockchain_id = "80000000"
 protocol = "http:"
@@ -43,6 +50,7 @@ password = ''
 
 [syncInterval]
 ethereum = 15000
+cafeca = 15000
 bitcoin = 900000
 fee = 3600000
 
