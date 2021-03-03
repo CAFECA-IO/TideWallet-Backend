@@ -100,6 +100,4 @@ pathname = [
   "get | /api/v1/fiats/rate | Bot.Blockchain.FiatsRate",
   "get | /api/v1/crypto/rate | Bot.Blockchain.CryptoRate",
   "get | /api/v1/blockchain/:blockchain_id/contract/:contract | Bot.Blockchain.TokenInfo",
-
-  "get | /tool/drop | Bot.Account.DROP_ALL_TABLE"
 ]

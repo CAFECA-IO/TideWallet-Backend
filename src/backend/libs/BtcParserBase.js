@@ -289,19 +289,22 @@ class BtcParserBase extends ParserBase {
     let note = '';
 
     for (const inputData of tx.vin) {
-      const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid } });
-      if (findUXTO) {
-        from = from.plus(new BigNumber(findUXTO.amount).dividedBy(new BigNumber(10 ** this.decimal)));
-      }
+      // if coinbase, continue
+      if (inputData.txid) {
+        const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid } });
+        if (findUXTO) {
+          from = from.plus(new BigNumber(findUXTO.amount).dividedBy(new BigNumber(10 ** this.decimal)));
+        }
 
-      // TODO: change use promise all
-      const txInfo = await this.getTransactionByTxidFromPeer(inputData.txid);
-      if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
-        if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.addresses) {
-          source_addresses = source_addresses.concat(txInfo.vout[inputData.vout].scriptPubKey.addresses);
-        } else if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.type === 'pubkey') {
-          // TODO: need pubkey => P2PK address
-          source_addresses.push(txInfo.vout[inputData.vout].scriptPubKey.hex);
+        // TODO: change use promise all
+        const txInfo = await this.getTransactionByTxidFromPeer(inputData.txid);
+        if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
+          if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.addresses) {
+            source_addresses = source_addresses.concat(txInfo.vout[inputData.vout].scriptPubKey.addresses);
+          } else if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.type === 'pubkey') {
+            // TODO: need pubkey => P2PK address
+            source_addresses.push(txInfo.vout[inputData.vout].scriptPubKey.hex);
+          }
         }
       }
     }
@@ -414,30 +417,33 @@ class BtcParserBase extends ParserBase {
         }
         // 3. update used utxo(to_tx), if vin used
         for (const inputData of tx.vin) {
-          const findExistUTXO = await this.utxoModel.findOne({
-            where: {
-              txid: tx.txid,
-              vout: inputData.vout,
-            },
-            transaction,
-          });
-          if (findExistUTXO) {
-            await this.utxoModel.update({
-              to_tx: transaction_id,
-              on_block_timestamp: tx.timestamp,
-            },
-            {
+          // if coinbase, continue
+          if (!inputData.coinbase) {
+            const findExistUTXO = await this.utxoModel.findOne({
               where: {
                 txid: tx.txid,
                 vout: inputData.vout,
               },
               transaction,
             });
+            if (findExistUTXO) {
+              await this.utxoModel.update({
+                to_tx: transaction_id,
+                on_block_timestamp: tx.timestamp,
+              },
+              {
+                where: {
+                  txid: tx.txid,
+                  vout: inputData.vout,
+                },
+                transaction,
+              });
+            }
           }
         }
 
         // 4. check from address is regist address
-        for (const sourceAddress of source_addresses) {
+        for (const sourceAddress of JSON.parse(source_addresses)) {
           const accountAddressFrom = await this.accountAddressModel.findOne({
             where: { address: sourceAddress },
             include: [
@@ -470,7 +476,7 @@ class BtcParserBase extends ParserBase {
           }
         }
         // 6. check to address is regist address
-        for (const destinationAddress of destination_addresses) {
+        for (const destinationAddress of JSON.parse(destination_addresses)) {
           const accountAddressFrom = await this.accountAddressModel.findOne({
             where: { address: destinationAddress },
             include: [
