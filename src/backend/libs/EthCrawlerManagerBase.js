@@ -20,7 +20,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     super(blockchainId, database, logger);
     this.options = {};
     this.syncInterval = 15000;
-    this.decimals = 18;
   }
 
   async init() {
@@ -58,8 +57,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         return Promise.reject();
       }
       if (data.result) {
-        const bnGasPrice = new BigNumber(data.result, 16).dividedBy(new BigNumber(10 ** this.decimals));
-
+        const bnGasPrice = new BigNumber(data.result, 16);
         return Promise.resolve(bnGasPrice.toFixed());
       }
     }

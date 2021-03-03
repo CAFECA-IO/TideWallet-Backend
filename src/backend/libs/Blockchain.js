@@ -214,15 +214,20 @@ class Blockchain extends Bot {
 
       const { avg_fee = '0' } = findBlockchainInfo;
 
-      const slow = new BigNumber(avg_fee).multipliedBy(0.8).toFixed();
-      const fast = new BigNumber(avg_fee).multipliedBy(1.5).toFixed();
+      // avg_fee save unit in db, if avg_fee multiplied 0.8 or 1.5 has decimal point, carry it
+      const slowFormat = new BigNumber(avg_fee).multipliedBy(0.8).toFixed(0);
+      const standardFormat = new BigNumber(avg_fee).toFixed();
+      const fastForMat = new BigNumber(avg_fee).multipliedBy(1.5).toFixed(0);
+
+      let decimals = 8;
+      if (blockchain_id === '8000025B' || blockchain_id === '8000003C')decimals = 18;
 
       return new ResponseFormat({
         message: 'Get Currency Detail',
         payload: {
-          slow,
-          standard: avg_fee,
-          fast,
+          slow: Utils.dividedByDecimal(slowFormat, decimals),
+          standard: Utils.dividedByDecimal(standardFormat, decimals),
+          fast: Utils.dividedByDecimal(fastForMat, decimals),
         },
       });
     } catch (e) {
