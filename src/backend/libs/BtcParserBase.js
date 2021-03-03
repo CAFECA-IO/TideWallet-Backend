@@ -419,7 +419,7 @@ class BtcParserBase extends ParserBase {
           });
           if (findExistUTXO) {
             await this.utxoModel.update({
-              to_tx: inputData.txid,
+              to_tx: transaction_id,
               on_block_timestamp: tx.timestamp,
             },
             {
