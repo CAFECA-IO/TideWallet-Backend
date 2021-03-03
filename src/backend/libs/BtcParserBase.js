@@ -342,6 +342,10 @@ class BtcParserBase extends ParserBase {
     // 1. insert tx
     // 2. insert utxo
     // 3. update used utxo(to_tx), if vin used
+    // 4. check from address is regist address
+    // 5. add mapping table
+    // 6. check to address is regist address
+    // 7. add mapping table
     this.logger.debug(`[${this.constructor.name}] parseTx(${tx.hash})`);
     const {
       fee, to, source_addresses, destination_addresses, note,
@@ -429,6 +433,31 @@ class BtcParserBase extends ParserBase {
               },
               transaction,
             });
+          }
+        }
+
+        // 4. check from address is regist address
+        for (const sourceAddress of source_addresses) {
+          const accountAddressFrom = await this.checkRegistAddress(sourceAddress);
+          if (accountAddressFrom) {
+            // 5. add mapping table
+            await this.setAddressTransaction(
+              accountAddressFrom.accountAddress_id,
+              transaction_id,
+              0,
+            );
+          }
+        }
+        // 6. check to address is regist address
+        for (const destinationAddress of destination_addresses) {
+          const accountAddressFrom = await this.checkRegistAddress(destinationAddress);
+          if (accountAddressFrom) {
+            // 7. add mapping table
+            await this.setAddressTransaction(
+              accountAddressFrom.accountAddress_id,
+              transaction_id,
+              1,
+            );
           }
         }
       });
