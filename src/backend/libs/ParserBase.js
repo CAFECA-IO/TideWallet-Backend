@@ -19,11 +19,14 @@ class ParserBase {
     this.accountAddressModel = this.database.db.AccountAddress;
     this.accountCurrencyModel = this.database.db.AccountCurrency;
     this.addressTransactionModel = this.database.db.AddressTransaction;
+    this.pendingTransactionModel = this.database.db.PendingTransaction;
   }
 
   async init() {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
+    this.thisCycleLatestBlockTimestamp = 0;
+    this.lastCycleLatestBlockTimestamp = 0;
     return this;
   }
 
@@ -58,6 +61,43 @@ class ParserBase {
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] currencyModel error ${error}`);
       return {};
+    }
+  }
+
+  async getPendingTransactionFromDB() {
+    this.logger.debug(`[${this.constructor.name}] getPendingTransactionFromDB`);
+    try {
+      const latest = await this.pendingTransactionModel.findAll({
+        limit: 1,
+        where: { blockchain_id: this.bcid },
+        order: [['timestamp', 'DESC']],
+      });
+
+      if (latest.length > 0) {
+        return JSON.parse(latest[0].transactions);
+      }
+      return latest;
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] getPendingTransactionFromDB error: ${error}`);
+      return [];
+    }
+  }
+
+  async getPendingTransactionFromPeer() {
+    // need override
+    return Promise.resolve();
+  }
+
+  async getTransactionsResultNull() {
+    this.logger.debug(`[${this.constructor.name}] getTransactionsResultNull`);
+    try {
+      const pendingTxs = await this.transactionModel.findAll({
+        where: { currency_id: this.currencyInfo.currency_id, result: null },
+      });
+      return pendingTxs;
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] getTransactionsResultNull error: ${error}`);
+      return [];
     }
   }
 
@@ -116,6 +156,11 @@ class ParserBase {
     // need override
   }
 
+  async parsePendingTransaction() {
+    // need override
+    return Promise.resolve();
+  }
+
   async removeParsedTx(tx) {
     this.logger.debug(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id})`);
     try {
@@ -126,6 +171,16 @@ class ParserBase {
       this.logger.error(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id}) error: ${error}`);
       return Promise.reject(error);
     }
+  }
+
+  async updateBalance() {
+    // need override
+    return Promise.resolve();
+  }
+
+  async updatePendingTransaction() {
+    // need override
+    return Promise.resolve();
   }
 
   async updateRetry(tx) {

@@ -22,8 +22,8 @@ class EthParserBase extends ParserBase {
     await super.init();
     this.isParsing = false;
     this.web3 = new Web3();
-    setInterval(() => {
-      this.doParse();
+    setInterval(async () => {
+      await this.doParse();
     }, this.syncInterval);
 
     this.doParse();
@@ -42,6 +42,8 @@ class EthParserBase extends ParserBase {
     // 3. assign parser
     // 4. update failed unparsed retry
     // 5. remove parsed transaction from UnparsedTransaction table
+    // 6. update balance
+    // 7. update lastCycleLatestBlockTimestamp
 
     try {
       // eslint-disable-next-line no-constant-condition
@@ -79,7 +81,11 @@ class EthParserBase extends ParserBase {
         for (const tx of successParsedTxs) {
           await this.removeParsedTx(tx);
         }
+
+        await this.updateBalance();
+        this.lastCycleLatestBlockTimestamp = this.thisCycleLatestBlockTimestamp;
       }
+
       this.isParsing = false;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
@@ -242,6 +248,30 @@ class EthParserBase extends ParserBase {
     }
   }
 
+  async getPendingTransactionFromPeer() {
+    this.logger.debug(`[${this.constructor.name}] getPendingTransactionFromPeer`);
+    try {
+      const type = 'getPendingTxs';
+      const options = dvalue.clone(this.options);
+      options.data = this.constructor.cmd({ type });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error(`[${this.constructor.name}] getPendingTransactionFromPeer fail`);
+          return null;
+        }
+        if (data.result) {
+          return Promise.resolve(data.result.transactions);
+        }
+      }
+      this.logger.error(`[${this.constructor.name}] getPendingTransactionFromPeer fail, ${JSON.stringify(data.error)}`);
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] getPendingTransactionFromPeer error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
   async parseReceiptTopic(receipt, transaction) {
     this.logger.debug(`[${this.constructor.name}] parseReceiptTopic`);
     // step:
@@ -328,6 +358,7 @@ class EthParserBase extends ParserBase {
     // 5. add mapping table
     // 6. check to address is regist address
     // 7. add mapping table
+    // 8. update thisCycleLatestBlockTimestamp
 
     this.logger.debug(`[${this.constructor.name}] parseTx(${tx.hash})`);
     try {
@@ -404,6 +435,8 @@ class EthParserBase extends ParserBase {
           1,
         );
       }
+
+      this.thisCycleLatestBlockTimestamp = timestamp > this.thisCycleLatestBlockTimestamp ? timestamp : this.thisCycleLatestBlockTimestamp;
       return true;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] parseTx(${tx.hash}) error: ${error}`);
@@ -436,6 +469,145 @@ class EthParserBase extends ParserBase {
     }
   }
 
+  async updateBalance() {
+    this.logger.debug(`[${this.constructor.name}] updateBalance`);
+    // step:
+    // 1. update pending transaction
+    try {
+      await this.parsePendingTransaction();
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] updateBalance error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
+  async updatePendingTransaction() {
+    this.logger.debug(`[${this.constructor.name}] updatePendingTransaction`);
+    try {
+      const pendingTxs = await this.getPendingTransactionFromPeer();
+      const result = await this.pendingTransactionModel.findOrCreate({
+        where: {
+          blockchain_id: this.bcid,
+          transactions: JSON.stringify(pendingTxs),
+          timestamp: Math.floor(Date.now() / 1000),
+        },
+        defaults: {
+          blockchain_id: this.bcid,
+          transactions: JSON.stringify(pendingTxs),
+          timestamp: Math.floor(Date.now() / 1000),
+        },
+      });
+      return result[0];
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] updatePendingTransaction error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
+  async parsePendingTransaction() {
+    this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
+    // step:
+    // 1. check thisCycleLatestBlockTimestamp is bigger than lastCycleLatestBlockTimestamp
+    // 1-1. if yes get pending transaction from peer
+    // 1-2. update pending transaction into pendingTransaction table
+    // 2. find all transaction where status is null(means pending transaction)
+    // 3. get last pending transaction from pendingTransaction table
+    // 4. create transaction which is not in step 2 array
+    // 5. update result to false which is not in step 3 array
+    try {
+      // 1. check thisCycleLatestBlockTimestamp is bigger than lastCycleLatestBlockTimestamp
+
+      if (this.thisCycleLatestBlockTimestamp > this.lastCycleLatestBlockTimestamp) {
+        // 1-1. if yes get pending transaction from peer
+        // 1-2. update pending transaction into pendingTransaction table
+        await this.updatePendingTransaction();
+      }
+      // 2. find all transaction where status is null(means pending transaction)
+      const transactions = await this.getTransactionsResultNull();
+
+      // 3. get last pending transaction from pendingTransaction table
+      const pendingTxs = await this.getPendingTransactionFromDB();
+
+      // 4. create transaction which is not in step 2 array
+      const newTxs = pendingTxs.filter((pendingTx) => transactions.every((transaction) => pendingTx.hash !== transaction.txid));
+      for (const tx of newTxs) {
+        try {
+          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash})`);
+          const bnAmount = new BigNumber(tx.value, 16);
+          const bnGasPrice = new BigNumber(tx.gasPrice, 16);
+          const bnGas = new BigNumber(tx.gas, 16);
+          const fee = bnGasPrice.multipliedBy(bnGas).toFixed();
+
+          let txResult = await this.transactionModel.findOne({
+            where: {
+              currency_id: this.currencyInfo.currency_id,
+              txid: tx.hash,
+            },
+          });
+          if (!txResult) {
+            txResult = await this.transactionModel.create({
+              transaction_id: uuidv4(),
+              currency_id: this.currencyInfo.currency_id,
+              txid: tx.hash,
+              source_addresses: tx.from,
+              destination_addresses: tx.to ? tx.to : '',
+              amount: bnAmount.toFixed(),
+              note: tx.input,
+              block: parseInt(tx.blockNumber, 16),
+              nonce: parseInt(tx.nonce, 16),
+              fee,
+              gas_price: bnGasPrice.toFixed(),
+            });
+          } else {
+            await this.transactionModel.update(
+              {
+                source_addresses: tx.from,
+                destination_addresses: tx.to ? tx.to : '',
+                amount: bnAmount.toFixed(),
+                note: tx.input,
+                block: parseInt(tx.blockNumber, 16),
+                nonce: parseInt(tx.nonce, 16),
+                gas_price: bnGasPrice.toFixed(),
+              },
+              {
+                where: {
+                  currency_id: this.currencyInfo.currency_id,
+                  txid: tx.hash,
+                },
+              },
+            );
+          }
+        } catch (error) {
+          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash}) error: ${error}`);
+        }
+      }
+
+      // 5. update result to false which is not in step 3 array
+      const missingTxs = transactions.filter((transaction) => pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid));
+      for (const tx of missingTxs) {
+        try {
+          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash})`);
+          await this.transactionModel.update(
+            {
+              result: false,
+            },
+            {
+              where: {
+                currency_id: this.currencyInfo.currency_id,
+                txid: tx.hash,
+              },
+            },
+          );
+        } catch (error) {
+          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
+        }
+      }
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
+      return Promise.reject(error);
+    }
+  }
+
   static cmd({
     type, address, command,
   }) {
@@ -449,6 +621,17 @@ class EthParserBase extends ParserBase {
             to: address,
             data: command,
           }, 'latest'],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getPendingTxs':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_getBlockByNumber',
+          params: [
+            'pending',
+            true,
+          ],
           id: dvalue.randomID(),
         };
         break;
