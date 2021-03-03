@@ -1,7 +1,8 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('UnparsedTransaction', {
   // PK
   unparsedTransaction_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
     primaryKey: true,
     allowNull: false,
   },

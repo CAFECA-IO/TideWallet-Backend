@@ -1,27 +1,26 @@
 const { v4: uuidv4 } = require('uuid');
 const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue');
-const Web3 = require('web3');
 const ecrequest = require('ecrequest');
 const ParserBase = require('./ParserBase');
 const Utils = require('./Utils');
-const ethABI = require('./abi/ethABI');
 
-class EthParserBase extends ParserBase {
+class BtcParserBase extends ParserBase {
   constructor(blockchainId, config, database, logger) {
     super(blockchainId, config, database, logger);
 
+    this.utxoModel = this.database.db.UTXO;
     this.receiptModel = this.database.db.Receipt;
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
     this.options = {};
-    this.syncInterval = 15000;
+    this.syncInterval = 900000;
+    this.decimal = 8;
   }
 
   async init() {
     await super.init();
     this.isParsing = false;
-    this.web3 = new Web3();
     setInterval(() => {
       this.doParse();
     }, this.syncInterval);
@@ -60,8 +59,7 @@ class EthParserBase extends ParserBase {
         for (const tx of txs) {
           try {
             const transaction = JSON.parse(tx.transaction);
-            const receipt = JSON.parse(tx.receipt);
-            await this.parseTx(transaction, receipt, tx.timestamp);
+            await this.parseTx(transaction, tx.timestamp);
           } catch (error) {
             failedList.push(tx);
           }
@@ -76,9 +74,9 @@ class EthParserBase extends ParserBase {
         }
 
         // 5. remove parsed transaction from UnparsedTransaction table
-        for (const tx of successParsedTxs) {
-          await this.removeParsedTx(tx);
-        }
+        // for (const tx of successParsedTxs) {
+        //   await this.removeParsedTx(tx);
+        // }
       }
       this.isParsing = false;
     } catch (error) {
@@ -131,7 +129,6 @@ class EthParserBase extends ParserBase {
       }
       return currencyInDb;
     } catch (error) {
-      console.log('error:', error);
       this.logger.error(`[${this.constructor.name}] findOrCreateCurrency error: ${error}`);
       return Promise.reject(error);
     }
@@ -243,172 +240,202 @@ class EthParserBase extends ParserBase {
     }
   }
 
-  async parseReceiptTopic(receipt, transaction) {
-    this.logger.debug(`[${this.constructor.name}] parseReceiptTopic`);
-    // step:
-    // 1. parse log
-    // 2. parse each logs topics
-    // 3. check topic has 'Transfer'
-    // 4. if yes, find or create currency by address
-    // 5. set TokenTransaction
-    // 6. check from address is regist address
-    // 7. add mapping table
-    // 8. check to address is regist address
-    // 9. add mapping table
+  async blockHeightByBlockHashFromPeer(block) {
+    this.logger.debug(`[${this.constructor.name}] blockHeightByBlockHashFromPeer(${block})`);
+    const type = 'getBlockHeight';
+    const options = dvalue.clone(this.options);
+    options.data = this.constructor.cmd({ type, block });
+    const checkId = options.data.id;
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        this.logger.error(`[${this.constructor.name}] blockHeightByBlockHashFromPeer not found`);
+        return Promise.reject();
+      }
+      if (data.result) {
+        const height = data.result.height[2] || '0';
+        return Promise.resolve(height);
+      }
+    }
+    this.logger.error(`[${this.constructor.name}] blockHeightByBlockHashFromPeer not found`);
+    return Promise.reject(data.error);
+  }
 
-    try {
-      const { logs } = receipt;
+  async getTransactionByTxidFromPeer(txid) {
+    this.logger.debug(`[${this.constructor.name}] getTransactionByTxidFromPeer(${txid})`);
+    const type = 'getTransaction';
+    const options = dvalue.clone(this.options);
+    options.data = this.constructor.cmd({ type, txid });
+    const checkId = options.data.id;
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
+        return Promise.reject();
+      }
+      if (data.result) {
+        return Promise.resolve(data.result);
+      }
+    }
+    this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
+    return Promise.reject(data.error);
+  }
 
-      for (const log of logs) {
-        const { address, data, topics } = log;
-        const abi = ethABI[topics[0]];
+  async parseBTCTxAmounts(tx) {
+    let from = new BigNumber(0);
+    let to = new BigNumber(0);
+    let source_addresses = [];
+    let destination_addresses = [];
+    let note = '';
 
-        // 3. check topic has 'Transfer'
-        if (abi && abi.name === 'Transfer' && abi.type === 'event') {
-          // 4. if yes, find or create currency by address
-          const currency = await this.findOrCreateCurrency(address);
+    for (const inputData of tx.vin) {
+      const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid } });
+      if (findUXTO) {
+        from = from.plus(new BigNumber(findUXTO.amount).dividedBy(new BigNumber(10 ** this.decimal)));
+      }
 
-          // 5. set TokenTransaction
-          const bnAmount = new BigNumber(data, 16);
-          const from = Utils.parse32BytesAddress(topics[1]);
-          const to = Utils.parse32BytesAddress(topics[2]);
-          const tokenTransaction = await this.tokenTransactionModel.findOrCreate({
-            where: {
-              transaction_id: transaction.transaction_id, currency_id: currency.currency_id,
-            },
-            defaults: {
-              tokenTransaction_id: uuidv4(),
-              transaction_id: transaction.transaction_id,
-              currency_id: currency.currency_id,
-              txid: transaction.txid,
-              timestamp: transaction.timestamp,
-              source_addresses: from,
-              destination_addresses: to,
-              amount: bnAmount.toFixed(),
-              result: receipt.status === '0x1',
-            },
-          });
-
-          // 6. check from address is regist address
-          const accountAddressFrom = await this.checkRegistAddress(from);
-          if (accountAddressFrom) {
-            // 7. add mapping table
-            await this.setAddressTokenTransaction(
-              currency.currency_id,
-              accountAddressFrom.accountAddress_id,
-              tokenTransaction[0].tokenTransaction_id,
-              0,
-            );
-          }
-          // 8. check to address is regist address
-          const accountAddressTo = await this.checkRegistAddress(to);
-          if (accountAddressTo) {
-            // 9. add mapping table
-            await this.setAddressTokenTransaction(
-              currency.currency_id,
-              accountAddressTo.accountAddress_id,
-              tokenTransaction[0].tokenTransaction_id,
-              1,
-            );
-          }
+      // TODO: change use promise all
+      const txInfo = await this.getTransactionByTxidFromPeer(inputData.txid);
+      if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
+        if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.addresses) {
+          source_addresses = source_addresses.concat(txInfo.vout[inputData.vout].scriptPubKey.addresses);
+        } else if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.type === 'pubkey') {
+          // TODO: need pubkey => P2PK address
+          source_addresses.push(txInfo.vout[inputData.vout].scriptPubKey.hex);
         }
       }
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] parseReceiptTopic error: ${error}`);
-      return Promise.resolve(error);
+    }
+
+    for (const outputData of tx.vout) {
+      to = to.plus(new BigNumber(outputData.value));
+      if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
+        destination_addresses = destination_addresses.concat(outputData.scriptPubKey.addresses);
+      }
+      // TODO: not work
+      if (outputData.scriptPubKey && outputData.scriptPubKey.asm && outputData.scriptPubKey.asm.slice(0, 9) === 'OP_RETURN1') {
+        note = outputData.scriptPubKey.hex || '';
+      } else if (outputData.scriptPubKey && outputData.scriptPubKey.type === 'pubkey') {
+        // TODO: need pubkey => P2PK address
+        source_addresses.push(outputData.scriptPubKey.hex);
+      }
+    }
+
+    return {
+      from, to, fee: from.plus(to), source_addresses: JSON.stringify(source_addresses), destination_addresses: JSON.stringify(destination_addresses), note,
+    };
+  }
+
+  formatTxType(type) {
+    switch (type) {
+      case 'pubkeyhash':
+        return 0;
+      case 'witness_v0_keyhash':
+        return 1;
+      case 'witness_v0_scripthash':
+        return 2;
+      default:
+        return -1;
     }
   }
 
-  async parseTx(tx, receipt, timestamp) {
+  async parseTx(tx, timestamp) {
     // step:
     // 1. insert tx
-    // 2. insert recript
-    // 3. parse receipt to check is token transfer
-    // 3-1. if yes insert token transaction
-    // 4. check from address is regist address
-    // 5. add mapping table
-    // 6. check to address is regist address
-    // 7. add mapping table
-
+    // 2. insert utxo
+    // 3. update used utxo(to_tx), if vin used
     this.logger.debug(`[${this.constructor.name}] parseTx(${tx.hash})`);
+    const {
+      fee, to, source_addresses, destination_addresses, note,
+    } = await this.parseBTCTxAmounts(tx);
+
     try {
-      const bnAmount = new BigNumber(tx.value, 16);
-      const bnGasPrice = new BigNumber(tx.gasPrice, 16);
-      const bnGasUsed = new BigNumber(receipt.gasUsed, 16);
-      const fee = bnGasPrice.multipliedBy(bnGasUsed).toFixed();
-      const insertTx = await this.transactionModel.findOrCreate({
-        where: {
-          currency_id: this.currencyInfo.currency_id,
-          txid: tx.hash,
-        },
-        defaults: {
-          transaction_id: uuidv4(),
-          currency_id: this.currencyInfo.currency_id,
-          txid: tx.hash,
-          timestamp,
-          source_addresses: tx.from,
-          destination_addresses: tx.to ? tx.to : '',
-          amount: bnAmount.toFixed(),
-          fee,
-          note: tx.input,
-          block: parseInt(tx.blockNumber, 16),
-          nonce: parseInt(tx.nonce, 16),
-          gas_price: bnGasPrice.toFixed(),
-          gas_used: bnGasUsed.toFixed(),
-          result: receipt.status === '0x1',
-        },
+      await this.sequelize.transaction(async (transaction) => {
+        const transaction_id = uuidv4();
+
+        // 1. insert tx
+        await this.transactionModel.findOrCreate({
+          where: {
+            currency_id: this.currencyInfo.currency_id,
+            txid: tx.txid,
+          },
+          defaults: {
+            transaction_id,
+            currency_id: this.currencyInfo.currency_id,
+            txid: tx.txid,
+            timestamp,
+            source_addresses,
+            destination_addresses,
+            amount: Utils.multipliedByDecimal(to, this.currencyInfo.decimals),
+            fee: Utils.multipliedByDecimal(fee, this.currencyInfo.decimals),
+            note,
+            block: tx.height,
+            result: true,
+          },
+          transaction,
+        });
+
+        for (const outputData of tx.vout) {
+          if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
+            const [address] = outputData.scriptPubKey.addresses;
+            const findAccountAddress = await this.accountAddressModel.findOne({
+              where: {
+                address,
+              },
+            });
+
+            const type = this.formatTxType(outputData.scriptPubKey.type);
+            if (findAccountAddress && type !== -1) {
+              const amount = Utils.multipliedByDecimal(outputData.value, this.currencyInfo.decimals);
+              // 2. insert utxo
+              await this.utxoModel.findOrCreate({
+                where: {
+                  txid: tx.txid,
+                  vout: outputData.n,
+                },
+                defaults: {
+                  utxo_id: uuidv4(),
+                  currency_id: this.currencyInfo.currency_id,
+                  accountAddress_id: findAccountAddress.accountAddress_id,
+                  transaction_id,
+                  txid: tx.txid,
+                  vout: outputData.n,
+                  type,
+                  amount,
+                  script: outputData.scriptPubKey.hex,
+                  locktime: tx.locktime,
+                },
+                transaction,
+              });
+            }
+          }
+        }
+        // 3. update used utxo(to_tx), if vin used
+        for (const inputData of tx.vin) {
+          const findExistUTXO = await this.utxoModel.findOne({
+            where: {
+              txid: tx.txid,
+              vout: inputData.vout,
+            },
+            transaction,
+          });
+          if (findExistUTXO) {
+            await this.utxoModel.update({
+              to_tx: inputData.txid,
+              on_block_timestamp: tx.timestamp,
+            },
+            {
+              where: {
+                txid: tx.txid,
+                vout: inputData.vout,
+              },
+              transaction,
+            });
+          }
+        }
       });
-
-      await this.receiptModel.findOrCreate({
-        where: {
-          transaction_id: insertTx[0].transaction_id,
-          currency_id: this.currencyInfo.currency_id,
-        },
-        defaults: {
-          receipt_id: uuidv4(),
-          transaction_id: insertTx[0].transaction_id,
-          currency_id: this.currencyInfo.currency_id,
-          contract_address: receipt.contractAddress,
-          cumulative_gas_used: parseInt(receipt.cumulativeGasUsed, 16),
-          gas_used: bnGasUsed.toFixed(),
-          logs: JSON.stringify(receipt.logs),
-          logsBloom: receipt.logsBloom,
-          status: parseInt(receipt.status, 16),
-        },
-      });
-
-      const { from, to } = tx;
-      // 3. parse receipt to check is token transfer
-      await this.parseReceiptTopic(receipt, insertTx[0]);
-
-      // 3-1. if yes insert token transaction
-      // TODO
-
-      // 4. check from address is regist address
-      const accountAddressFrom = await this.checkRegistAddress(from);
-      if (accountAddressFrom) {
-        // 5. add mapping table
-        await this.setAddressTransaction(
-          accountAddressFrom.accountAddress_id,
-          insertTx[0].transaction_id,
-          0,
-        );
-      }
-
-      // 6. check to address is regist address
-      const accountAddressTo = await this.checkRegistAddress(to);
-      if (accountAddressTo) {
-        // 7. add mapping table
-        await this.setAddressTransaction(
-          accountAddressTo.accountAddress_id,
-          insertTx[0].transaction_id,
-          1,
-        );
-      }
-      return true;
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] parseTx(${tx.hash}) error: ${error}`);
-      return Promise.reject(error);
+    } catch (e) {
+      console.log(e);
+      throw e;
     }
   }
 
@@ -438,18 +465,15 @@ class EthParserBase extends ParserBase {
   }
 
   static cmd({
-    type, address, command,
+    type, txid,
   }) {
     let result;
     switch (type) {
-      case 'callContract':
+      case 'getTransaction':
         result = {
-          jsonrpc: '2.0',
-          method: 'eth_call',
-          params: [{
-            to: address,
-            data: command,
-          }, 'latest'],
+          jsonrpc: '1.0',
+          method: 'getrawtransaction',
+          params: [txid, true],
           id: dvalue.randomID(),
         };
         break;
@@ -460,4 +484,4 @@ class EthParserBase extends ParserBase {
   }
 }
 
-module.exports = EthParserBase;
+module.exports = BtcParserBase;

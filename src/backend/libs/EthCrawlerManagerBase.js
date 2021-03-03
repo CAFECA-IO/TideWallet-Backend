@@ -152,7 +152,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       const insertResult = await this.unparsedTxModel.findOrCreate({
         where: { blockchain_id: this.bcid, txid: transaction.hash },
         defaults: {
-          unparsedTransaction_id: uuidv4(),
           blockchain_id: this.bcid,
           txid: transaction.hash,
           transaction: JSON.stringify(transaction),
@@ -287,7 +286,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
             });
             if (!findTX) {
               insertTx.push({
-                unparsedTransaction_id: uuidv4(),
                 blockchain_id: this.bcid,
                 txid: transactions[j].hash,
                 transaction: JSON.stringify(transactions[j]),
