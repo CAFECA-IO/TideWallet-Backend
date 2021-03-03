@@ -243,7 +243,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           if (!findTX) {
             insertTx.push({
               blockchain_id: this.bcid,
-              txid: txs[j].hash,
+              txid: txs[j].txid,
               transaction: JSON.stringify(txs[j]),
               receipt: '',
               timestamp,
