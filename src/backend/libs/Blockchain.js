@@ -2,6 +2,7 @@ const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue'); const { v4: uuidv4 } = require('uuid');
 const Web3 = require('web3');
 const ecrequest = require('ecrequest');
+const { toChecksumAddress } = require('ethereumjs-util');
 const EthParser = require('./EthParser');
 const EthRopstenParser = require('./EthRopstenParser');
 const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
@@ -220,7 +221,11 @@ class Blockchain extends Bot {
       const fastForMat = new BigNumber(avg_fee).multipliedBy(1.5).toFixed(0);
 
       let decimals = 8;
-      if (blockchain_id === '8000025B' || blockchain_id === '8000003C')decimals = 18;
+      const findBlockchainCurrencyDecimals = await this.currencyModel.findOne({
+        where: { blockchain_id, type: 1 },
+        attributes: 'decimals',
+      });
+      if (findBlockchainCurrencyDecimals) decimals = findBlockchainCurrencyDecimals.decimals;
 
       return new ResponseFormat({
         message: 'Get Currency Detail',
