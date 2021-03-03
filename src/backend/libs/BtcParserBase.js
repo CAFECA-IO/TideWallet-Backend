@@ -74,9 +74,9 @@ class BtcParserBase extends ParserBase {
         }
 
         // 5. remove parsed transaction from UnparsedTransaction table
-        // for (const tx of successParsedTxs) {
-        //   await this.removeParsedTx(tx);
-        // }
+        for (const tx of successParsedTxs) {
+          await this.removeParsedTx(tx);
+        }
       }
       this.isParsing = false;
     } catch (error) {
@@ -311,12 +311,11 @@ class BtcParserBase extends ParserBase {
       if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
         destination_addresses = destination_addresses.concat(outputData.scriptPubKey.addresses);
       }
-      // TODO: not work
       if (outputData.scriptPubKey && outputData.scriptPubKey.asm && outputData.scriptPubKey.asm.slice(0, 9) === 'OP_RETURN1') {
         note = outputData.scriptPubKey.hex || '';
       } else if (outputData.scriptPubKey && outputData.scriptPubKey.type === 'pubkey') {
         // TODO: need pubkey => P2PK address
-        source_addresses.push(outputData.scriptPubKey.hex);
+        destination_addresses.push(outputData.scriptPubKey.hex);
       }
     }
 
