@@ -438,26 +438,68 @@ class BtcParserBase extends ParserBase {
 
         // 4. check from address is regist address
         for (const sourceAddress of source_addresses) {
-          const accountAddressFrom = await this.checkRegistAddress(sourceAddress);
+          const accountAddressFrom = await this.accountAddressModel.findOne({
+            where: { address: sourceAddress },
+            include: [
+              {
+                model: this.accountModel,
+                attributes: ['blockchain_id'],
+                where: { blockchain_id: this.bcid },
+              },
+            ],
+            transaction,
+          });
           if (accountAddressFrom) {
             // 5. add mapping table
-            await this.setAddressTransaction(
-              accountAddressFrom.accountAddress_id,
-              transaction_id,
-              0,
-            );
+            await this.addressTransactionModel.findOrCreate({
+              where: {
+                currency_id: this.currencyInfo.currency_id,
+                accountAddress_id: accountAddressFrom.accountAddress_id,
+                transaction_id,
+                direction: 0,
+              },
+              defaults: {
+                addressTransaction_id: uuidv4(),
+                currency_id: this.currencyInfo.currency_id,
+                accountAddress_id: accountAddressFrom.accountAddress_id,
+                transaction_id,
+                direction: 0,
+              },
+              transaction,
+            });
           }
         }
         // 6. check to address is regist address
         for (const destinationAddress of destination_addresses) {
-          const accountAddressFrom = await this.checkRegistAddress(destinationAddress);
+          const accountAddressFrom = await this.accountAddressModel.findOne({
+            where: { address: destinationAddress },
+            include: [
+              {
+                model: this.accountModel,
+                attributes: ['blockchain_id'],
+                where: { blockchain_id: this.bcid },
+              },
+            ],
+            transaction,
+          });
           if (accountAddressFrom) {
             // 7. add mapping table
-            await this.setAddressTransaction(
-              accountAddressFrom.accountAddress_id,
-              transaction_id,
-              1,
-            );
+            await this.addressTransactionModel.findOrCreate({
+              where: {
+                currency_id: this.currencyInfo.currency_id,
+                accountAddress_id: accountAddressFrom.accountAddress_id,
+                transaction_id,
+                direction: 1,
+              },
+              defaults: {
+                addressTransaction_id: uuidv4(),
+                currency_id: this.currencyInfo.currency_id,
+                accountAddress_id: accountAddressFrom.accountAddress_id,
+                transaction_id,
+                direction: 1,
+              },
+              transaction,
+            });
           }
         }
       });
