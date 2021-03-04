@@ -231,7 +231,7 @@ class Blockchain extends Bot {
       let decimals = 8;
       const findBlockchainCurrencyDecimals = await this.currencyModel.findOne({
         where: { blockchain_id, type: 1 },
-        attributes: 'decimals',
+        attributes: ['decimals'],
       });
       if (findBlockchainCurrencyDecimals) decimals = findBlockchainCurrencyDecimals.decimals;
 
