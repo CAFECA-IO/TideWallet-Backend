@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('UTXO', {
     allowNull: false,
   },
   type: {
-    type: DataTypes.SMALLINT,
+    type: DataTypes.STRING,
     allowNull: false,
   },
   amount: {

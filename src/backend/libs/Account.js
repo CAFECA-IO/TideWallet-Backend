@@ -789,6 +789,12 @@ class Account extends Bot {
     // find all UTXO
     const findUTXO = await this.utxoModel.findAll({
       where: { accountAddress_id: findAccountAddress.accountAddress_id },
+      include: [
+        {
+          model: this.accountAddressModel,
+          attributes: ['address'],
+        },
+      ],
     });
 
     for (let i = 0; i < findUTXO.length; i++) {
@@ -803,6 +809,7 @@ class Account extends Bot {
         timestamp: utxo.on_block_timestamp,
         chain_index,
         key_index,
+        address: utxo.Account.address,
       });
     }
   }

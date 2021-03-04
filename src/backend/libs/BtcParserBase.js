@@ -4,6 +4,7 @@ const dvalue = require('dvalue');
 const ecrequest = require('ecrequest');
 const ParserBase = require('./ParserBase');
 const Utils = require('./Utils');
+const HDWallet = require('./HDWallet');
 
 class BtcParserBase extends ParserBase {
   constructor(blockchainId, config, database, logger) {
@@ -61,6 +62,7 @@ class BtcParserBase extends ParserBase {
             const transaction = JSON.parse(tx.transaction);
             await this.parseTx(transaction, tx.timestamp);
           } catch (error) {
+            console.log('error:', error);
             failedList.push(tx);
           }
         }
@@ -327,19 +329,6 @@ class BtcParserBase extends ParserBase {
     };
   }
 
-  formatTxType(type) {
-    switch (type) {
-      case 'pubkeyhash':
-        return 0;
-      case 'witness_v0_keyhash':
-        return 1;
-      case 'witness_v0_scripthash':
-        return 2;
-      default:
-        return -1;
-    }
-  }
-
   async parseTx(tx, timestamp) {
     // step:
     // 1. insert tx
@@ -354,165 +343,199 @@ class BtcParserBase extends ParserBase {
       fee, to, source_addresses, destination_addresses, note,
     } = await this.parseBTCTxAmounts(tx);
 
-    try {
-      await this.sequelize.transaction(async (transaction) => {
-        const transaction_id = uuidv4();
+    await this.sequelize.transaction(async (transaction) => {
+      const transaction_id = uuidv4();
 
-        // 1. insert tx
-        await this.transactionModel.findOrCreate({
-          where: {
-            currency_id: this.currencyInfo.currency_id,
-            txid: tx.txid,
-          },
-          defaults: {
-            transaction_id,
-            currency_id: this.currencyInfo.currency_id,
-            txid: tx.txid,
-            timestamp,
-            source_addresses,
-            destination_addresses,
-            amount: Utils.multipliedByDecimal(to, this.currencyInfo.decimals),
-            fee: Utils.multipliedByDecimal(fee, this.currencyInfo.decimals),
-            note,
-            block: tx.height,
-            result: true,
-          },
-          transaction,
-        });
+      // 1. insert tx
+      await this.transactionModel.findOrCreate({
+        where: {
+          currency_id: this.currencyInfo.currency_id,
+          txid: tx.txid,
+        },
+        defaults: {
+          transaction_id,
+          currency_id: this.currencyInfo.currency_id,
+          txid: tx.txid,
+          timestamp,
+          source_addresses,
+          destination_addresses,
+          amount: Utils.multipliedByDecimal(to, this.currencyInfo.decimals),
+          fee: Utils.multipliedByDecimal(fee, this.currencyInfo.decimals),
+          note,
+          block: tx.height,
+          result: true,
+        },
+        transaction,
+      });
 
-        for (const outputData of tx.vout) {
-          if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
-            const [address] = outputData.scriptPubKey.addresses;
-            const findAccountAddress = await this.accountAddressModel.findOne({
+      for (const outputData of tx.vout) {
+        if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
+          const [address] = outputData.scriptPubKey.addresses;
+          const findAccountAddress = await this.accountAddressModel.findOne({
+            where: {
+              address,
+            },
+          });
+
+          if (findAccountAddress) {
+            const amount = Utils.multipliedByDecimal(outputData.value, this.currencyInfo.decimals);
+            // 2. insert utxo
+            await this.utxoModel.findOrCreate({
               where: {
-                address,
+                txid: tx.txid,
+                vout: outputData.n,
               },
+              defaults: {
+                utxo_id: uuidv4(),
+                currency_id: this.currencyInfo.currency_id,
+                accountAddress_id: findAccountAddress.accountAddress_id,
+                transaction_id,
+                txid: tx.txid,
+                vout: outputData.n,
+                type: outputData.scriptPubKey.type,
+                amount,
+                script: outputData.scriptPubKey.hex,
+                locktime: tx.locktime,
+              },
+              transaction,
             });
-
-            const type = this.formatTxType(outputData.scriptPubKey.type);
-            if (findAccountAddress && type !== -1) {
-              const amount = Utils.multipliedByDecimal(outputData.value, this.currencyInfo.decimals);
-              // 2. insert utxo
-              await this.utxoModel.findOrCreate({
-                where: {
-                  txid: tx.txid,
-                  vout: outputData.n,
-                },
-                defaults: {
-                  utxo_id: uuidv4(),
-                  currency_id: this.currencyInfo.currency_id,
-                  accountAddress_id: findAccountAddress.accountAddress_id,
-                  transaction_id,
-                  txid: tx.txid,
-                  vout: outputData.n,
-                  type,
-                  amount,
-                  script: outputData.scriptPubKey.hex,
-                  locktime: tx.locktime,
-                },
-                transaction,
-              });
-            }
           }
         }
-        // 3. update used utxo(to_tx), if vin used
-        for (const inputData of tx.vin) {
-          // if coinbase, continue
-          if (!inputData.coinbase) {
-            const findExistUTXO = await this.utxoModel.findOne({
+      }
+      // 3. update used utxo(to_tx), if vin used
+      for (const inputData of tx.vin) {
+        // if coinbase, continue
+        if (!inputData.coinbase) {
+          const findExistUTXO = await this.utxoModel.findOne({
+            where: {
+              txid: tx.txid,
+              vout: inputData.vout,
+            },
+            transaction,
+          });
+          if (findExistUTXO) {
+            await this.utxoModel.update({
+              to_tx: transaction_id,
+              on_block_timestamp: tx.timestamp,
+            },
+            {
               where: {
                 txid: tx.txid,
                 vout: inputData.vout,
               },
               transaction,
             });
-            if (findExistUTXO) {
-              await this.utxoModel.update({
-                to_tx: transaction_id,
-                on_block_timestamp: tx.timestamp,
-              },
+          }
+        }
+      }
+
+      // 4. check from address is regist address
+      for (const sourceAddress of JSON.parse(source_addresses)) {
+        const accountAddressFrom = await this.accountAddressModel.findOne({
+          where: { address: sourceAddress },
+          include: [
+            {
+              model: this.accountModel,
+              attributes: ['blockchain_id'],
+              where: { blockchain_id: this.bcid },
+            },
+          ],
+          transaction,
+        });
+        if (accountAddressFrom) {
+          // 5. add mapping table
+          await this.addressTransactionModel.findOrCreate({
+            where: {
+              currency_id: this.currencyInfo.currency_id,
+              accountAddress_id: accountAddressFrom.accountAddress_id,
+              transaction_id,
+              direction: 0,
+            },
+            defaults: {
+              addressTransaction_id: uuidv4(),
+              currency_id: this.currencyInfo.currency_id,
+              accountAddress_id: accountAddressFrom.accountAddress_id,
+              transaction_id,
+              direction: 0,
+            },
+            transaction,
+          });
+        }
+      }
+      // 6. check to address is regist address
+      for (const destinationAddress of JSON.parse(destination_addresses)) {
+        const accountAddressFrom = await this.accountAddressModel.findOne({
+          where: { address: destinationAddress },
+          include: [
+            {
+              model: this.accountModel,
+              attributes: ['account_id', 'blockchain_id', 'extend_public_key'],
+              where: { blockchain_id: this.bcid },
+              include: [
+                {
+                  model: this.blockchainModel,
+                  attributes: ['coin_type'],
+                },
+              ],
+            },
+          ],
+          transaction,
+        });
+        if (accountAddressFrom) {
+          // 7. add mapping table
+          await this.addressTransactionModel.findOrCreate({
+            where: {
+              currency_id: this.currencyInfo.currency_id,
+              accountAddress_id: accountAddressFrom.accountAddress_id,
+              transaction_id,
+              direction: 1,
+            },
+            defaults: {
+              addressTransaction_id: uuidv4(),
+              currency_id: this.currencyInfo.currency_id,
+              accountAddress_id: accountAddressFrom.accountAddress_id,
+              transaction_id,
+              direction: 1,
+            },
+            transaction,
+          });
+
+          // 8. if vout has account change address, update number_of_internal_key += 1
+          if (accountAddressFrom.chain_index === 1) {
+            const accountCurrency = await this.accountCurrencyModel.increment(
+              { number_of_internal_key: 1 },
               {
                 where: {
-                  txid: tx.txid,
-                  vout: inputData.vout,
+                  account_id: accountAddressFrom.Account.account_id,
+                  currency_id: this.currencyInfo.currency_id,
                 },
                 transaction,
+              },
+            );
+
+            if (accountCurrency && accountCurrency.length > 0 && accountCurrency[0] && accountCurrency[0][0] && accountCurrency[0][0][0]) {
+              const hdWallet = new HDWallet({ extendPublicKey: accountAddressFrom.Account.extend_public_key });
+              const coinType = accountAddressFrom.Account.Blockchain.coin_type;
+              const wallet = hdWallet.getWalletInfo({
+                change: 1,
+                index: accountCurrency[0][0][0].number_of_internal_key,
+                coinType,
+                blockchainID: accountAddressFrom.Account.blockchain_id,
+              });
+
+              await this.accountAddressModel.create({
+                accountAddress_id: uuidv4(),
+                account_id: accountAddressFrom.Account.account_id,
+                chain_index: 1,
+                key_index: accountCurrency[0][0][0].number_of_internal_key,
+                public_key: wallet.publicKey,
+                address: wallet.address,
               });
             }
           }
         }
-
-        // 4. check from address is regist address
-        for (const sourceAddress of JSON.parse(source_addresses)) {
-          const accountAddressFrom = await this.accountAddressModel.findOne({
-            where: { address: sourceAddress },
-            include: [
-              {
-                model: this.accountModel,
-                attributes: ['blockchain_id'],
-                where: { blockchain_id: this.bcid },
-              },
-            ],
-            transaction,
-          });
-          if (accountAddressFrom) {
-            // 5. add mapping table
-            await this.addressTransactionModel.findOrCreate({
-              where: {
-                currency_id: this.currencyInfo.currency_id,
-                accountAddress_id: accountAddressFrom.accountAddress_id,
-                transaction_id,
-                direction: 0,
-              },
-              defaults: {
-                addressTransaction_id: uuidv4(),
-                currency_id: this.currencyInfo.currency_id,
-                accountAddress_id: accountAddressFrom.accountAddress_id,
-                transaction_id,
-                direction: 0,
-              },
-              transaction,
-            });
-          }
-        }
-        // 6. check to address is regist address
-        for (const destinationAddress of JSON.parse(destination_addresses)) {
-          const accountAddressFrom = await this.accountAddressModel.findOne({
-            where: { address: destinationAddress },
-            include: [
-              {
-                model: this.accountModel,
-                attributes: ['blockchain_id'],
-                where: { blockchain_id: this.bcid },
-              },
-            ],
-            transaction,
-          });
-          if (accountAddressFrom) {
-            // 7. add mapping table
-            await this.addressTransactionModel.findOrCreate({
-              where: {
-                currency_id: this.currencyInfo.currency_id,
-                accountAddress_id: accountAddressFrom.accountAddress_id,
-                transaction_id,
-                direction: 1,
-              },
-              defaults: {
-                addressTransaction_id: uuidv4(),
-                currency_id: this.currencyInfo.currency_id,
-                accountAddress_id: accountAddressFrom.accountAddress_id,
-                transaction_id,
-                direction: 1,
-              },
-              transaction,
-            });
-          }
-        }
-      });
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
+      }
+    });
   }
 
   async setAddressTokenTransaction(currency_id, accountAddress_id, tokenTransaction_id, direction) {

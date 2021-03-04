@@ -119,7 +119,7 @@ class User extends Bot {
             address: wallet.address,
           }, { transaction });
 
-          if (accounts[i].blockchain_id === '80000000' && accounts[i].blockchain_id === '80000001') {
+          if (accounts[i].blockchain_id === '80000000' || accounts[i].blockchain_id === '80000001') {
             const changeWallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id, chang: 1 });
             await this.accountAddressModel.create({
               accountAddress_id: uuidv4(),
