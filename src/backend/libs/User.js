@@ -92,7 +92,7 @@ class User extends Bot {
             account_id: uuidv4(),
             user_id: insertUser.user_id,
             blockchain_id: accounts[i].blockchain_id,
-            purpose: 44,
+            purpose: 3324,
             curve_type: 0,
             extend_public_key,
             regist_block_num: accounts[i].Blockchain.block,
@@ -118,6 +118,18 @@ class User extends Bot {
             public_key: wallet.publicKey,
             address: wallet.address,
           }, { transaction });
+
+          if (accounts[i].blockchain_id === '80000000' || accounts[i].blockchain_id === '80000001') {
+            const changeWallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id, chang: 1 });
+            await this.accountAddressModel.create({
+              accountAddress_id: uuidv4(),
+              account_id: insertAccount.account_id,
+              chain_index: 1,
+              key_index: 0,
+              public_key: changeWallet.publicKey,
+              address: changeWallet.address,
+            }, { transaction });
+          }
         }
         await this.deviceModel.create({
           device_id: uuidv4(),

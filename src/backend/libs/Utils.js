@@ -218,7 +218,7 @@ class Utils {
       } catch (e) {
         this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
         this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
-        return false;
+        return e;
       }
       return Promise.resolve(response);
     });
@@ -813,13 +813,38 @@ class Utils {
   }
 
   static dividedByDecimal(amount, decimal) {
-    let _amount = new BigNumber(amount);
+    let _amount = (amount instanceof BigNumber) ? amount : new BigNumber(amount);
     if (typeof amount === 'string' && (amount).indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
     return _amount.dividedBy(new BigNumber(10 ** decimal)).toFixed();
   }
 
+  static multipliedByDecimal(amount, decimal) {
+    let _amount = (amount instanceof BigNumber) ? amount : new BigNumber(amount);
+    if (typeof amount === 'string' && (amount).indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
+    return _amount.multipliedBy(new BigNumber(10 ** decimal)).toFixed();
+  }
+
   static getBlockchainConfig(blockchain_id) {
     return Object.values(this.config.blockchain).find((info) => info.blockchain_id === blockchain_id) || false;
+  }
+
+  static hash160(data) {
+    return this.ripemd160(this.sha256(data));
+  }
+
+  static pubkeyToBIP49RedeemScript(compressedPubKey) {
+    const rs = [0x00, 0x14];
+    rs.push(...this.hash160(compressedPubKey));
+    return Buffer.from(rs);
+  }
+
+  static pubkeyToP2SHAddress(type, compressedPubKey) {
+    const redeemScript = this.pubkeyToBIP49RedeemScript(compressedPubKey);
+    const fingerprint = this.hash160(redeemScript);
+    // List<int> checksum = sha256(sha256(fingerprint)).sublist(0, 4);
+    // bs58check library 會幫加checksum
+    const address = bs58check.encode(Uint8Array.from([type.p2shAddressPrefix, ...fingerprint]));
+    return address;
   }
 }
 

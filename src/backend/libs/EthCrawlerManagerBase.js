@@ -20,7 +20,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     super(blockchainId, database, logger);
     this.options = {};
     this.syncInterval = 15000;
-    this.decimals = 18;
   }
 
   async init() {
@@ -58,8 +57,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         return Promise.reject();
       }
       if (data.result) {
-        const bnGasPrice = new BigNumber(data.result, 16).dividedBy(new BigNumber(10 ** this.decimals));
-
+        const bnGasPrice = new BigNumber(data.result, 16);
         return Promise.resolve(bnGasPrice.toFixed());
       }
     }
@@ -152,7 +150,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       const insertResult = await this.unparsedTxModel.findOrCreate({
         where: { blockchain_id: this.bcid, txid: transaction.hash },
         defaults: {
-          unparsedTransaction_id: uuidv4(),
           blockchain_id: this.bcid,
           txid: transaction.hash,
           transaction: JSON.stringify(transaction),
@@ -317,7 +314,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
             });
             if (!findTX) {
               insertTx.push({
-                unparsedTransaction_id: uuidv4(),
                 blockchain_id: this.bcid,
                 txid: transactions[j].hash,
                 transaction: JSON.stringify(transactions[j]),

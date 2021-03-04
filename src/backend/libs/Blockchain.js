@@ -1,8 +1,10 @@
+/* eslint-disable no-case-declarations */
 const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue'); const { v4: uuidv4 } = require('uuid');
 const Web3 = require('web3');
 const ecrequest = require('ecrequest');
 const EthParser = require('./EthParser');
+const BtcParserBase = require('./BtcParserBase');
 const EthRopstenParser = require('./EthRopstenParser');
 const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
 const Codes = require('./Codes');
@@ -28,6 +30,13 @@ class Blockchain extends Bot {
       this.blockchainModel = this.database.db.Blockchain;
       this.currencyModel = this.database.db.Currency;
       this.fiatCurrencyRateModel = this.database.db.FiatCurrencyRate;
+
+      // used by BtcParserBase.parseTx.call
+      this.transactionModel = this.database.db.Transaction;
+      this.accountAddressModel = this.database.db.AccountAddress;
+      this.utxoModel = this.database.db.UTXO;
+      this.addressTransactionModel = this.database.db.AddressTransaction;
+      this.accountCurrencyModel = this.database.db.AccountCurrency;
 
       this.sequelize = this.database.db.sequelize;
       this.Sequelize = this.database.db.Sequelize;
@@ -214,15 +223,24 @@ class Blockchain extends Bot {
 
       const { avg_fee = '0' } = findBlockchainInfo;
 
-      const slow = new BigNumber(avg_fee).multipliedBy(0.8).toFixed();
-      const fast = new BigNumber(avg_fee).multipliedBy(1.5).toFixed();
+      // avg_fee save unit in db, if avg_fee multiplied 0.8 or 1.5 has decimal point, carry it
+      const slowFormat = new BigNumber(avg_fee).multipliedBy(0.8).toFixed(0);
+      const standardFormat = new BigNumber(avg_fee).toFixed();
+      const fastForMat = new BigNumber(avg_fee).multipliedBy(1.5).toFixed(0);
+
+      let decimals = 8;
+      const findBlockchainCurrencyDecimals = await this.currencyModel.findOne({
+        where: { blockchain_id, type: 1 },
+        attributes: 'decimals',
+      });
+      if (findBlockchainCurrencyDecimals) decimals = findBlockchainCurrencyDecimals.decimals;
 
       return new ResponseFormat({
         message: 'Get Currency Detail',
         payload: {
-          slow,
-          standard: avg_fee,
-          fast,
+          slow: Utils.dividedByDecimal(slowFormat, decimals),
+          standard: Utils.dividedByDecimal(standardFormat, decimals),
+          fast: Utils.dividedByDecimal(fastForMat, decimals),
         },
       });
     } catch (e) {
@@ -264,9 +282,8 @@ class Blockchain extends Bot {
           }],
           id: dvalue.randomID(),
         };
-        // eslint-disable-next-line no-case-declarations
         const data = await Utils.ETHRPC(option);
-
+        if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
         if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
         gasLimit = new BigNumber(data.result).toFixed();
         return new ResponseFormat({
@@ -309,7 +326,6 @@ class Blockchain extends Bot {
       switch (blockchain_id) {
         case '8000003C':
         case '8000025B':
-          // eslint-disable-next-line no-case-declarations
           const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
           if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
@@ -320,9 +336,9 @@ class Blockchain extends Bot {
             params: [address, 'latest'],
             id: dvalue.randomID(),
           };
-          // eslint-disable-next-line no-case-declarations
           const data = await Utils.ETHRPC(option);
 
+          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
           if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
           nonce = new BigNumber(data.result).toFixed();
 
@@ -344,6 +360,23 @@ class Blockchain extends Bot {
     }
   }
 
+  async saveBTCPublishTransaction(tx, currencyInfo, retryCount = 0) {
+    if (retryCount > 3) {
+      this.logger.error('saveBTCPublishTransaction retry error');
+      this.logger.error('saveBTCPublishTransaction tx', JSON.stringify(tx));
+      this.logger.error('saveBTCPublishTransaction currencyInfo', JSON.stringify(currencyInfo.toJSON()));
+      return;
+    }
+    try {
+      await BtcParserBase.parseTx.call(this, tx, currencyInfo, 0);
+    } catch (error) {
+      this.logger.error('saveBTCPublishTransaction retry error:', error.message);
+      setTimeout(() => {
+        this.saveBTCPublishTransaction(tx, currencyInfo, retryCount += 1);
+      }, 300);
+    }
+  }
+
   async PublishTransaction({ params, body }) {
     const { blockchain_id } = params;
     const { hex } = body;
@@ -351,13 +384,12 @@ class Blockchain extends Bot {
 
     try {
       let option = {};
+      let data = {};
+      const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+      if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
       switch (blockchain_id) {
         case '8000003C':
         case '8000025B':
-          // eslint-disable-next-line no-case-declarations
-          const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
-          if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
-
           option = { ...blockchainConfig };
           option.data = {
             jsonrpc: '2.0',
@@ -365,9 +397,9 @@ class Blockchain extends Bot {
             params: [hex],
             id: dvalue.randomID(),
           };
-          // eslint-disable-next-line no-case-declarations
-          const data = await Utils.ETHRPC(option);
+          data = await Utils.ETHRPC(option);
 
+          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
           if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
 
           return new ResponseFormat({
@@ -377,6 +409,48 @@ class Blockchain extends Bot {
             },
           });
 
+        case '80000000':
+        case '80000001':
+          option = { ...blockchainConfig };
+          let txid = '';
+          // send transaction
+          option.data = {
+            jsonrpc: '2.0',
+            method: 'sendrawtransaction',
+            params: [hex],
+            id: dvalue.randomID(),
+          };
+          data = await Utils.BTCRPC(option);
+          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
+          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          txid = data.result;
+
+          // if send success, insert transaction & pending utxo to db
+          option.data = {
+            jsonrpc: '2.0',
+            method: 'decoderawtransaction',
+            params: [hex],
+            id: dvalue.randomID(),
+          };
+          data = await Utils.BTCRPC(option);
+          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
+          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+
+          const findCurrency = await this.currencyModel.findOne({
+            where: {
+              blockchain_id,
+              type: 1,
+            },
+            attributes: ['currency_id', 'decimals'],
+          });
+
+          this.bcid = blockchain_id;
+          await this.saveBTCPublishTransaction(data.result, findCurrency, 0);
+
+          return new ResponseFormat({
+            message: 'Publish Transaction',
+            payload: { txid },
+          });
         default:
           return new ResponseFormat({
             message: 'Publish Transaction',

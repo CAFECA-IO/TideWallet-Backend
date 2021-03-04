@@ -220,8 +220,8 @@ class Account extends Bot {
           let { balance } = accountCurrency;
           const { Currency, currency_id, accountCurrency_id } = accountCurrency;
 
-          // if ETH symbol, request RPC get balance
           if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C') {
+            // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
             const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: account.blockchain_id } });
             if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
               const findAddress = await this.accountAddressModel.findOne({
@@ -239,6 +239,25 @@ class Account extends Bot {
             } else {
               balance = accountCurrency.balance;
             }
+          } else if (account.blockchain_id === '80000000' || account.blockchain_id === '80000001') {
+            // TODO: get btc balance 拔成一個 function
+            // if BTC symbol, count all utxo in db
+            const findAllAddress = await this.accountAddressModel.findAll({
+              where: { account_id: account.account_id },
+              attributes: ['accountAddress_id'],
+            });
+            balance = new BigNumber(0);
+            for (const addressItem of findAllAddress) {
+              const findUTXOByAddress = await this.utxoModel.findAll({
+                where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
+                attributes: ['amount'],
+              });
+
+              for (const utxoItem of findUTXOByAddress) {
+                balance = balance.plus(new BigNumber(utxoItem.amount));
+              }
+            }
+            balance = Utils.dividedByDecimal(balance, Currency.decimals);
           }
 
           payload.push({
@@ -307,8 +326,8 @@ class Account extends Bot {
       for (let j = 0; j < findAccountCurrencies.length; j++) {
         const accountCurrency = findAccountCurrencies[j];
         let { balance = '0' } = accountCurrency;
-        // if ETH symbol, request RPC get balance
         if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C') {
+          // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
           const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
           if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
             const findAddress = await this.accountAddressModel.findOne({
@@ -329,6 +348,25 @@ class Account extends Bot {
               balance = accountCurrency.balance;
             }
           }
+        } else if (findAccount.blockchain_id === '80000000' || findAccount.blockchain_id === '80000001') {
+          // TODO: get btc balance 拔成一個 function
+          // if BTC symbol, count all utxo in db
+          const findAllAddress = await this.accountAddressModel.findAll({
+            where: { account_id: findAccount.account_id },
+            attributes: ['accountAddress_id'],
+          });
+          balance = new BigNumber(0);
+          for (const addressItem of findAllAddress) {
+            const findUTXOByAddress = await this.utxoModel.findAll({
+              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
+              attributes: ['amount'],
+            });
+
+            for (const utxoItem of findUTXOByAddress) {
+              balance = balance.plus(new BigNumber(utxoItem.amount));
+            }
+          }
+          balance = Utils.dividedByDecimal(balance, accountCurrency.Currency.decimals);
         }
 
         if (accountCurrency.Currency && accountCurrency.Currency.type === 1) {
@@ -752,7 +790,13 @@ class Account extends Bot {
 
     // find all UTXO
     const findUTXO = await this.utxoModel.findAll({
-      where: { accountAddress_id: findAccountAddress.accountAddress_id },
+      where: { accountAddress_id: findAccountAddress.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
+      include: [
+        {
+          model: this.accountAddressModel,
+          attributes: ['address'],
+        },
+      ],
     });
 
     for (let i = 0; i < findUTXO.length; i++) {
@@ -767,6 +811,7 @@ class Account extends Bot {
         timestamp: utxo.on_block_timestamp,
         chain_index,
         key_index,
+        address: utxo.Account.address,
       });
     }
   }

@@ -128,7 +128,6 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       const insertResult = await this.unparsedTxModel.findOrCreate({
         where: { blockchain_id: this.bcid, txid: transaction.hash },
         defaults: {
-          unparsedTransaction_id: uuidv4(),
           blockchain_id: this.bcid,
           txid: transaction.txid,
           transaction: JSON.stringify(transaction),
@@ -237,12 +236,14 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           const findTX = await this.unparsedTxModel.findOne({
             where: { blockchain_id: this.bcid, txid: txs[j].hash },
           });
-
+          txs[j].blockhash = syncResult.hash;
+          txs[j].confirmations = syncResult.confirmations;
+          txs[j].blocktime = syncResult.time;
+          txs[j].height = syncResult.height;
           if (!findTX) {
             insertTx.push({
-              unparsedTransaction_id: uuidv4(),
               blockchain_id: this.bcid,
-              txid: txs[j].hash,
+              txid: txs[j].txid,
               transaction: JSON.stringify(txs[j]),
               receipt: '',
               timestamp,
