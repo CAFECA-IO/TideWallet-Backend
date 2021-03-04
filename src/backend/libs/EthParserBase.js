@@ -366,12 +366,14 @@ class EthParserBase extends ParserBase {
       const bnGasPrice = new BigNumber(tx.gasPrice, 16);
       const bnGasUsed = new BigNumber(receipt.gasUsed, 16);
       const fee = bnGasPrice.multipliedBy(bnGasUsed).toFixed();
-      const insertTx = await this.transactionModel.findOrCreate({
+      let insertTx = await this.transactionModel.findOne({
         where: {
           currency_id: this.currencyInfo.currency_id,
           txid: tx.hash,
         },
-        defaults: {
+      });
+      if (!insertTx) {
+        insertTx = await this.transactionModel.create({
           transaction_id: uuidv4(),
           currency_id: this.currencyInfo.currency_id,
           txid: tx.hash,
@@ -386,17 +388,33 @@ class EthParserBase extends ParserBase {
           gas_price: bnGasPrice.toFixed(),
           gas_used: bnGasUsed.toFixed(),
           result: receipt.status === '0x1',
-        },
-      });
+        });
+      } else {
+        const updateResult = await this.transactionModel.update({
+          timestamp,
+          fee,
+          block: parseInt(tx.blockNumber, 16),
+          gas_used: bnGasUsed.toFixed(),
+          result: receipt.status === '0x1',
+        }, {
+          where: {
+            currency_id: this.currencyInfo.currency_id,
+            txid: tx.hash,
+          },
+          returning: true,
+        });
+
+        [, [insertTx]] = updateResult;
+      }
 
       await this.receiptModel.findOrCreate({
         where: {
-          transaction_id: insertTx[0].transaction_id,
+          transaction_id: insertTx.transaction_id,
           currency_id: this.currencyInfo.currency_id,
         },
         defaults: {
           receipt_id: uuidv4(),
-          transaction_id: insertTx[0].transaction_id,
+          transaction_id: insertTx.transaction_id,
           currency_id: this.currencyInfo.currency_id,
           contract_address: receipt.contractAddress,
           cumulative_gas_used: parseInt(receipt.cumulativeGasUsed, 16),
@@ -409,7 +427,7 @@ class EthParserBase extends ParserBase {
 
       const { from, to } = tx;
       // 3. parse receipt to check is token transfer
-      await this.parseReceiptTopic(receipt, insertTx[0]);
+      await this.parseReceiptTopic(receipt, insertTx);
 
       // 3-1. if yes insert token transaction
       // TODO
@@ -420,7 +438,7 @@ class EthParserBase extends ParserBase {
         // 5. add mapping table
         await this.setAddressTransaction(
           accountAddressFrom.accountAddress_id,
-          insertTx[0].transaction_id,
+          insertTx.transaction_id,
           0,
         );
       }
@@ -431,7 +449,7 @@ class EthParserBase extends ParserBase {
         // 7. add mapping table
         await this.setAddressTransaction(
           accountAddressTo.accountAddress_id,
-          insertTx[0].transaction_id,
+          insertTx.transaction_id,
           1,
         );
       }
@@ -586,7 +604,7 @@ class EthParserBase extends ParserBase {
       const missingTxs = transactions.filter((transaction) => pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid));
       for (const tx of missingTxs) {
         try {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash})`);
+          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.txid})`);
           await this.transactionModel.update(
             {
               result: false,
@@ -594,7 +612,7 @@ class EthParserBase extends ParserBase {
             {
               where: {
                 currency_id: this.currencyInfo.currency_id,
-                txid: tx.hash,
+                txid: tx.txid,
               },
             },
           );
