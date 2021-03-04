@@ -25,8 +25,6 @@ class ParserBase {
   async init() {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
-    this.thisCycleLatestBlockTimestamp = 0;
-    this.lastCycleLatestBlockTimestamp = 0;
     return this;
   }
 
@@ -81,11 +79,6 @@ class ParserBase {
       this.logger.debug(`[${this.constructor.name}] getPendingTransactionFromDB error: ${error}`);
       return [];
     }
-  }
-
-  async getPendingTransactionFromPeer() {
-    // need override
-    return Promise.resolve();
   }
 
   async getTransactionsResultNull() {
@@ -174,11 +167,6 @@ class ParserBase {
   }
 
   async updateBalance() {
-    // need override
-    return Promise.resolve();
-  }
-
-  async updatePendingTransaction() {
     // need override
     return Promise.resolve();
   }

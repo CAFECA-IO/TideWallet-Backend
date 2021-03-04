@@ -6,6 +6,7 @@ class BtcCrawlerManager extends BtcCrawlerManagerBase {
     this.options = config.blockchain.bitcoin_mainnet;
     this.syncInterval = config.syncInterval.bitcoin ? config.syncInterval.bitcoin : 900000;
     this.feeSyncInterval = config.syncInterval.fee ? config.syncInterval.fee : 3600000;
+    this.pendingTxSyncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
   }
 }
 
