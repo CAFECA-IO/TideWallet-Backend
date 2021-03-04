@@ -341,7 +341,7 @@ class BtcParserBase extends ParserBase {
     this.logger.debug(`[${this.constructor.name}] parseTx(${tx.hash})`);
     const {
       fee, to, source_addresses, destination_addresses, note,
-    } = await BtcParserBase.parseBTCTxAmounts(tx);
+    } = await BtcParserBase.parseBTCTxAmounts.call(this, tx);
 
     await this.sequelize.transaction(async (transaction) => {
       const transaction_id = uuidv4();
