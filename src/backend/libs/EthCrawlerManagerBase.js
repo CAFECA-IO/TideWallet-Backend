@@ -184,11 +184,14 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       // 7-1 if not equal rollbackBlock
       // 8. syncNextBlock
       // 9. updateBalance
-      // 10. wait to next cycle
+      // 10. checkBlockNumber
+      // 10-1. if is current block on peer, start sync pending transaction
+      // 11. wait to next cycle
 
       if (!await this.checkBlockNumberLess()) {
         this.logger.log(`[${this.constructor.name}] block height ${this.dbBlock} is top now.`);
         this.isSyncing = false;
+        if (!this.startSyncPendingTx) { this.startSyncPendingTx = true; }
         return Promise.resolve();
       }
 
@@ -202,12 +205,39 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
       await this.updateBalance();
 
+      if (!this.startSyncPendingTx && !await this.checkBlockNumberLess()) {
+        this.startSyncPendingTx = true;
+      }
       this.isSyncing = false;
       return Promise.resolve();
     } catch (error) {
       this.isSyncing = false;
       this.logger.error(error);
       return Promise.resolve();
+    }
+  }
+
+  async pendingTransactionFromPeer() {
+    this.logger.debug(`[${this.constructor.name}] pendingTransactionFromPeer`);
+    try {
+      const type = 'getPendingTxs';
+      const options = dvalue.clone(this.options);
+      options.data = this.constructor.cmd({ type });
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error(`[${this.constructor.name}] pendingTransactionFromPeer fail`);
+          return null;
+        }
+        if (data.result) {
+          return Promise.resolve(data.result.transactions);
+        }
+      }
+      this.logger.error(`[${this.constructor.name}] pendingTransactionFromPeer fail, ${JSON.stringify(data.error)}`);
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] pendingTransactionFromPeer error: ${error}`);
+      return Promise.reject(error);
     }
   }
 
@@ -386,6 +416,22 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     return insertResult;
   }
 
+  async updatePendingTransaction() {
+    this.logger.debug(`[${this.constructor.name}] updatePendingTransaction`);
+    try {
+      const pendingTxs = await this.pendingTransactionFromPeer();
+      const result = await this.pendingTransactionModel.create({
+        blockchain_id: this.bcid,
+        transactions: JSON.stringify(pendingTxs),
+        timestamp: Math.floor(Date.now() / 1000),
+      });
+      return result[0];
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] updatePendingTransaction error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
   static cmd({
     type, block, txid,
   }) {
@@ -428,6 +474,17 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           jsonrpc: '2.0',
           method: 'eth_getTransactionReceipt',
           params: [txid],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getPendingTxs':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_getBlockByNumber',
+          params: [
+            'pending',
+            true,
+          ],
           id: dvalue.randomID(),
         };
         break;

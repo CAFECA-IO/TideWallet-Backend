@@ -14,11 +14,14 @@ class CrawlerManagerBase {
     this.currencyModel = this.database.db.Currency;
     this.sequelize = this.database.db.sequelize;
     this.unparsedTxModel = this.database.db.UnparsedTransaction;
+    this.pendingTransactionModel = this.database.db.PendingTransaction;
     this.feeSyncInterval = 3600000;
+    this.pendingTxSyncInterval = 15000;
   }
 
   async init() {
     this.isSyncing = false;
+    this.startSyncPendingTx = false;
     this.blockInfo = await this.getBlockInfo();
     if (this.blockInfo.start_block > this.blockInfo.block) {
       await this.updateBlockHeight(this.blockInfo.start_block);
@@ -27,6 +30,11 @@ class CrawlerManagerBase {
       this.syncAvgFee();
     }, this.feeSyncInterval);
     this.syncAvgFee();
+
+    setInterval(() => {
+      if (!this.startSyncPendingTx) return;
+      this.updatePendingTransaction();
+    }, this.pendingTxSyncInterval);
     return this;
   }
 
@@ -148,6 +156,11 @@ class CrawlerManagerBase {
     return Promise.resolve();
   }
 
+  async pendingTransactionFromPeer() {
+    // need override
+    return Promise.resolve();
+  }
+
   async rollbackBlock() {
     // TODO
     this.logger.debug('rollbackBlock()');
@@ -186,6 +199,11 @@ class CrawlerManagerBase {
       { where: { blockchain_id: this.bcid } },
     );
     return insertResult;
+  }
+
+  async updatePendingTransaction() {
+    // need override
+    return Promise.resolve();
   }
 }
 
