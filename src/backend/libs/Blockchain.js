@@ -370,7 +370,6 @@ class Blockchain extends Bot {
     try {
       await BtcParserBase.parseTx.call(this, tx, currencyInfo, 0);
     } catch (error) {
-      console.log('error:', error);
       this.logger.error('saveBTCPublishTransaction retry error:', error.message);
       setTimeout(() => {
         this.saveBTCPublishTransaction(tx, currencyInfo, retryCount += 1);

@@ -1,7 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue');
-const ecrequest = require('ecrequest');
 const ParserBase = require('./ParserBase');
 const Utils = require('./Utils');
 const HDWallet = require('./HDWallet');
@@ -15,7 +14,7 @@ class BtcParserBase extends ParserBase {
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
     this.options = {};
-    this.syncInterval = 900000;
+    this.syncInterval = 450000;
     this.decimal = 8;
   }
 
@@ -62,7 +61,6 @@ class BtcParserBase extends ParserBase {
             const transaction = JSON.parse(tx.transaction);
             await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, tx.timestamp);
           } catch (error) {
-            console.log('error:', error);
             failedList.push(tx);
           }
         }
@@ -85,160 +83,6 @@ class BtcParserBase extends ParserBase {
       this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
       this.isParsing = false;
       return Promise.resolve();
-    }
-  }
-
-  async findOrCreateCurrency(contractAddress) {
-    try {
-      let currencyInDb = await this.currencyModel.findOne({
-        where: { contract: contractAddress },
-      });
-      if (!currencyInDb) {
-        const tokenInfoFromPeer = await Promise.all([
-          this.getTokenNameFromPeer(contractAddress),
-          this.getTokenSymbolFromPeer(contractAddress),
-          this.getTokenDecimalFromPeer(contractAddress),
-          this.getTokenTotalSupplyFromPeer(contractAddress),
-        ]).catch((error) => Promise.reject(error));
-        if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) throw tokenInfoFromPeer;
-
-        let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
-        try {
-          const checkIcon = await ecrequest.get({
-            protocol: 'https:',
-            hostname: 'cdn.jsdelivr.net',
-            port: '',
-            path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
-            timeout: 1000,
-          });
-          if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
-        } catch (e) {
-          icon = `${this.config.base.domain}/icon/ERC20.png`;
-        }
-
-        currencyInDb = await this.currencyModel.create({
-          currency_id: uuidv4(),
-          blockchain_id: this.bcid,
-          name: tokenInfoFromPeer[0],
-          symbol: tokenInfoFromPeer[1],
-          type: 2,
-          publish: false,
-          decimals: tokenInfoFromPeer[2],
-          total_supply: tokenInfoFromPeer[3],
-          contract: contractAddress,
-          icon,
-        });
-      }
-      return currencyInDb;
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] findOrCreateCurrency error: ${error}`);
-      return Promise.reject(error);
-    }
-  }
-
-  async getTokenNameFromPeer(address) {
-    try {
-      const type = 'callContract';
-      const options = dvalue.clone(this.options);
-      const command = '0x06fdde03'; // erc20 get name
-      options.data = this.constructor.cmd({ type, address, command });
-      const checkId = options.data.id;
-      const data = await Utils.ETHRPC(options);
-      if (data instanceof Object) {
-        if (data.id !== checkId) {
-          this.logger.error(`[${this.constructor.name}] getTokenNameFromPeer fail`);
-          return null;
-        }
-        if (data.result) {
-          const nameEncode = data.result;
-          if (nameEncode.length !== 194) return nameEncode;
-          const name = this.web3.eth.abi.decodeParameter('string', nameEncode);
-          return Promise.resolve(name);
-        }
-      }
-      this.logger.error(`[${this.constructor.name}] getTokenNameFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
-      return null;
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] getTokenNameFromPeer(${address}) error: ${error}`);
-      return null;
-    }
-  }
-
-  async getTokenSymbolFromPeer(address) {
-    try {
-      const type = 'callContract';
-      const options = dvalue.clone(this.options);
-      const command = '0x95d89b41'; // erc20 get synbol
-      options.data = this.constructor.cmd({ type, address, command });
-      const checkId = options.data.id;
-      const data = await Utils.ETHRPC(options);
-      if (data instanceof Object) {
-        if (data.id !== checkId) {
-          this.logger.error(`[${this.constructor.name}] getTokenSymbolFromPeer fail`);
-          return null;
-        }
-        if (data.result) {
-          const symbolEncode = data.result;
-          if (symbolEncode.length !== 194) return symbolEncode;
-          const symbol = this.web3.eth.abi.decodeParameter('string', symbolEncode);
-          return Promise.resolve(symbol);
-        }
-      }
-      this.logger.error(`[${this.constructor.name}] getTokenSymbolFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
-      return null;
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] getTokenSymbolFromPeer(${address}) error: ${error}`);
-      return null;
-    }
-  }
-
-  async getTokenDecimalFromPeer(address) {
-    try {
-      const type = 'callContract';
-      const options = dvalue.clone(this.options);
-      const command = '0x313ce567'; // erc20 get decimals
-      options.data = this.constructor.cmd({ type, address, command });
-      const checkId = options.data.id;
-      const data = await Utils.ETHRPC(options);
-      if (data instanceof Object) {
-        if (data.id !== checkId) {
-          this.logger.error(`[${this.constructor.name}] getTokenDecimalFromPeer fail`);
-          return null;
-        }
-        const decimals = data.result;
-        if (data.result) { return Promise.resolve(parseInt(decimals, 16)); }
-      }
-      this.logger.error(`[${this.constructor.name}] getTokenDecimalFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
-      return null;
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] getTokenDecimalFromPeer(${address}) error: ${error}`);
-      return null;
-    }
-  }
-
-  async getTokenTotalSupplyFromPeer(address) {
-    try {
-      const type = 'callContract';
-      const options = dvalue.clone(this.options);
-      const command = '0x18160ddd'; // erc20 get total supply
-      options.data = this.constructor.cmd({ type, address, command });
-      const checkId = options.data.id;
-      const data = await Utils.ETHRPC(options);
-      if (data instanceof Object) {
-        if (data.id !== checkId) {
-          this.logger.error(`[${this.constructor.name}] getTokenTotalSupplyFromPeer fail`);
-          return null;
-        }
-        if (data.result) {
-          const bnTotalSupply = new BigNumber(data.result, 16);
-          return Promise.resolve(bnTotalSupply.toFixed());
-        }
-      }
-      this.logger.error(`[${this.constructor.name}] getTokenTotalSupplyFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
-      return null;
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] getTokenTotalSupplyFromPeer(${address}) error: ${error}`);
-      return null;
     }
   }
 
@@ -553,31 +397,6 @@ class BtcParserBase extends ParserBase {
         }
       }
     });
-  }
-
-  async setAddressTokenTransaction(currency_id, accountAddress_id, tokenTransaction_id, direction) {
-    this.logger.debug(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction})`);
-    try {
-      const result = await this.addressTokenTransactionModel.findOrCreate({
-        where: {
-          currency_id,
-          accountAddress_id,
-          tokenTransaction_id,
-          direction,
-        },
-        defaults: {
-          addressTokenTransaction_id: uuidv4(),
-          currency_id,
-          accountAddress_id,
-          tokenTransaction_id,
-          direction,
-        },
-      });
-      return result;
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction}) error: ${error}`);
-      return Promise.reject(error);
-    }
   }
 
   static cmd({

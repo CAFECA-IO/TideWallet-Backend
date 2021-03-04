@@ -240,6 +240,7 @@ class Account extends Bot {
               balance = accountCurrency.balance;
             }
           } else if (account.blockchain_id === '80000000' || account.blockchain_id === '80000001') {
+            // TODO: get btc balance 拔成一個 function
             // if BTC symbol, count all utxo in db
             const findAllAddress = await this.accountAddressModel.findAll({
               where: { account_id: account.account_id },
@@ -348,6 +349,7 @@ class Account extends Bot {
             }
           }
         } else if (findAccount.blockchain_id === '80000000' || findAccount.blockchain_id === '80000001') {
+          // TODO: get btc balance 拔成一個 function
           // if BTC symbol, count all utxo in db
           const findAllAddress = await this.accountAddressModel.findAll({
             where: { account_id: findAccount.account_id },

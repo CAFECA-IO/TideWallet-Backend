@@ -131,7 +131,6 @@ class EthParserBase extends ParserBase {
       }
       return currencyInDb;
     } catch (error) {
-      console.log('error:', error);
       this.logger.error(`[${this.constructor.name}] findOrCreateCurrency error: ${error}`);
       return Promise.reject(error);
     }
