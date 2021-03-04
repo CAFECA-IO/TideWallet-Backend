@@ -788,7 +788,7 @@ class Account extends Bot {
 
     // find all UTXO
     const findUTXO = await this.utxoModel.findAll({
-      where: { accountAddress_id: findAccountAddress.accountAddress_id },
+      where: { accountAddress_id: findAccountAddress.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
       include: [
         {
           model: this.accountAddressModel,

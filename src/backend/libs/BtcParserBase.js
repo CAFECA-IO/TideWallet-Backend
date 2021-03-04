@@ -60,7 +60,7 @@ class BtcParserBase extends ParserBase {
         for (const tx of txs) {
           try {
             const transaction = JSON.parse(tx.transaction);
-            await this.parseTx(transaction, tx.timestamp);
+            await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, tx.timestamp);
           } catch (error) {
             console.log('error:', error);
             failedList.push(tx);
@@ -283,7 +283,7 @@ class BtcParserBase extends ParserBase {
     return Promise.reject(data.error);
   }
 
-  async parseBTCTxAmounts(tx) {
+  static async parseBTCTxAmounts(tx) {
     let from = new BigNumber(0);
     let to = new BigNumber(0);
     let source_addresses = [];
@@ -329,7 +329,7 @@ class BtcParserBase extends ParserBase {
     };
   }
 
-  async parseTx(tx, timestamp) {
+  static async parseTx(tx, currencyInfo, timestamp) {
     // step:
     // 1. insert tx
     // 2. insert utxo
@@ -341,32 +341,49 @@ class BtcParserBase extends ParserBase {
     this.logger.debug(`[${this.constructor.name}] parseTx(${tx.hash})`);
     const {
       fee, to, source_addresses, destination_addresses, note,
-    } = await this.parseBTCTxAmounts(tx);
+    } = await BtcParserBase.parseBTCTxAmounts(tx);
 
     await this.sequelize.transaction(async (transaction) => {
       const transaction_id = uuidv4();
 
       // 1. insert tx
-      await this.transactionModel.findOrCreate({
+      const findTransaction = await this.transactionModel.findOrCreate({
         where: {
-          currency_id: this.currencyInfo.currency_id,
+          currency_id: currencyInfo.currency_id,
           txid: tx.txid,
         },
         defaults: {
           transaction_id,
-          currency_id: this.currencyInfo.currency_id,
+          currency_id: currencyInfo.currency_id,
           txid: tx.txid,
-          timestamp,
+          timestamp: timestamp || null,
           source_addresses,
           destination_addresses,
-          amount: Utils.multipliedByDecimal(to, this.currencyInfo.decimals),
-          fee: Utils.multipliedByDecimal(fee, this.currencyInfo.decimals),
+          amount: Utils.multipliedByDecimal(to, currencyInfo.decimals),
+          fee: Utils.multipliedByDecimal(fee, currencyInfo.decimals),
           note,
-          block: tx.height,
-          result: true,
+          block: tx.height ? tx.height : null,
+          result: tx.confirmations >= 6 ? true : null,
         },
         transaction,
       });
+
+      // check transaction exist
+      if (findTransaction && findTransaction.length === 2 && findTransaction[1] === false) {
+        // Blockchain.js PublishTransaction -> save tx before token on block, update it when parse
+        if (!findTransaction[0].block) {
+          await this.transactionModel.update({
+            timestamp: findTransaction[0].timestamp,
+            block: findTransaction[0].block,
+          },
+          {
+            where: {
+              transaction_id: findTransaction[0].transaction_id,
+            },
+            transaction,
+          });
+        }
+      }
 
       for (const outputData of tx.vout) {
         if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
@@ -378,7 +395,7 @@ class BtcParserBase extends ParserBase {
           });
 
           if (findAccountAddress) {
-            const amount = Utils.multipliedByDecimal(outputData.value, this.currencyInfo.decimals);
+            const amount = Utils.multipliedByDecimal(outputData.value, currencyInfo.decimals);
             // 2. insert utxo
             await this.utxoModel.findOrCreate({
               where: {
@@ -387,7 +404,7 @@ class BtcParserBase extends ParserBase {
               },
               defaults: {
                 utxo_id: uuidv4(),
-                currency_id: this.currencyInfo.currency_id,
+                currency_id: currencyInfo.currency_id,
                 accountAddress_id: findAccountAddress.accountAddress_id,
                 transaction_id,
                 txid: tx.txid,
@@ -446,14 +463,14 @@ class BtcParserBase extends ParserBase {
           // 5. add mapping table
           await this.addressTransactionModel.findOrCreate({
             where: {
-              currency_id: this.currencyInfo.currency_id,
+              currency_id: currencyInfo.currency_id,
               accountAddress_id: accountAddressFrom.accountAddress_id,
               transaction_id,
               direction: 0,
             },
             defaults: {
               addressTransaction_id: uuidv4(),
-              currency_id: this.currencyInfo.currency_id,
+              currency_id: currencyInfo.currency_id,
               accountAddress_id: accountAddressFrom.accountAddress_id,
               transaction_id,
               direction: 0,
@@ -485,14 +502,14 @@ class BtcParserBase extends ParserBase {
           // 7. add mapping table
           await this.addressTransactionModel.findOrCreate({
             where: {
-              currency_id: this.currencyInfo.currency_id,
+              currency_id: currencyInfo.currency_id,
               accountAddress_id: accountAddressFrom.accountAddress_id,
               transaction_id,
               direction: 1,
             },
             defaults: {
               addressTransaction_id: uuidv4(),
-              currency_id: this.currencyInfo.currency_id,
+              currency_id: currencyInfo.currency_id,
               accountAddress_id: accountAddressFrom.accountAddress_id,
               transaction_id,
               direction: 1,
@@ -507,7 +524,7 @@ class BtcParserBase extends ParserBase {
               {
                 where: {
                   account_id: accountAddressFrom.Account.account_id,
-                  currency_id: this.currencyInfo.currency_id,
+                  currency_id: currencyInfo.currency_id,
                 },
                 transaction,
               },
