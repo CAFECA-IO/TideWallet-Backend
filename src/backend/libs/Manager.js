@@ -23,6 +23,7 @@ class Manager extends Bot {
     this.name = 'Manager';
     this._crawlerManagers = [];
     this.rateSyncInterval = 86400000;
+    this.cryptoRateSyncInterval = 360000;
   }
 
   init({
@@ -35,6 +36,11 @@ class Manager extends Bot {
 
       this.fiatCurrencyRateModel = this.database.db.FiatCurrencyRate;
       this.currencyModel = this.database.db.Currency;
+
+      setInterval(() => {
+        this.syncCryptoRate();
+      }, this.cryptoRateSyncInterval);
+      this.syncCryptoRate();
 
       setInterval(() => {
         this.syncRate();
@@ -88,6 +94,39 @@ class Manager extends Bot {
         }
       }
     });
+  }
+
+  syncCryptoRate() {
+    const BTCObj = { asset_id: '5b1ea92e584bf50020130612', symbol: 'BTC' };
+    const ETHObj = { asset_id: '5b755dacd5dd99000b3d92b2', symbol: 'ETH' };
+    const USDID = '5b1ea92e584bf50020130615';
+
+    for (const crypto of [BTCObj, ETHObj]) {
+      const opt = {
+        protocol: 'https:',
+        port: '',
+        hostname: 'api.cryptoapis.io',
+        path: `/v1/exchange-rates/${crypto.asset_id}/${USDID}`,
+        headers: {
+          'X-API-Key': this.config.cryptoapis.key,
+          'Content-Type': 'application/json',
+        },
+      };
+
+      // eslint-disable-next-line no-loop-func
+      ecrequest.get(opt)
+        .then(async (rs) => {
+          console.log('rs.data.toString():', rs.data.toString());
+          const { payload } = JSON.parse(rs.data.toString());
+          await this.currencyModel.update(
+            { exchange_rate: payload.amount },
+            { where: { symbol: crypto.symbol } },
+          );
+        })
+        .catch((e) => {
+          this.logger.console.error('syncCryptoRate e');
+        });
+    }
   }
 
   createManager() {
