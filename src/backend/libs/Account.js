@@ -823,7 +823,7 @@ class Account extends Bot {
         timestamp: utxo.on_block_timestamp,
         chain_index,
         key_index,
-        address: utxo.Account.address,
+        address: utxo.AccountAddress.address,
       });
     }
   }
