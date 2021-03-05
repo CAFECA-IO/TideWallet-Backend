@@ -524,7 +524,7 @@ class Blockchain extends Bot {
             symbol: findTokenItem.symbol,
             name: findTokenItem.name,
             contract: findTokenItem.contract,
-            decimal: findTokenItem.decimal,
+            decimals: findTokenItem.decimals,
             total_supply: findTokenItem.total_supply,
             description: findTokenItem.description,
             imageUrl: findTokenItem.icon || `${this.config.base.domain}/icon/ERC20.png`,

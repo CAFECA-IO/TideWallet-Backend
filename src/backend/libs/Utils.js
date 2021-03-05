@@ -846,6 +846,19 @@ class Utils {
     const address = bs58check.encode(Uint8Array.from([type.p2shAddressPrefix, ...fingerprint]));
     return address;
   }
+
+  static formatAddressArray(addresses) {
+    if (typeof addresses === 'string')addresses = JSON.parse(addresses);
+    let result = [];
+    addresses.forEach((addressItem) => {
+      if (Array.isArray(addressItem.addresses)) {
+        result = result.concat(addressItem.addresses);
+      } else {
+        result.push(addressItem.addresses);
+      }
+    });
+    return result;
+  }
 }
 
 module.exports = Utils;

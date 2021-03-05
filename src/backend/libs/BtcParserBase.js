@@ -130,8 +130,8 @@ class BtcParserBase extends ParserBase {
   static async parseBTCTxAmounts(tx) {
     let from = new BigNumber(0);
     let to = new BigNumber(0);
-    let source_addresses = [];
-    let destination_addresses = [];
+    const source_addresses = [];
+    const destination_addresses = [];
     let note = '';
 
     for (const inputData of tx.vin) {
@@ -146,10 +146,10 @@ class BtcParserBase extends ParserBase {
         const txInfo = await this.getTransactionByTxidFromPeer(inputData.txid);
         if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
           if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.addresses) {
-            source_addresses = source_addresses.concat(txInfo.vout[inputData.vout].scriptPubKey.addresses);
+            source_addresses.push({ addresses: txInfo.vout[inputData.vout].scriptPubKey.addresses, amount: txInfo.vout[inputData.vout].value });
           } else if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.type === 'pubkey') {
             // TODO: need pubkey => P2PK address
-            source_addresses.push(txInfo.vout[inputData.vout].scriptPubKey.hex);
+            source_addresses.push({ addresses: txInfo.vout[inputData.vout].scriptPubKey.hex, amount: txInfo.vout[inputData.vout].value || '0' });
           }
         }
       }
@@ -158,18 +158,23 @@ class BtcParserBase extends ParserBase {
     for (const outputData of tx.vout) {
       to = to.plus(new BigNumber(outputData.value));
       if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
-        destination_addresses = destination_addresses.concat(outputData.scriptPubKey.addresses);
+        destination_addresses.push({ addresses: outputData.scriptPubKey.addresses, amount: outputData.value });
       }
       if (outputData.scriptPubKey && outputData.scriptPubKey.asm && outputData.scriptPubKey.asm.slice(0, 9) === 'OP_RETURN1') {
         note = outputData.scriptPubKey.hex || '';
       } else if (outputData.scriptPubKey && outputData.scriptPubKey.type === 'pubkey') {
         // TODO: need pubkey => P2PK address
-        destination_addresses.push(outputData.scriptPubKey.hex);
+        destination_addresses.push({ addresses: outputData.scriptPubKey.hex, amount: outputData.value || '0' });
       }
     }
 
     return {
-      from, to, fee: from.plus(to), source_addresses: JSON.stringify(source_addresses), destination_addresses: JSON.stringify(destination_addresses), note,
+      from,
+      to,
+      fee: from.plus(to),
+      source_addresses: JSON.stringify(source_addresses),
+      destination_addresses: JSON.stringify(destination_addresses),
+      note,
     };
   }
 
@@ -281,8 +286,7 @@ class BtcParserBase extends ParserBase {
             },
             {
               where: {
-                txid: tx.txid,
-                vout: inputData.vout,
+                utxo_id: findExistUTXO.utxo_id,
               },
               transaction,
             });
@@ -291,7 +295,10 @@ class BtcParserBase extends ParserBase {
       }
 
       // 4. check from address is regist address
-      for (const sourceAddress of JSON.parse(source_addresses)) {
+      const _source_addresses = JSON.parse(source_addresses);
+      for (let i = 0; i < _source_addresses.length; i++) {
+        const sourceAddress = Array.isArray(_source_addresses[i].addresses) ? _source_addresses[i].addresses[0] : _source_addresses[i].addresses;
+        const sourceAddressAmount = _source_addresses[i].amount;
         const accountAddressFrom = await this.accountAddressModel.findOne({
           where: { address: sourceAddress },
           include: [
@@ -317,6 +324,7 @@ class BtcParserBase extends ParserBase {
               currency_id: currencyInfo.currency_id,
               accountAddress_id: accountAddressFrom.accountAddress_id,
               transaction_id,
+              amount: sourceAddressAmount,
               direction: 0,
             },
             transaction,
@@ -324,7 +332,10 @@ class BtcParserBase extends ParserBase {
         }
       }
       // 6. check to address is regist address
-      for (const destinationAddress of JSON.parse(destination_addresses)) {
+      const _destination_addresses = JSON.parse(destination_addresses);
+      for (let i = 0; i < _destination_addresses.length; i++) {
+        const destinationAddress = Array.isArray(_destination_addresses[i].addresses) ? _destination_addresses[i].addresses[0] : _destination_addresses[i].addresses;
+        const destinationAddressAmount = _destination_addresses[i].amount;
         const accountAddressFrom = await this.accountAddressModel.findOne({
           where: { address: destinationAddress },
           include: [
@@ -356,6 +367,7 @@ class BtcParserBase extends ParserBase {
               currency_id: currencyInfo.currency_id,
               accountAddress_id: accountAddressFrom.accountAddress_id,
               transaction_id,
+              amount: destinationAddressAmount,
               direction: 1,
             },
             transaction,
