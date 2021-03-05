@@ -8,7 +8,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
     super(blockchainId, database, logger);
     this.options = {};
-    this.syncInterval = 90000;
+    this.syncInterval = 450000;
   }
 
   async init() {
@@ -158,12 +158,14 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       // 7. checkBlockHash
       // 7-1 if not equal rollbackBlock
       // 8. syncNextBlock
-      // 9. updateBalance
+      // 9. checkBlockNumber
+      // 9-1. if is current block on peer, start sync pending transaction
       // 10. wait to next cycle
 
       if (!await this.checkBlockNumberLess()) {
         this.logger.log(`[${this.constructor.name}] block height ${this.dbBlock} is top now.`);
         this.isSyncing = false;
+        if (!this.startSyncPendingTx) { this.startSyncPendingTx = true; }
         return Promise.resolve();
       }
 
@@ -175,13 +177,39 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
 
       await this.syncBlock(this.dbBlock);
 
-      await this.updateBalance();
-
+      if (!this.startSyncPendingTx && !await this.checkBlockNumberLess()) {
+        this.startSyncPendingTx = true;
+      }
       this.isSyncing = false;
       return Promise.resolve();
     } catch (error) {
       this.isSyncing = false;
       return Promise.reject();
+    }
+  }
+
+  async pendingTransactionFromPeer() {
+    this.logger.debug(`[${this.constructor.name}] pendingTransactionFromPeer`);
+    try {
+      const type = 'getPendingTxs';
+      const options = dvalue.clone(this.options);
+      options.data = this.constructor.cmd({ type });
+      const checkId = options.data.id;
+      const data = await Utils.BTCRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error(`[${this.constructor.name}] pendingTransactionFromPeer fail`);
+          return null;
+        }
+        if (data.result) {
+          return Promise.resolve(data.result);
+        }
+      }
+      this.logger.error(`[${this.constructor.name}] pendingTransactionFromPeer fail, ${JSON.stringify(data.error)}`);
+      return Promise.reject(data.error);
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] pendingTransactionFromPeer error: ${error}`);
+      return Promise.reject(error);
     }
   }
 
@@ -280,6 +308,22 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     return insertResult;
   }
 
+  async updatePendingTransaction() {
+    this.logger.debug(`[${this.constructor.name}] updatePendingTransaction`);
+    try {
+      const pendingTxs = await this.pendingTransactionFromPeer();
+      const result = await this.pendingTransactionModel.create({
+        blockchain_id: this.bcid,
+        transactions: JSON.stringify(pendingTxs),
+        timestamp: Math.floor(Date.now() / 1000),
+      });
+      return result[0];
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] updatePendingTransaction error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
   static cmd({
     type, block, blockHash,
   }) {
@@ -314,6 +358,14 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           jsonrpc: '1.0',
           method: 'getblockstats',
           params: [block, ['feerate_percentiles']],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getPendingTxs':
+        result = {
+          jsonrpc: '1.0',
+          method: 'getrawmempool',
+          params: [false],
           id: dvalue.randomID(),
         };
         break;

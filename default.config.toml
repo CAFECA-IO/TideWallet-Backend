@@ -51,7 +51,7 @@ password = ''
 [syncInterval]
 ethereum = 15000
 cafeca = 15000
-bitcoin = 900000
+bitcoin = 450000
 fee = 3600000
 pending = 15000
 

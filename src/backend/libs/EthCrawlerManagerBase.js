@@ -66,7 +66,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   async blockNumberFromPeer() {
-    this.logger.error(`[${this.constructor.name}] blockNumberFromPeer`);
+    this.logger.debug(`[${this.constructor.name}] blockNumberFromPeer`);
     const type = 'getBlockcount';
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type });
@@ -180,10 +180,9 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       // 7. checkBlockHash
       // 7-1 if not equal rollbackBlock
       // 8. syncNextBlock
-      // 9. updateBalance
-      // 10. checkBlockNumber
-      // 10-1. if is current block on peer, start sync pending transaction
-      // 11. wait to next cycle
+      // 9. checkBlockNumber
+      // 9-1. if is current block on peer, start sync pending transaction
+      // 10. wait to next cycle
 
       if (!await this.checkBlockNumberLess()) {
         this.logger.log(`[${this.constructor.name}] block height ${this.dbBlock} is top now.`);
@@ -199,8 +198,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       }
 
       await this.syncBlock(this.dbBlock);
-
-      await this.updateBalance();
 
       if (!this.startSyncPendingTx && !await this.checkBlockNumberLess()) {
         this.startSyncPendingTx = true;
