@@ -299,6 +299,7 @@ class EthParserBase extends ParserBase {
               currency.currency_id,
               accountAddressFrom.accountAddress_id,
               tokenTransaction[0].tokenTransaction_id,
+              tokenTransaction[0].amount,
               0,
             );
           }
@@ -310,6 +311,7 @@ class EthParserBase extends ParserBase {
               currency.currency_id,
               accountAddressTo.accountAddress_id,
               tokenTransaction[0].tokenTransaction_id,
+              tokenTransaction[0].amount,
               1,
             );
           }
@@ -411,6 +413,7 @@ class EthParserBase extends ParserBase {
         await this.setAddressTransaction(
           accountAddressFrom.accountAddress_id,
           insertTx.transaction_id,
+          insertTx.amount,
           0,
         );
       }
@@ -422,6 +425,7 @@ class EthParserBase extends ParserBase {
         await this.setAddressTransaction(
           accountAddressTo.accountAddress_id,
           insertTx.transaction_id,
+          insertTx.amount,
           1,
         );
       }
@@ -433,7 +437,7 @@ class EthParserBase extends ParserBase {
     }
   }
 
-  async setAddressTokenTransaction(currency_id, accountAddress_id, tokenTransaction_id, direction) {
+  async setAddressTokenTransaction(currency_id, accountAddress_id, amount, tokenTransaction_id, direction) {
     this.logger.debug(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction})`);
     try {
       const result = await this.addressTokenTransactionModel.findOrCreate({
@@ -441,6 +445,7 @@ class EthParserBase extends ParserBase {
           currency_id,
           accountAddress_id,
           tokenTransaction_id,
+          amount,
           direction,
         },
         defaults: {
@@ -448,6 +453,7 @@ class EthParserBase extends ParserBase {
           currency_id,
           accountAddress_id,
           tokenTransaction_id,
+          amount,
           direction,
         },
       });

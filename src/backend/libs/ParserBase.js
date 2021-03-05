@@ -120,7 +120,7 @@ class ParserBase {
     }
   }
 
-  async setAddressTransaction(accountAddress_id, transaction_id, direction) {
+  async setAddressTransaction(accountAddress_id, transaction_id, amount, direction) {
     this.logger.debug(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction})`);
     try {
       const result = await this.addressTransactionModel.findOrCreate({
@@ -128,6 +128,7 @@ class ParserBase {
           currency_id: this.currencyInfo.currency_id,
           accountAddress_id,
           transaction_id,
+          amount,
           direction,
         },
         defaults: {
@@ -135,6 +136,7 @@ class ParserBase {
           currency_id: this.currencyInfo.currency_id,
           accountAddress_id,
           transaction_id,
+          amount,
           direction,
         },
       });
