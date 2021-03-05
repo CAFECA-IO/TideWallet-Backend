@@ -14,7 +14,7 @@ class BtcParserBase extends ParserBase {
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
     this.options = {};
-    this.syncInterval = 450000;
+    this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
     this.decimal = 8;
   }
 
@@ -80,7 +80,7 @@ class BtcParserBase extends ParserBase {
         }
       }
 
-      // await this.updateBalance();
+      await this.updateBalance();
       this.isParsing = false;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
@@ -426,65 +426,21 @@ class BtcParserBase extends ParserBase {
       const transactions = await this.getTransactionsResultNull();
 
       // 2. get last pending transaction from pendingTransaction table
-      const pendingTxs = await this.getPendingTransactionFromDB();
+      const pendingTxids = await this.getPendingTransactionFromDB();
 
       // 3. create transaction which is not in step 1 array
-      const newTxs = pendingTxs.filter((pendingTx) => transactions.every((transaction) => pendingTx.hash !== transaction.txid));
-      for (const tx of newTxs) {
+      const newTxids = pendingTxids.filter((pendingTxid) => transactions.every((transaction) => pendingTxid !== transaction.txid));
+      for (const txid of newTxids) {
         try {
-          const bnAmount = new BigNumber(tx.value, 16);
-          const bnGasPrice = new BigNumber(tx.gasPrice, 16);
-          const bnGas = new BigNumber(tx.gas, 16);
-          const fee = bnGasPrice.multipliedBy(bnGas).toFixed();
-
-          let txResult = await this.transactionModel.findOne({
-            where: {
-              currency_id: this.currencyInfo.currency_id,
-              txid: tx.hash,
-            },
-          });
-          if (!txResult) {
-            this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash})`);
-            txResult = await this.transactionModel.create({
-              transaction_id: uuidv4(),
-              currency_id: this.currencyInfo.currency_id,
-              txid: tx.hash,
-              source_addresses: tx.from,
-              destination_addresses: tx.to ? tx.to : '',
-              amount: bnAmount.toFixed(),
-              note: tx.input,
-              block: parseInt(tx.blockNumber, 16),
-              nonce: parseInt(tx.nonce, 16),
-              fee,
-              gas_price: bnGasPrice.toFixed(),
-            });
-          } else {
-            const updateResult = await this.transactionModel.update(
-              {
-                source_addresses: tx.from,
-                destination_addresses: tx.to ? tx.to : '',
-                amount: bnAmount.toFixed(),
-                note: tx.input,
-                block: parseInt(tx.blockNumber, 16),
-                nonce: parseInt(tx.nonce, 16),
-                gas_price: bnGasPrice.toFixed(),
-              }, {
-                where: {
-                  currency_id: this.currencyInfo.currency_id,
-                  txid: tx.hash,
-                },
-                returning: true,
-              },
-            );
-            [, [txResult]] = updateResult;
-          }
+          const tx = await this.getTransactionByTxidFromPeer(txid);
+          await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.time);
         } catch (error) {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash}) error: ${error}`);
+          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
         }
       }
 
       // 4. update result to false which is not in step 2 array
-      const missingTxs = transactions.filter((transaction) => pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid));
+      const missingTxs = transactions.filter((transaction) => pendingTxids.every((pendingTxid) => pendingTxid !== transaction.txid));
       for (const tx of missingTxs) {
         try {
           this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.txid})`);

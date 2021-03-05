@@ -15,7 +15,7 @@ class EthParserBase extends ParserBase {
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
     this.options = {};
-    this.syncInterval = 15000;
+    this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
   }
 
   async init() {

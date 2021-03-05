@@ -5,7 +5,6 @@ class EthRopstenParser extends EthParserBase {
     super('8000025B', config, database, logger);
 
     this.options = config.blockchain.ethereum_ropsten;
-    this.syncInterval = config.syncInterval.ethereum ? config.syncInterval.ethereum : 15000;
   }
 }
 
