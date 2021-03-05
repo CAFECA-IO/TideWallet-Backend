@@ -183,6 +183,7 @@ class Blockchain extends Bot {
           decimals: item.decimals,
           exchange_rate: item.exchange_rate,
           icon: item.icon || `${this.config.base.domain}/icon/ERC20.png`,
+          contract: item.contract,
         }));
       } else {
         payload = [];
