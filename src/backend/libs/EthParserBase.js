@@ -298,14 +298,16 @@ class EthParserBase extends ParserBase {
             await this.setAddressTokenTransaction(
               currency.currency_id,
               accountAddressFrom.accountAddress_id,
-              tokenTransaction[0].tokenTransaction_id,
               tokenTransaction[0].amount,
+              tokenTransaction[0].tokenTransaction_id,
               0,
             );
-
             await this.accountCurrencyModel.findOrCreate({
               where: {
-                transaction_id: transaction.transaction_id, currency_id: currency.currency_id,
+                account_id: accountAddressFrom.account_id,
+                currency_id: currency.currency_id,
+                number_of_external_key: '0',
+                number_of_internal_key: '0',
               },
               defaults: {
                 accountCurrency_id: uuidv4(),
@@ -324,18 +326,21 @@ class EthParserBase extends ParserBase {
             await this.setAddressTokenTransaction(
               currency.currency_id,
               accountAddressTo.accountAddress_id,
-              tokenTransaction[0].tokenTransaction_id,
               tokenTransaction[0].amount,
+              tokenTransaction[0].tokenTransaction_id,
               1,
             );
 
             await this.accountCurrencyModel.findOrCreate({
               where: {
-                transaction_id: transaction.transaction_id, currency_id: currency.currency_id,
+                account_id: accountAddressTo.account_id,
+                currency_id: currency.currency_id,
+                number_of_external_key: '0',
+                number_of_internal_key: '0',
               },
               defaults: {
                 accountCurrency_id: uuidv4(),
-                account_id: accountAddressFrom.account_id,
+                account_id: accountAddressTo.account_id,
                 currency_id: currency.currency_id,
                 balance: bnAmount.toFixed(),
                 number_of_external_key: '0',

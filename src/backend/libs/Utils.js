@@ -852,7 +852,7 @@ class Utils {
       try {
         addresses = JSON.parse(addresses);
       } catch (e) {
-        this.logger.error(`formatAddressArray(${addresses})`, e);
+        // if is eth address: '0x123456789...' JSON.parse will panic, only return string
         return addresses;
       }
     }
