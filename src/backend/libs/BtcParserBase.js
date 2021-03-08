@@ -14,7 +14,7 @@ class BtcParserBase extends ParserBase {
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
     this.options = {};
-    this.syncInterval = 450000;
+    this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
     this.decimal = 8;
   }
 
@@ -41,11 +41,13 @@ class BtcParserBase extends ParserBase {
     // 3. assign parser
     // 4. update failed unparsed retry
     // 5. remove parsed transaction from UnparsedTransaction table
+    // 6. update balance
 
     try {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-      // 1. load unparsed transactions per block from UnparsedTransaction
+        // 1. load unparsed transactions per block from UnparsedTransaction
+        this.block = await this.blockNumberFromDB();
         const txs = await this.getUnparsedTxs();
         if (!txs || txs.length < 1) break;
 
@@ -78,6 +80,8 @@ class BtcParserBase extends ParserBase {
           await this.removeParsedTx(tx);
         }
       }
+
+      await this.updateBalance();
       this.isParsing = false;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
@@ -99,7 +103,7 @@ class BtcParserBase extends ParserBase {
         return Promise.reject();
       }
       if (data.result) {
-        const height = data.result.height[2] || '0';
+        const height = data.result.height || '0';
         return Promise.resolve(height);
       }
     }
@@ -201,7 +205,7 @@ class BtcParserBase extends ParserBase {
     // 5. add mapping table
     // 6. check to address is regist address
     // 7. add mapping table
-    this.logger.debug(`[${this.constructor.name}] parseTx(${tx.hash})`);
+    this.logger.debug(`[${this.constructor.name}] parseTx(${tx.txid})`);
     const {
       fee, to, source_addresses, destination_addresses, note,
     } = await BtcParserBase.parseBTCTxAmounts.call(this, tx);
@@ -237,6 +241,7 @@ class BtcParserBase extends ParserBase {
           await this.transactionModel.update({
             timestamp: findTransaction[0].timestamp,
             block: findTransaction[0].block,
+            result: tx.confirmations >= 6 ? true : null,
           },
           {
             where: {
@@ -424,8 +429,95 @@ class BtcParserBase extends ParserBase {
     });
   }
 
+  async updateBalance() {
+    this.logger.debug(`[${this.constructor.name}] updateBalance`);
+    // step:
+    // 1. update pending transaction
+    try {
+      await this.parsePendingTransaction();
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] updateBalance error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
+  async parsePendingTransaction() {
+    this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
+    // step:
+    // 1. find all transaction where status is null(means pending transaction)
+    // 2. get last pending transaction from pendingTransaction table
+    // 3. create transaction which is not in step 1 array
+    // 4. update result which is not in step 2 array
+    try {
+      // 1. find all transaction where status is null(means pending transaction)
+      const transactions = await this.getTransactionsResultNull();
+
+      // 2. get last pending transaction from pendingTransaction table
+      const pendingTxids = await this.getPendingTransactionFromDB();
+
+      // 3. create transaction which is not in step 1 array
+      const newTxids = pendingTxids.filter((pendingTxid) => transactions.every((transaction) => pendingTxid !== transaction.txid));
+      for (const txid of newTxids) {
+        try {
+          const tx = await this.getTransactionByTxidFromPeer(txid);
+          await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.time);
+        } catch (error) {
+          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
+        }
+      }
+
+      // 4. update result which is not in step 2 array
+      const missingTxs = transactions.filter((transaction) => (pendingTxids.every((pendingTxid) => pendingTxid !== transaction.txid) && this.block - transaction.block >= 6));
+      for (const tx of missingTxs) {
+        try {
+          if (tx.block) {
+            await this.transactionModel.update(
+              {
+                result: true,
+              },
+              {
+                where: {
+                  currency_id: this.currencyInfo.currency_id,
+                  txid: tx.txid,
+                },
+              },
+            );
+          } else {
+            const peerTx = await this.getTransactionByTxidFromPeer(tx.txid).catch((error) => error);
+            if (peerTx.blockhash) {
+              const blockData = await this.blockDataFromDB(peerTx.blockhash);
+              tx.block = blockData.block;
+              tx.timestamp = peerTx.blocktime;
+              tx.result = tx.confirmations >= 6 ? true : null;
+            } else if (peerTx.code === -5) {
+              tx.result = false;
+            }
+            await this.transactionModel.update(
+              {
+                block: tx.block,
+                timestamp: tx.timestamp,
+                result: tx.result,
+              },
+              {
+                where: {
+                  currency_id: this.currencyInfo.currency_id,
+                  txid: tx.txid,
+                },
+              },
+            );
+          }
+        } catch (error) {
+          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
+        }
+      }
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
+      return Promise.reject(error);
+    }
+  }
+
   static cmd({
-    type, txid,
+    type, txid, block_hash,
   }) {
     let result;
     switch (type) {
@@ -434,6 +526,14 @@ class BtcParserBase extends ParserBase {
           jsonrpc: '1.0',
           method: 'getrawtransaction',
           params: [txid, true],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getBlockHeight':
+        result = {
+          jsonrpc: '1.0',
+          method: 'getblockstats',
+          params: [block_hash, ['height']],
           id: dvalue.randomID(),
         };
         break;

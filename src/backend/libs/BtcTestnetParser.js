@@ -5,7 +5,6 @@ class BtcTestnetParser extends BtcParserBase {
     super('80000001', config, database, logger);
 
     this.options = config.blockchain.bitcoin_testnet;
-    this.syncInterval = config.syncInterval.bitcoin ? config.syncInterval.bitcoin : 900000;
   }
 }
 

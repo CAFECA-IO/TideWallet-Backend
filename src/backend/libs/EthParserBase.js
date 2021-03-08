@@ -15,7 +15,7 @@ class EthParserBase extends ParserBase {
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
     this.options = {};
-    this.syncInterval = 15000;
+    this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
   }
 
   async init() {
@@ -47,7 +47,8 @@ class EthParserBase extends ParserBase {
     try {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-      // 1. load unparsed transactions per block from UnparsedTransaction
+        // 1. load unparsed transactions per block from UnparsedTransaction
+        this.block = await this.blockNumberFromDB();
         const txs = await this.getUnparsedTxs();
         if (!txs || txs.length < 1) break;
 
@@ -373,6 +374,12 @@ class EthParserBase extends ParserBase {
       const bnGasPrice = new BigNumber(tx.gasPrice, 16);
       const bnGasUsed = new BigNumber(receipt.gasUsed, 16);
       const fee = bnGasPrice.multipliedBy(bnGasUsed).toFixed();
+      let txStatus = null;
+      if (receipt.status !== '0x1') {
+        txStatus = false;
+      } else if (this.block - parseInt(tx.blockNumber, 16) >= 6) {
+        txStatus = true;
+      }
       let insertTx = await this.transactionModel.findOne({
         where: {
           currency_id: this.currencyInfo.currency_id,
@@ -394,7 +401,7 @@ class EthParserBase extends ParserBase {
           nonce: parseInt(tx.nonce, 16),
           gas_price: bnGasPrice.toFixed(),
           gas_used: bnGasUsed.toFixed(),
-          result: receipt.status === '0x1',
+          result: txStatus,
         });
       } else {
         const updateResult = await this.transactionModel.update({
@@ -402,7 +409,7 @@ class EthParserBase extends ParserBase {
           fee,
           block: parseInt(tx.blockNumber, 16),
           gas_used: bnGasUsed.toFixed(),
-          result: receipt.status === '0x1',
+          result: txStatus,
         }, {
           where: {
             currency_id: this.currencyInfo.currency_id,
@@ -578,22 +585,35 @@ class EthParserBase extends ParserBase {
         }
       }
 
-      // 4. update result to false which is not in step 2 array
-      const missingTxs = transactions.filter((transaction) => pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid));
+      // 4. update result which is not in step 2 array
+      const missingTxs = transactions.filter((transaction) => (pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid) && this.block - transaction.block >= 6));
       for (const tx of missingTxs) {
         try {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.txid})`);
-          await this.transactionModel.update(
-            {
-              result: false,
-            },
-            {
-              where: {
-                currency_id: this.currencyInfo.currency_id,
-                txid: tx.txid,
+          if (tx.block) {
+            await this.transactionModel.update(
+              {
+                result: true,
               },
-            },
-          );
+              {
+                where: {
+                  currency_id: this.currencyInfo.currency_id,
+                  txid: tx.txid,
+                },
+              },
+            );
+          } else {
+            await this.transactionModel.update(
+              {
+                result: false,
+              },
+              {
+                where: {
+                  currency_id: this.currencyInfo.currency_id,
+                  txid: tx.txid,
+                },
+              },
+            );
+          }
         } catch (error) {
           this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
         }
