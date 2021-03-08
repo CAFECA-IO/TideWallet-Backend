@@ -139,7 +139,7 @@ class BtcParserBase extends ParserBase {
       if (inputData.txid) {
         const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid } });
         if (findUXTO) {
-          from = from.plus(new BigNumber(findUXTO.amount).dividedBy(new BigNumber(10 ** this.decimal)));
+          from = from.plus(new BigNumber(findUXTO.amount));
         }
 
         // TODO: change use promise all
@@ -147,9 +147,11 @@ class BtcParserBase extends ParserBase {
         if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
           if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.addresses) {
             source_addresses.push({ addresses: txInfo.vout[inputData.vout].scriptPubKey.addresses, amount: txInfo.vout[inputData.vout].value });
+            from = from.plus(new BigNumber(txInfo.vout[inputData.vout].value || '0'));
           } else if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.type === 'pubkey') {
             // TODO: need pubkey => P2PK address
             source_addresses.push({ addresses: txInfo.vout[inputData.vout].scriptPubKey.hex, amount: txInfo.vout[inputData.vout].value || '0' });
+            from = from.plus(new BigNumber(txInfo.vout[inputData.vout].value || '0'));
           }
         }
       }
@@ -171,7 +173,7 @@ class BtcParserBase extends ParserBase {
     return {
       from,
       to,
-      fee: from.plus(to),
+      fee: from.minus(to),
       source_addresses: JSON.stringify(source_addresses),
       destination_addresses: JSON.stringify(destination_addresses),
       note,

@@ -132,18 +132,18 @@ class Manager extends Bot {
     this.logger.log('createManager');
     const result = [];
     // crawler
-    // result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
-    // result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
-    // result.push(new EthCrawlerManager(this.config, this.database, this.logger));
-    // result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
-    // result.push(new CfcCrawlerManager(this.config, this.database, this.logger));
+    result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
+    result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
+    result.push(new EthCrawlerManager(this.config, this.database, this.logger));
+    result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
+    result.push(new CfcCrawlerManager(this.config, this.database, this.logger));
 
     // parser
-    // result.push(new BtcParser(this.config, this.database, this.logger));
-    // result.push(new BtcTestnetParser(this.config, this.database, this.logger));
+    result.push(new BtcParser(this.config, this.database, this.logger));
+    result.push(new BtcTestnetParser(this.config, this.database, this.logger));
     result.push(new EthRopstenParser(this.config, this.database, this.logger));
-    // result.push(new EthParser(this.config, this.database, this.logger));
-    // result.push(new CfcParser(this.config, this.database, this.logger));
+    result.push(new EthParser(this.config, this.database, this.logger));
+    result.push(new CfcParser(this.config, this.database, this.logger));
     return result;
   }
 
