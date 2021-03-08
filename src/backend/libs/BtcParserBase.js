@@ -443,18 +443,12 @@ class BtcParserBase extends ParserBase {
       const missingTxs = transactions.filter((transaction) => pendingTxids.every((pendingTxid) => pendingTxid !== transaction.txid));
       for (const tx of missingTxs) {
         try {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.txid})`);
-          await this.transactionModel.update(
-            {
-              result: false,
-            },
-            {
-              where: {
-                currency_id: this.currencyInfo.currency_id,
-                txid: tx.txid,
-              },
-            },
-          );
+          const peerTx = await this.getTransactionByTxidFromPeer(tx.txid);
+          if (peerTx.blockhash) {
+            const blockData = await this.blockDataFromDB(peerTx.blockhash);
+            tx.height = blockData.block;
+          }
+          await BtcParserBase.parseTx.call(this, peerTx, this.currencyInfo, peerTx.time);
         } catch (error) {
           this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
         }

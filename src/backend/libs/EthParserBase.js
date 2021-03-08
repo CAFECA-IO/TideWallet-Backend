@@ -51,6 +51,8 @@ class EthParserBase extends ParserBase {
         const txs = await this.getUnparsedTxs();
         if (!txs || txs.length < 1) break;
 
+        this.block = await this.blockNumberFromDB();
+
         // 2. set queue
         // TODO job queue
 
@@ -539,22 +541,35 @@ class EthParserBase extends ParserBase {
         }
       }
 
-      // 4. update result to false which is not in step 2 array
+      // 4. update result which is not in step 2 array
       const missingTxs = transactions.filter((transaction) => pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid));
       for (const tx of missingTxs) {
         try {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.txid})`);
-          await this.transactionModel.update(
-            {
-              result: false,
-            },
-            {
-              where: {
-                currency_id: this.currencyInfo.currency_id,
-                txid: tx.txid,
+          if (tx.block) {
+            await this.transactionModel.update(
+              {
+                result: this.block - tx.block >= 6 ? true : null,
               },
-            },
-          );
+              {
+                where: {
+                  currency_id: this.currencyInfo.currency_id,
+                  txid: tx.txid,
+                },
+              },
+            );
+          } else {
+            await this.transactionModel.update(
+              {
+                result: false,
+              },
+              {
+                where: {
+                  currency_id: this.currencyInfo.currency_id,
+                  txid: tx.txid,
+                },
+              },
+            );
+          }
         } catch (error) {
           this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
         }

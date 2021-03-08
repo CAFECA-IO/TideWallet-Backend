@@ -28,6 +28,32 @@ class ParserBase {
     return this;
   }
 
+  async blockNumberFromDB() {
+    this.logger.debug(`[${this.constructor.name}] blockNumberFromDB`);
+    try {
+      const result = await this.blockchainModel.findOne({
+        where: { blockchain_id: this.bcid },
+      });
+      return result.block;
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
+      return 0;
+    }
+  }
+
+  async blockDataFromDB(block_hash) {
+    this.logger.debug(`[${this.constructor.name}] blockNumberFromDB`);
+    try {
+      const result = await this.blockScannedModel.findOne({
+        where: { blockchain_id: this.bcid, block_hash },
+      });
+      return result;
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
+      return 0;
+    }
+  }
+
   async checkRegistAddress(address) {
     this.logger.debug(`[${this.constructor.name}] checkRegistAddress(${address})`);
 
