@@ -47,11 +47,10 @@ class EthParserBase extends ParserBase {
     try {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-      // 1. load unparsed transactions per block from UnparsedTransaction
+        // 1. load unparsed transactions per block from UnparsedTransaction
+        this.block = await this.blockNumberFromDB();
         const txs = await this.getUnparsedTxs();
         if (!txs || txs.length < 1) break;
-
-        this.block = await this.blockNumberFromDB();
 
         // 2. set queue
         // TODO job queue
@@ -548,13 +547,13 @@ class EthParserBase extends ParserBase {
       }
 
       // 4. update result which is not in step 2 array
-      const missingTxs = transactions.filter((transaction) => pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid));
+      const missingTxs = transactions.filter((transaction) => (pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid) && this.block - transaction.block >= 6));
       for (const tx of missingTxs) {
         try {
           if (tx.block) {
             await this.transactionModel.update(
               {
-                result: this.block - tx.block >= 6 ? true : null,
+                result: true,
               },
               {
                 where: {
