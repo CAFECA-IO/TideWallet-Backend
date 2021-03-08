@@ -146,11 +146,17 @@ class BtcParserBase extends ParserBase {
         const txInfo = await this.getTransactionByTxidFromPeer(inputData.txid);
         if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
           if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.addresses) {
-            source_addresses.push({ addresses: txInfo.vout[inputData.vout].scriptPubKey.addresses, amount: txInfo.vout[inputData.vout].value });
+            source_addresses.push({
+              addresses: txInfo.vout[inputData.vout].scriptPubKey.addresses,
+              amount: Utils.multipliedByDecimal(txInfo.vout[inputData.vout].value, this.decimal),
+            });
             from = from.plus(new BigNumber(txInfo.vout[inputData.vout].value || '0'));
           } else if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.type === 'pubkey') {
             // TODO: need pubkey => P2PK address
-            source_addresses.push({ addresses: txInfo.vout[inputData.vout].scriptPubKey.hex, amount: txInfo.vout[inputData.vout].value || '0' });
+            source_addresses.push({
+              addresses: txInfo.vout[inputData.vout].scriptPubKey.hex,
+              amount: Utils.multipliedByDecimal(txInfo.vout[inputData.vout].value || '0', this.decimal),
+            });
             from = from.plus(new BigNumber(txInfo.vout[inputData.vout].value || '0'));
           }
         }
@@ -160,13 +166,19 @@ class BtcParserBase extends ParserBase {
     for (const outputData of tx.vout) {
       to = to.plus(new BigNumber(outputData.value));
       if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
-        destination_addresses.push({ addresses: outputData.scriptPubKey.addresses, amount: outputData.value });
+        destination_addresses.push({
+          addresses: outputData.scriptPubKey.addresses,
+          amount: Utils.multipliedByDecimal(outputData.value, this.decimal),
+        });
       }
       if (outputData.scriptPubKey && outputData.scriptPubKey.asm && outputData.scriptPubKey.asm.slice(0, 9) === 'OP_RETURN1') {
         note = outputData.scriptPubKey.hex || '';
       } else if (outputData.scriptPubKey && outputData.scriptPubKey.type === 'pubkey') {
         // TODO: need pubkey => P2PK address
-        destination_addresses.push({ addresses: outputData.scriptPubKey.hex, amount: outputData.value || '0' });
+        destination_addresses.push({
+          addresses: outputData.scriptPubKey.hex,
+          amount: new BigNumber(outputData.value || '0', this.decimal),
+        });
       }
     }
 
@@ -299,7 +311,7 @@ class BtcParserBase extends ParserBase {
       const _source_addresses = JSON.parse(source_addresses);
       for (let i = 0; i < _source_addresses.length; i++) {
         const sourceAddress = Array.isArray(_source_addresses[i].addresses) ? _source_addresses[i].addresses[0] : _source_addresses[i].addresses;
-        const sourceAddressAmount = _source_addresses[i].amount;
+        const sourceAddressAmount = Utils.dividedByDecimal(new BigNumber(_source_addresses[i].amount), currencyInfo.decimals);
         const accountAddressFrom = await this.accountAddressModel.findOne({
           where: { address: sourceAddress },
           include: [
@@ -336,7 +348,7 @@ class BtcParserBase extends ParserBase {
       const _destination_addresses = JSON.parse(destination_addresses);
       for (let i = 0; i < _destination_addresses.length; i++) {
         const destinationAddress = Array.isArray(_destination_addresses[i].addresses) ? _destination_addresses[i].addresses[0] : _destination_addresses[i].addresses;
-        const destinationAddressAmount = _destination_addresses[i].amount;
+        const destinationAddressAmount = Utils.dividedByDecimal(new BigNumber(_destination_addresses[i].amount), currencyInfo.decimals);
         const accountAddressFrom = await this.accountAddressModel.findOne({
           where: { address: destinationAddress },
           include: [
