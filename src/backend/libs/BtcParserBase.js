@@ -433,8 +433,10 @@ class BtcParserBase extends ParserBase {
     this.logger.debug(`[${this.constructor.name}] updateBalance`);
     // step:
     // 1. update pending transaction
+    // 2. update balance
     try {
       await this.parsePendingTransaction();
+      // TODO: update balance
     } catch (error) {
       this.logger.debug(`[${this.constructor.name}] updateBalance error: ${error}`);
       return Promise.reject(error);
