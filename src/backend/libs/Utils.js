@@ -185,17 +185,24 @@ class Utils {
       data,
       timeout: 1000,
     };
-    return ecRequest.post(opt).then((rs) => {
-      let response = '';
-      try {
-        response = JSON.parse(rs.data);
-      } catch (e) {
-        this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
-        this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
-        return false;
-      }
-      return Promise.resolve(response);
-    });
+    const start = new Date();
+    return ecRequest.post(opt)
+      .then((rs) => {
+        let response = '';
+        try {
+          response = JSON.parse(rs.data);
+        } catch (e) {
+          this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
+          this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+          return false;
+        }
+        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        return Promise.resolve(response);
+      })
+      .catch((e) => {
+        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        throw e;
+      });
   }
 
   static ETHRPC({
@@ -211,17 +218,24 @@ class Utils {
       data,
       timeout: 1000,
     };
-    return ecRequest.post(opt).then((rs) => {
-      let response = '';
-      try {
-        response = JSON.parse(rs.data);
-      } catch (e) {
-        this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
-        this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
-        return e;
-      }
-      return Promise.resolve(response);
-    });
+    const start = new Date();
+    return ecRequest.post(opt)
+      .then((rs) => {
+        let response = '';
+        try {
+          response = JSON.parse(rs.data);
+        } catch (e) {
+          this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
+          this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+          return e;
+        }
+        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        return Promise.resolve(response);
+      })
+      .catch((e) => {
+        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        throw e;
+      });
   }
 
   static initialAll({ configPath }) {
