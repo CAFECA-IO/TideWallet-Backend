@@ -340,6 +340,12 @@ class EthParserBase extends ParserBase {
       const bnGasPrice = new BigNumber(tx.gasPrice, 16);
       const bnGasUsed = new BigNumber(receipt.gasUsed, 16);
       const fee = bnGasPrice.multipliedBy(bnGasUsed).toFixed();
+      let txStatus = null;
+      if (receipt.status !== '0x1') {
+        txStatus = false;
+      } else if (this.block - parseInt(tx.blockNumber, 16) >= 6) {
+        txStatus = true;
+      }
       let insertTx = await this.transactionModel.findOne({
         where: {
           currency_id: this.currencyInfo.currency_id,
@@ -361,7 +367,7 @@ class EthParserBase extends ParserBase {
           nonce: parseInt(tx.nonce, 16),
           gas_price: bnGasPrice.toFixed(),
           gas_used: bnGasUsed.toFixed(),
-          result: receipt.status === '0x1',
+          result: txStatus,
         });
       } else {
         const updateResult = await this.transactionModel.update({
@@ -369,7 +375,7 @@ class EthParserBase extends ParserBase {
           fee,
           block: parseInt(tx.blockNumber, 16),
           gas_used: bnGasUsed.toFixed(),
-          result: receipt.status === '0x1',
+          result: txStatus,
         }, {
           where: {
             currency_id: this.currencyInfo.currency_id,
