@@ -758,7 +758,7 @@ class Utils {
     option.data = {
       jsonrpc: '2.0',
       method: 'eth_getBalance',
-      params: [address, 'latest'],
+      params: [address, 'pending'],
       id: dvalue.randomID(),
     };
 
@@ -845,6 +845,27 @@ class Utils {
     // bs58check library 會幫加checksum
     const address = bs58check.encode(Uint8Array.from([type.p2shAddressPrefix, ...fingerprint]));
     return address;
+  }
+
+  static formatAddressArray(addresses) {
+    if (typeof addresses === 'string') {
+      try {
+        addresses = JSON.parse(addresses);
+      } catch (e) {
+        // if is eth address: '0x123456789...' JSON.parse will panic, only return string
+        return addresses;
+      }
+    }
+    let result = [];
+    addresses.forEach((addressItem) => {
+      if (Array.isArray(addressItem.addresses)) {
+        result = result.concat(addressItem.addresses);
+      } else {
+        result.push(addressItem.addresses);
+      }
+    });
+
+    return result.join();
   }
 }
 

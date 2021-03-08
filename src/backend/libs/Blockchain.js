@@ -183,6 +183,7 @@ class Blockchain extends Bot {
           decimals: item.decimals,
           exchange_rate: item.exchange_rate,
           icon: item.icon || `${this.config.base.domain}/icon/ERC20.png`,
+          contract: item.contract,
         }));
       } else {
         payload = [];
@@ -314,8 +315,15 @@ class Blockchain extends Bot {
 
     try {
       // find user, address mapping
-      const findUserAddress = await this.accountModel.findOne({
-        where: { blockchain_id, user_id: tokenInfo.userID },
+      const findUserAddress = await this.accountAddressModel.findOne({
+        where: { address },
+        include: [
+          {
+            model: this.accountModel,
+            where: { blockchain_id, user_id: tokenInfo.userID },
+            attributes: ['account_id'],
+          },
+        ],
       });
 
       if (!findUserAddress) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
@@ -524,7 +532,7 @@ class Blockchain extends Bot {
             symbol: findTokenItem.symbol,
             name: findTokenItem.name,
             contract: findTokenItem.contract,
-            decimal: findTokenItem.decimal,
+            decimals: findTokenItem.decimals,
             total_supply: findTokenItem.total_supply,
             description: findTokenItem.description,
             imageUrl: findTokenItem.icon || `${this.config.base.domain}/icon/ERC20.png`,

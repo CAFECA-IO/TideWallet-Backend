@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => sequelize.define('AddressTransaction'
     type: DataTypes.STRING,
     allowNull: false,
   },
+  amount: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
   direction: {
     type: DataTypes.SMALLINT,
     allowNull: false,

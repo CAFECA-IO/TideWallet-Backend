@@ -298,9 +298,26 @@ class EthParserBase extends ParserBase {
             await this.setAddressTokenTransaction(
               currency.currency_id,
               accountAddressFrom.accountAddress_id,
+              tokenTransaction[0].amount,
               tokenTransaction[0].tokenTransaction_id,
               0,
             );
+            await this.accountCurrencyModel.findOrCreate({
+              where: {
+                account_id: accountAddressFrom.account_id,
+                currency_id: currency.currency_id,
+                number_of_external_key: '0',
+                number_of_internal_key: '0',
+              },
+              defaults: {
+                accountCurrency_id: uuidv4(),
+                account_id: accountAddressFrom.account_id,
+                currency_id: currency.currency_id,
+                balance: bnAmount.toFixed(),
+                number_of_external_key: '0',
+                number_of_internal_key: '0',
+              },
+            });
           }
           // 8. check to address is regist address
           const accountAddressTo = await this.checkRegistAddress(to);
@@ -309,9 +326,27 @@ class EthParserBase extends ParserBase {
             await this.setAddressTokenTransaction(
               currency.currency_id,
               accountAddressTo.accountAddress_id,
+              tokenTransaction[0].amount,
               tokenTransaction[0].tokenTransaction_id,
               1,
             );
+
+            await this.accountCurrencyModel.findOrCreate({
+              where: {
+                account_id: accountAddressTo.account_id,
+                currency_id: currency.currency_id,
+                number_of_external_key: '0',
+                number_of_internal_key: '0',
+              },
+              defaults: {
+                accountCurrency_id: uuidv4(),
+                account_id: accountAddressTo.account_id,
+                currency_id: currency.currency_id,
+                balance: bnAmount.toFixed(),
+                number_of_external_key: '0',
+                number_of_internal_key: '0',
+              },
+            });
           }
         }
       }
@@ -411,6 +446,7 @@ class EthParserBase extends ParserBase {
         await this.setAddressTransaction(
           accountAddressFrom.accountAddress_id,
           insertTx.transaction_id,
+          insertTx.amount,
           0,
         );
       }
@@ -422,6 +458,7 @@ class EthParserBase extends ParserBase {
         await this.setAddressTransaction(
           accountAddressTo.accountAddress_id,
           insertTx.transaction_id,
+          insertTx.amount,
           1,
         );
       }
@@ -433,7 +470,7 @@ class EthParserBase extends ParserBase {
     }
   }
 
-  async setAddressTokenTransaction(currency_id, accountAddress_id, tokenTransaction_id, direction) {
+  async setAddressTokenTransaction(currency_id, accountAddress_id, amount, tokenTransaction_id, direction) {
     this.logger.debug(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction})`);
     try {
       const result = await this.addressTokenTransactionModel.findOrCreate({
@@ -441,6 +478,7 @@ class EthParserBase extends ParserBase {
           currency_id,
           accountAddress_id,
           tokenTransaction_id,
+          amount,
           direction,
         },
         defaults: {
@@ -448,6 +486,7 @@ class EthParserBase extends ParserBase {
           currency_id,
           accountAddress_id,
           tokenTransaction_id,
+          amount,
           direction,
         },
       });

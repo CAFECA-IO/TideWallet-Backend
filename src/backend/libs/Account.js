@@ -596,8 +596,13 @@ class Account extends Bot {
         if (findTxByAddress && findTxByAddress.length > 0) {
           for (let j = 0; j < findTxByAddress.length; j++) {
             const txInfo = findTxByAddress[j];
-            const amount = Utils.dividedByDecimal(txInfo.TokenTransaction.amount, findAccountCurrency.Currency.decimals);
-            const gas_price = Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.gas_price, findAccountCurrency.Currency.decimals);
+            const amount = Utils.dividedByDecimal(txInfo.amount, findAccountCurrency.Currency.decimals);
+            const gas_price = txInfo.TokenTransaction.Transaction.gas_price
+              ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.gas_price, findAccountCurrency.Currency.decimals)
+              : null;
+            const fee = txInfo.TokenTransaction.Transaction.fee
+              ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.fee, findAccountCurrency.Currency.decimals)
+              : null;
             txs.push({
               txid: txInfo.TokenTransaction.Transaction.txid,
               status: (isToken) ? findTxByAddress.result : 'success',
@@ -606,9 +611,9 @@ class Account extends Bot {
               direction: txInfo.TokenTransaction.direction === 0 ? 'send' : 'receive',
               confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.TokenTransaction.Transaction.block,
               timestamp: txInfo.TokenTransaction.timestamp,
-              source_addresses: txInfo.TokenTransaction.source_addresses,
-              destination_addresses: txInfo.TokenTransaction.destination_addresses,
-              fee: txInfo.TokenTransaction.Transaction.fee,
+              source_addresses: Utils.formatAddressArray(txInfo.TokenTransaction.source_addresses),
+              destination_addresses: Utils.formatAddressArray(txInfo.TokenTransaction.destination_addresses),
+              fee,
               gas_price,
               gas_used: txInfo.TokenTransaction.Transaction.gas_used,
               note: txInfo.TokenTransaction.Transaction.note,
@@ -630,8 +635,13 @@ class Account extends Bot {
         if (findTxByAddress) {
           for (let j = 0; j < findTxByAddress.length; j++) {
             const txInfo = findTxByAddress[j];
-            const amount = Utils.dividedByDecimal(txInfo.Transaction.amount, findAccountCurrency.Currency.decimals);
-            const gas_price = Utils.dividedByDecimal(txInfo.Transaction.gas_price, findAccountCurrency.Currency.decimals);
+            const amount = Utils.dividedByDecimal(txInfo.amount, findAccountCurrency.Currency.decimals);
+            const gas_price = txInfo.Transaction.gas_price
+              ? Utils.dividedByDecimal(txInfo.Transaction.gas_price, findAccountCurrency.Currency.decimals)
+              : null;
+            const fee = txInfo.Transaction.fee
+              ? Utils.dividedByDecimal(txInfo.Transaction.fee, findAccountCurrency.Currency.decimals)
+              : null;
 
             txs.push({
               txid: txInfo.Transaction.txid,
@@ -642,9 +652,9 @@ class Account extends Bot {
               direction: txInfo.direction === 0 ? 'send' : 'receive',
               confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.Transaction.block,
               timestamp: txInfo.Transaction.timestamp,
-              source_addresses: txInfo.Transaction.source_addresses,
-              destination_addresses: txInfo.Transaction.destination_addresses,
-              fee: txInfo.Transaction.fee,
+              source_addresses: Utils.formatAddressArray(txInfo.Transaction.source_addresses),
+              destination_addresses: Utils.formatAddressArray(txInfo.Transaction.destination_addresses),
+              fee,
               gas_price,
               gas_used: txInfo.Transaction.gas_used,
               note: txInfo.Transaction.note,
@@ -685,6 +695,7 @@ class Account extends Bot {
         ],
       });
 
+      // console.log('findAccountCurrency', findAccountCurrency);
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
@@ -740,7 +751,9 @@ class Account extends Bot {
       });
       if (findTX) {
         const amount = Utils.dividedByDecimal(findTX.amount, findTX.Currency.decimals);
-        const gas_price = Utils.dividedByDecimal(findTX.gas_price, findTX.Currency.decimals);
+        const gas_price = findTX.gas_price
+          ? Utils.dividedByDecimal(findTX.gas_price, findTX.Currency.decimals)
+          : null;
         return new ResponseFormat({
           message: 'Get Transaction Detail',
           payload: {
@@ -752,8 +765,8 @@ class Account extends Bot {
             symbol: findTX.Currency.symbol,
             direction: findTX.direction === 0 ? 'send' : 'receive',
             timestamp: findTX.timestamp,
-            source_addresses: findTX.source_addresses,
-            destination_addresses: findTX.destination_addresses,
+            source_addresses: Utils.formatAddressArray(findTX.source_addresses),
+            destination_addresses: Utils.formatAddressArray(findTX.destination_addresses),
             fee: findTX.fee,
             gas_price,
             gas_used: findTX.gas_used,
@@ -811,7 +824,7 @@ class Account extends Bot {
         timestamp: utxo.on_block_timestamp,
         chain_index,
         key_index,
-        address: utxo.Account.address,
+        address: utxo.AccountAddress.address,
       });
     }
   }

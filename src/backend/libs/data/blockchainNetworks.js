@@ -39,7 +39,7 @@ module.exports = {
     blockchain_id: '8000003C',
     name: 'Ethereum',
     coin_type: 60,
-    network_id: 0,
+    network_id: 1,
     publish: true,
     description: 'Ethereum description',
     block: 0,
