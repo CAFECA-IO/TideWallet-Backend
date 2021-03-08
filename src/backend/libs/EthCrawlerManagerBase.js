@@ -396,10 +396,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     return Promise.reject();
   }
 
-  async updateBalance() {
-    return Promise.resolve();
-  }
-
   async updateBlockHeight(block) {
     this.logger.debug(`[${this.constructor.name}] updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(

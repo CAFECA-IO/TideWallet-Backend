@@ -239,25 +239,6 @@ class Account extends Bot {
             } else {
               balance = accountCurrency.balance;
             }
-          } else if (account.blockchain_id === '80000000' || account.blockchain_id === '80000001') {
-            // TODO: get btc balance 拔成一個 function
-            // if BTC symbol, count all utxo in db
-            const findAllAddress = await this.accountAddressModel.findAll({
-              where: { account_id: account.account_id },
-              attributes: ['accountAddress_id'],
-            });
-            balance = new BigNumber(0);
-            for (const addressItem of findAllAddress) {
-              const findUTXOByAddress = await this.utxoModel.findAll({
-                where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
-                attributes: ['amount'],
-              });
-
-              for (const utxoItem of findUTXOByAddress) {
-                balance = balance.plus(new BigNumber(utxoItem.amount));
-              }
-            }
-            balance = Utils.dividedByDecimal(balance, Currency.decimals);
           }
 
           payload.push({
@@ -348,25 +329,6 @@ class Account extends Bot {
               balance = accountCurrency.balance;
             }
           }
-        } else if (findAccount.blockchain_id === '80000000' || findAccount.blockchain_id === '80000001') {
-          // TODO: get btc balance 拔成一個 function
-          // if BTC symbol, count all utxo in db
-          const findAllAddress = await this.accountAddressModel.findAll({
-            where: { account_id: findAccount.account_id },
-            attributes: ['accountAddress_id'],
-          });
-          balance = new BigNumber(0);
-          for (const addressItem of findAllAddress) {
-            const findUTXOByAddress = await this.utxoModel.findAll({
-              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
-              attributes: ['amount'],
-            });
-
-            for (const utxoItem of findUTXOByAddress) {
-              balance = balance.plus(new BigNumber(utxoItem.amount));
-            }
-          }
-          balance = Utils.dividedByDecimal(balance, accountCurrency.Currency.decimals);
         }
 
         if (accountCurrency.Currency && accountCurrency.Currency.type === 1) {

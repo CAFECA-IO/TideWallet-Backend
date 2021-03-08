@@ -294,11 +294,6 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     }
   }
 
-  async updateBalance() {
-    // TODO
-    return Promise.resolve();
-  }
-
   async updateBlockHeight(block) {
     this.logger.debug(`[${this.constructor.name}] updateBlockHeight(${block})`);
     const insertResult = await this.blockchainModel.update(

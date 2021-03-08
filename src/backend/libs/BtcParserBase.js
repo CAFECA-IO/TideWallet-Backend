@@ -16,6 +16,8 @@ class BtcParserBase extends ParserBase {
     this.options = {};
     this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
     this.decimal = 8;
+
+    this.updateBalanceAccounts = {};
   }
 
   async init() {
@@ -256,9 +258,15 @@ class BtcParserBase extends ParserBase {
         if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
           const [address] = outputData.scriptPubKey.addresses;
           const findAccountAddress = await this.accountAddressModel.findOne({
-            where: {
-              address,
-            },
+            where: { address },
+            include: [
+              {
+                model: this.accountModel,
+                attributes: ['blockchain_id'],
+                where: { blockchain_id: this.bcid },
+              },
+            ],
+            transaction,
           });
 
           if (findAccountAddress) {
@@ -329,6 +337,8 @@ class BtcParserBase extends ParserBase {
           transaction,
         });
         if (accountAddressFrom) {
+          this.updateBalanceAccounts[accountAddressFrom.account_id] = { retryCount: 0 };
+
           // 5. add mapping table
           await this.addressTransactionModel.findOrCreate({
             where: {
@@ -354,7 +364,7 @@ class BtcParserBase extends ParserBase {
       for (let i = 0; i < _destination_addresses.length; i++) {
         const destinationAddress = Array.isArray(_destination_addresses[i].addresses) ? _destination_addresses[i].addresses[0] : _destination_addresses[i].addresses;
         const destinationAddressAmount = Utils.dividedByDecimal(new BigNumber(_destination_addresses[i].amount), currencyInfo.decimals);
-        const accountAddressFrom = await this.accountAddressModel.findOne({
+        const accountAddressTo = await this.accountAddressModel.findOne({
           where: { address: destinationAddress },
           include: [
             {
@@ -371,19 +381,21 @@ class BtcParserBase extends ParserBase {
           ],
           transaction,
         });
-        if (accountAddressFrom) {
+        if (accountAddressTo) {
+          this.updateBalanceAccounts[accountAddressTo.account_id] = { retryCount: 0 };
+
           // 7. add mapping table
           await this.addressTransactionModel.findOrCreate({
             where: {
               currency_id: currencyInfo.currency_id,
-              accountAddress_id: accountAddressFrom.accountAddress_id,
+              accountAddress_id: accountAddressTo.accountAddress_id,
               transaction_id,
               direction: 1,
             },
             defaults: {
               addressTransaction_id: uuidv4(),
               currency_id: currencyInfo.currency_id,
-              accountAddress_id: accountAddressFrom.accountAddress_id,
+              accountAddress_id: accountAddressTo.accountAddress_id,
               transaction_id,
               amount: destinationAddressAmount,
               direction: 1,
@@ -392,12 +404,12 @@ class BtcParserBase extends ParserBase {
           });
 
           // 8. if vout has account change address, update number_of_internal_key += 1
-          if (accountAddressFrom.chain_index === 1) {
+          if (accountAddressTo.chain_index === 1) {
             const accountCurrency = await this.accountCurrencyModel.increment(
               { number_of_internal_key: 1 },
               {
                 where: {
-                  account_id: accountAddressFrom.Account.account_id,
+                  account_id: accountAddressTo.Account.account_id,
                   currency_id: currencyInfo.currency_id,
                 },
                 transaction,
@@ -405,18 +417,18 @@ class BtcParserBase extends ParserBase {
             );
 
             if (accountCurrency && accountCurrency.length > 0 && accountCurrency[0] && accountCurrency[0][0] && accountCurrency[0][0][0]) {
-              const hdWallet = new HDWallet({ extendPublicKey: accountAddressFrom.Account.extend_public_key });
-              const coinType = accountAddressFrom.Account.Blockchain.coin_type;
+              const hdWallet = new HDWallet({ extendPublicKey: accountAddressTo.Account.extend_public_key });
+              const coinType = accountAddressTo.Account.Blockchain.coin_type;
               const wallet = hdWallet.getWalletInfo({
                 change: 1,
                 index: accountCurrency[0][0][0].number_of_internal_key,
                 coinType,
-                blockchainID: accountAddressFrom.Account.blockchain_id,
+                blockchainID: accountAddressTo.Account.blockchain_id,
               });
 
               await this.accountAddressModel.create({
                 accountAddress_id: uuidv4(),
-                account_id: accountAddressFrom.Account.account_id,
+                account_id: accountAddressTo.Account.account_id,
                 chain_index: 1,
                 key_index: accountCurrency[0][0][0].number_of_internal_key,
                 public_key: wallet.publicKey,
@@ -436,7 +448,50 @@ class BtcParserBase extends ParserBase {
     // 2. update balance
     try {
       await this.parsePendingTransaction();
-      // TODO: update balance
+      // update balance
+      for (const accountID of Object.keys(this.updateBalanceAccounts)) {
+        if (this.updateBalanceAccounts[accountID] && this.updateBalanceAccounts[accountID].retryCount < 3) {
+          const findAllAddress = await this.accountAddressModel.findAll({
+            where: { account_id: accountID },
+            attributes: ['accountAddress_id'],
+          });
+          let balance = new BigNumber(0);
+          for (const addressItem of findAllAddress) {
+            const findUTXOByAddress = await this.utxoModel.findAll({
+              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: false } },
+              attributes: ['amount'],
+            });
+
+            for (const utxoItem of findUTXOByAddress) {
+              balance = balance.plus(new BigNumber(utxoItem.amount));
+            }
+          }
+
+          try {
+            await this.accountCurrencyModel.update({
+              balance: balance.toFixed(),
+            },
+            {
+              where: {
+                account_id: accountID,
+                currency_id: this.currencyInfo.currency_id,
+              },
+            });
+
+            delete this.updateBalanceAccounts[accountID];
+          } catch (e) {
+            this.updateBalanceAccounts[accountID].retryCount += 1;
+          }
+        } else {
+          this.logger.error(`this.updateBalanceAccounts[${accountID}] update error!`);
+          this.updateBalanceAccounts[accountID].retryCount += 1;
+
+          // if error after 3 block, reset retryCount, and retry it
+          if (this.updateBalanceAccounts[accountID].retryCount > 6) {
+            this.updateBalanceAccounts[accountID].retryCount = 0;
+          }
+        }
+      }
     } catch (error) {
       this.logger.debug(`[${this.constructor.name}] updateBalance error: ${error}`);
       return Promise.reject(error);
@@ -507,6 +562,27 @@ class BtcParserBase extends ParserBase {
                 },
               },
             );
+          }
+
+          const findAddressTransaction = await this.addressTransactionModel.findOne({
+            include: [
+              {
+                model: this.transactionModel,
+                attributes: ['transaction_id', 'txid', 'currency_id'],
+                where: {
+                  currency_id: this.currencyInfo.currency_id,
+                  txid: tx.txid,
+                },
+              },
+              {
+                model: this.accountAddressModel,
+                attributes: ['account_id'],
+              },
+            ],
+            attributes: ['addressTransaction_id', 'currency_id', 'transaction_id'],
+          });
+          if (findAddressTransaction) {
+            this.updateBalanceAccounts[findAddressTransaction.AccountAddress.account_id] = { retryCount: 0 };
           }
         } catch (error) {
           this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
