@@ -758,7 +758,7 @@ class Utils {
     option.data = {
       jsonrpc: '2.0',
       method: 'eth_getBalance',
-      params: [address, 'latest'],
+      params: [address, 'pending'],
       id: dvalue.randomID(),
     };
 
