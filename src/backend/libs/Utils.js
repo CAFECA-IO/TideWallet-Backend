@@ -848,7 +848,14 @@ class Utils {
   }
 
   static formatAddressArray(addresses) {
-    if (typeof addresses === 'string')addresses = JSON.parse(addresses);
+    if (typeof addresses === 'string') {
+      try {
+        addresses = JSON.parse(addresses);
+      } catch (e) {
+        this.logger.error(`formatAddressArray(${addresses})`, e);
+        return addresses;
+      }
+    }
     let result = [];
     addresses.forEach((addressItem) => {
       if (Array.isArray(addressItem.addresses)) {
@@ -857,7 +864,8 @@ class Utils {
         result.push(addressItem.addresses);
       }
     });
-    return result;
+
+    return result.join();
   }
 }
 

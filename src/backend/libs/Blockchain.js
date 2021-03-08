@@ -315,8 +315,15 @@ class Blockchain extends Bot {
 
     try {
       // find user, address mapping
-      const findUserAddress = await this.accountModel.findOne({
-        where: { blockchain_id, user_id: tokenInfo.userID },
+      const findUserAddress = await this.accountAddressModel.findOne({
+        where: { address },
+        include: [
+          {
+            model: this.accountModel,
+            where: { blockchain_id, user_id: tokenInfo.userID },
+            attributes: ['account_id'],
+          },
+        ],
       });
 
       if (!findUserAddress) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });

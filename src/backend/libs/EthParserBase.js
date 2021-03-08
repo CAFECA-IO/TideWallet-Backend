@@ -302,6 +302,20 @@ class EthParserBase extends ParserBase {
               tokenTransaction[0].amount,
               0,
             );
+
+            await this.accountCurrencyModel.findOrCreate({
+              where: {
+                transaction_id: transaction.transaction_id, currency_id: currency.currency_id,
+              },
+              defaults: {
+                accountCurrency_id: uuidv4(),
+                account_id: accountAddressFrom.account_id,
+                currency_id: currency.currency_id,
+                balance: bnAmount.toFixed(),
+                number_of_external_key: '0',
+                number_of_internal_key: '0',
+              },
+            });
           }
           // 8. check to address is regist address
           const accountAddressTo = await this.checkRegistAddress(to);
@@ -314,6 +328,20 @@ class EthParserBase extends ParserBase {
               tokenTransaction[0].amount,
               1,
             );
+
+            await this.accountCurrencyModel.findOrCreate({
+              where: {
+                transaction_id: transaction.transaction_id, currency_id: currency.currency_id,
+              },
+              defaults: {
+                accountCurrency_id: uuidv4(),
+                account_id: accountAddressFrom.account_id,
+                currency_id: currency.currency_id,
+                balance: bnAmount.toFixed(),
+                number_of_external_key: '0',
+                number_of_internal_key: '0',
+              },
+            });
           }
         }
       }
