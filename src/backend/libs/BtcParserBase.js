@@ -171,9 +171,9 @@ class BtcParserBase extends ParserBase {
     }
 
     return {
-      from,
-      to,
-      fee: from.minus(to),
+      from: Utils.multipliedByDecimal(from, this.decimal),
+      to: Utils.multipliedByDecimal(to, this.decimal),
+      fee: new BigNumber(from).minus(new BigNumber(to)),
       source_addresses: JSON.stringify(source_addresses),
       destination_addresses: JSON.stringify(destination_addresses),
       note,
@@ -196,7 +196,6 @@ class BtcParserBase extends ParserBase {
 
     await this.sequelize.transaction(async (transaction) => {
       const transaction_id = uuidv4();
-
       // 1. insert tx
       const findTransaction = await this.transactionModel.findOrCreate({
         where: {
@@ -210,7 +209,7 @@ class BtcParserBase extends ParserBase {
           timestamp: timestamp || null,
           source_addresses,
           destination_addresses,
-          amount: Utils.multipliedByDecimal(to, currencyInfo.decimals),
+          amount: to,
           fee: Utils.multipliedByDecimal(fee, currencyInfo.decimals),
           note,
           block: tx.height ? tx.height : null,
