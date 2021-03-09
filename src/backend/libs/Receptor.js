@@ -7,6 +7,9 @@ const Koa = require('koa');
 const Router = require('koa-router');
 const bodyParser = require('koa-body');
 const staticServe = require('koa-static');
+const compress = require('koa-compress');
+const helmet = require('koa-helmet');
+const zlib = require('zlib');
 const ResponseFormat = require('./ResponseFormat');
 const Codes = require('./Codes');
 
@@ -41,7 +44,15 @@ class Receptor extends Bot {
         app.use(staticServe(this.config.base.static))
           .use(bodyParser({ multipart: true }))
           .use(this.router.routes())
-          .use(this.router.allowedMethods());
+          .use(this.router.allowedMethods())
+          .use(compress({
+            threshold: 2048,
+            gzip: {
+              flush: zlib.constants.Z_SYNC_FLUSH,
+            },
+            br: false,
+          }))
+          .use(helmet());
         return this.listen({ options, callback: app.callback() });
       });
   }
@@ -97,6 +108,7 @@ class Receptor extends Bot {
         session: ctx.session,
         token: ctx.header.token,
       };
+      this.logger.log(`[API] ${ctx.method} ${ctx.url} request body: ${JSON.stringify(ctx.request.body)}`);
       return operation(inputs)
         .then((rs) => {
           ctx.body = rs;
