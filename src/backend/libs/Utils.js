@@ -7,6 +7,7 @@ const EthUtils = require('ethereumjs-util');
 const crypto = require('crypto');
 const bitcoin = require('bitcoinjs-lib');
 const BigNumber = require('bignumber.js');
+const log4js = require('log4js');
 
 const { BN } = EthUtils;
 const toml = require('toml');
@@ -496,11 +497,25 @@ class Utils {
   }
 
   static initialLogger({ base }) {
+    log4js.configure({
+      appenders: {
+        out: {
+          type: 'stdout',
+        },
+      },
+      categories: {
+        default: {
+          appenders: ['out'],
+          level: base.logLevel || 'debug',
+        },
+      },
+    });
+    this.loggerAdapter = log4js.getLogger('TideWallet');
     return Promise.resolve({
-      log: console.log,
-      error: console.error,
-      debug: base.debug ? console.log : () => {},
-      trace: console.trace,
+      log: (...data) => this.loggerAdapter.info('%s', data),
+      error: (...data) => this.loggerAdapter.error('%s', data),
+      debug: (...data) => this.loggerAdapter.debug('%s', data),
+      trace: (...data) => this.loggerAdapter.trace('%s', data),
     });
   }
 
@@ -880,6 +895,13 @@ class Utils {
     });
 
     return result.join();
+  }
+
+  static randomStr(length) {
+    let key = '';
+    const charset = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let i = 0; i < length; i++) { key += charset.charAt(Math.floor(Math.random() * charset.length)); }
+    return key;
   }
 }
 
