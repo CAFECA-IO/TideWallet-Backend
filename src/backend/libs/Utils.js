@@ -506,7 +506,7 @@ class Utils {
       categories: {
         default: {
           appenders: ['out'],
-          level: base.debug ? base.debug || 'debug' : 'error',
+          level: base.logLevel || 'debug',
         },
       },
     });
@@ -895,6 +895,13 @@ class Utils {
     });
 
     return result.join();
+  }
+
+  static randomStr(length) {
+    let key = '';
+    const charset = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let i = 0; i < length; i++) { key += charset.charAt(Math.floor(Math.random() * charset.length)); }
+    return key;
   }
 }
 

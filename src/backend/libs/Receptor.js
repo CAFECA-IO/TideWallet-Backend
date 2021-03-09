@@ -1,5 +1,4 @@
 const path = require('path');
-
 const pem = require('pem');
 const http = require('http');
 const spdy = require('spdy');
@@ -10,6 +9,7 @@ const staticServe = require('koa-static');
 const compress = require('koa-compress');
 const helmet = require('koa-helmet');
 const zlib = require('zlib');
+const Utils = require('./Utils');
 const ResponseFormat = require('./ResponseFormat');
 const Codes = require('./Codes');
 
@@ -98,6 +98,7 @@ class Receptor extends Bot {
   register({ pathname, options, operation }) {
     const method = options.method.toLowerCase();
     this.router[method](pathname, (ctx, next) => {
+      const requestID = Utils.randomStr(6);
       const inputs = {
         body: ctx.request.body,
         files: ctx.request.files,
@@ -107,16 +108,19 @@ class Receptor extends Bot {
         query: ctx.query,
         session: ctx.session,
         token: ctx.header.token,
+        requestID,
       };
-      this.logger.log(`[API] ${ctx.method} ${ctx.url} request body: ${JSON.stringify(ctx.request.body)}`);
+      this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} request body: ${JSON.stringify(ctx.request.body)}`);
       return operation(inputs)
         .then((rs) => {
           ctx.body = rs;
+          this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${JSON.stringify(ctx.body)}`);
           next();
         })
         .catch((e) => {
           // unhandled error
           ctx.body = new ResponseFormat({ message: `unknown error(${e.message})`, code: Codes.UNKNOWN_ERROR });
+          this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${JSON.stringify(ctx.body)}`);
           next();
         });
     });
