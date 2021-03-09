@@ -121,24 +121,39 @@ class Blockchain extends Bot {
     }
   }
 
+  async _findFiatCurrencyRate(currency_id) {
+    return this.fiatCurrencyRateModel.findOne({
+      where: { currency_id },
+      attributes: ['rate'],
+    });
+  }
+
   async CurrencyList() {
     try {
-      let payload = await this.currencyModel.findAll({
+      const findCurrency = await this.currencyModel.findAll({
         where: {
           [this.Sequelize.Op.or]: [{ type: 0 }, { type: 1 }],
         },
       });
-      if (payload) {
-        payload = payload.map((item) => ({
-          currency_id: item.currency_id,
-          name: item.name,
-          symbol: item.symbol,
-          type: item.type,
-          publish: item.publish,
-          decimals: item.decimals,
-          exchange_rate: item.exchange_rate,
-          icon: item.icon,
-        }));
+      const payload = [];
+      if (findCurrency) {
+        for (const item of findCurrency) {
+          let { exchange_rate } = item;
+          if (exchange_rate === null) {
+            const findRate = await this._findFiatCurrencyRate(item.currency_id);
+            if (findRate)exchange_rate = findRate.rate;
+          }
+          payload.push({
+            currency_id: item.currency_id,
+            name: item.name,
+            symbol: item.symbol,
+            type: item.type,
+            publish: item.publish,
+            decimals: item.decimals,
+            exchange_rate,
+            icon: item.icon,
+          });
+        }
       }
       return new ResponseFormat({ message: 'List Supported Currencies', payload });
     } catch (e) {
@@ -478,13 +493,17 @@ class Blockchain extends Bot {
         include: [
           {
             model: this.currencyModel,
-            attributes: ['symbol'],
+            attributes: ['currency_id', 'symbol'],
           },
         ],
       });
       const payload = [];
       findRates.forEach((item) => {
-        payload.push({ name: item.Currency.symbol, rate: item.rate || '0' });
+        payload.push({
+          currency_id: item.currency_id,
+          name: item.Currency.symbol,
+          rate: item.rate || '0',
+        });
       });
       return new ResponseFormat({ message: 'List Fiat Currency Rate', payload });
     } catch (e) {
@@ -497,7 +516,7 @@ class Blockchain extends Bot {
   async CryptoRate() {
     try {
       const findRates = await this.currencyModel.findAll({
-        attributes: ['exchange_rate', 'symbol'],
+        attributes: ['currency_id', 'exchange_rate', 'symbol'],
         where: {
           [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
         },
@@ -505,6 +524,7 @@ class Blockchain extends Bot {
       const payload = [];
       findRates.forEach((item) => {
         payload.push({
+          currency_id: item.currency_id,
           name: item.symbol,
           rate: item.exchange_rate || '0',
         });
