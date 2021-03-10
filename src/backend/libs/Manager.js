@@ -123,7 +123,7 @@ class Manager extends Bot {
           );
         })
         .catch((e) => {
-          this.logger.console.error('syncCryptoRate e');
+          this.logger.error('syncCryptoRate error:', e);
         });
     }
   }
@@ -131,19 +131,43 @@ class Manager extends Bot {
   createManager() {
     this.logger.log('createManager');
     const result = [];
-    // crawler
-    result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
-    result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
-    result.push(new EthCrawlerManager(this.config, this.database, this.logger));
-    result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
-    result.push(new CfcCrawlerManager(this.config, this.database, this.logger));
+    const { syncBlockchain } = this.config;
+    const blockchainSet = Object.keys(syncBlockchain);
 
-    // parser
-    result.push(new BtcParser(this.config, this.database, this.logger));
-    result.push(new BtcTestnetParser(this.config, this.database, this.logger));
-    result.push(new EthRopstenParser(this.config, this.database, this.logger));
-    result.push(new EthParser(this.config, this.database, this.logger));
-    result.push(new CfcParser(this.config, this.database, this.logger));
+    /**
+     * 'bitcoin_mainnet',
+     * 'bitcoin_testnet',
+     * 'ethereum_mainnet',
+     * 'ethereum_ropsten',
+     * 'cafeca'
+     */
+    blockchainSet.forEach((blockchianName) => {
+      if (!syncBlockchain[blockchianName]) return;
+      this.logger.log(blockchianName);
+      switch (blockchianName) {
+        case 'bitcoin_mainnet':
+          result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
+          result.push(new BtcParser(this.config, this.database, this.logger));
+          break;
+        case 'bitcoin_testnet':
+          result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
+          result.push(new BtcTestnetParser(this.config, this.database, this.logger));
+          break;
+        case 'ethereum_mainnet':
+          result.push(new EthCrawlerManager(this.config, this.database, this.logger));
+          result.push(new EthParser(this.config, this.database, this.logger));
+          break;
+        case 'ethereum_ropsten':
+          result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
+          result.push(new EthRopstenParser(this.config, this.database, this.logger));
+          break;
+        case 'cafeca':
+          result.push(new CfcCrawlerManager(this.config, this.database, this.logger));
+          result.push(new CfcParser(this.config, this.database, this.logger));
+          break;
+        default:
+      }
+    });
     return result;
   }
 
