@@ -51,6 +51,13 @@ path = "/"
 user = ''
 password = ''
 
+[syncBlockchain]
+bitcoin_mainnet = false
+bitcoin_testnet = false
+ethereum_mainnet = false
+ethereum_ropsten = false
+cafeca = false
+
 [syncInterval]
 ethereum = 15000
 cafeca = 15000
