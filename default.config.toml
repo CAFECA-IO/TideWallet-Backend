@@ -7,7 +7,7 @@ domain = "https://service.tidewallet.io"
 folder = "TideWallet-Backend"
 static = "./public/"
 token_secret_expire_time = 31536000 # 365 * 24 * 60 * 60 (expires in 365 day)
-logLevel = 'info'
+logLevel = 'error'
 
 [cryptoapis]
 key = ""
@@ -104,4 +104,5 @@ pathname = [
   "get | /api/v1/fiats/rate | Bot.Blockchain.FiatsRate",
   "get | /api/v1/crypto/rate | Bot.Blockchain.CryptoRate",
   "get | /api/v1/blockchain/:blockchain_id/contract/:contract | Bot.Blockchain.TokenInfo",
+  "get | /api/v1/blockchains/height | Bot.Blockchain.BlockHeight",
 ]

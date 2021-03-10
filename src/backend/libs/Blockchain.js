@@ -30,6 +30,8 @@ class Blockchain extends Bot {
       this.blockchainModel = this.database.db.Blockchain;
       this.currencyModel = this.database.db.Currency;
       this.fiatCurrencyRateModel = this.database.db.FiatCurrencyRate;
+      this.blockScannedModel = this.database.db.BlockScanned;
+      this.unparsedTransactionModel = this.database.db.UnparsedTransaction;
 
       // used by BtcParserBase.parseTx.call
       this.transactionModel = this.database.db.Transaction;
@@ -637,6 +639,117 @@ class Blockchain extends Bot {
       if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
+  }
+
+  async ethBlockHeight(blockchain_id) {
+    const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+    const option = { ...blockchainConfig };
+
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_blockNumber',
+      params: [],
+      id: dvalue.randomID(),
+    };
+    const data = await Utils.ETHRPC(option);
+    if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
+    if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+    return new BigNumber(data.result).toNumber();
+  }
+
+  async btcBlockHeight(blockchain_id) {
+    const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+    const option = { ...blockchainConfig };
+
+    option.data = {
+      jsonrpc: '1.0',
+      method: 'getblockcount',
+      params: [],
+      id: dvalue.randomID(),
+    };
+
+    const data = await Utils.BTCRPC(option);
+    if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
+    if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+    return new BigNumber(data.result).toNumber();
+  }
+
+  async findBlockScannedHeight(blockchain_id) {
+    const findBtcMainnetUnparsedTxTimestamp = await this.unparsedTransactionModel.findOne({
+      where: { blockchain_id },
+      order: [['unparsedTransaction_id', 'ASC']],
+      attributes: ['timestamp'],
+    });
+
+    let result = {};
+    if (findBtcMainnetUnparsedTxTimestamp) {
+      result = await this.blockScannedModel.findOne({
+        where: { blockchain_id, timestamp: findBtcMainnetUnparsedTxTimestamp.timestamp },
+      });
+      if (result) return result.block;
+    }
+    result = await this.blockScannedModel.findOne({
+      where: { blockchain_id },
+      order: [['timestamp', 'ASC']],
+    });
+    if (result) return result.block;
+    return 0;
+  }
+
+  async BlockHeight() {
+    const findBlockchain = await this.blockchainModel.findAll({});
+    const btcMainnetBlockHeight = await this.btcBlockHeight('80000000');
+    const btcTestnetBlockHeight = await this.btcBlockHeight('80000001');
+    const ethMainnetBlockHeight = await this.ethBlockHeight('8000003C');
+    const ethTestnetBlockHeight = await this.ethBlockHeight('8000025B');
+
+    const _dbBtcMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000000');
+    const dbBtcMainnetBlockHeight = _dbBtcMainnetBlockHeight ? _dbBtcMainnetBlockHeight.block : 0;
+    const _dbBtcTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000001');
+    const dbBtcTestnetBlockHeight = _dbBtcTestnetBlockHeight ? _dbBtcTestnetBlockHeight.block : 0;
+    const _dbEthMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '8000003C');
+    const dbEthMainnetBlockHeight = _dbEthMainnetBlockHeight ? _dbEthMainnetBlockHeight.block : 0;
+    const _dbEthTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '8000025B');
+    const dbEthTestnetBlockHeight = _dbEthTestnetBlockHeight ? _dbEthTestnetBlockHeight.block : 0;
+
+    const btcMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000000');
+    const btcTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000001');
+    const ethMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000003C');
+    const ethTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000025B');
+
+    return new ResponseFormat({
+      message: 'Block Height',
+      payload: {
+        BTC_MAINNET: {
+          blockHeight: btcMainnetBlockHeight,
+          db_blockHeight: dbBtcMainnetBlockHeight,
+          blockScanned_blockHeight: btcMainnetBlockScannedBlockHeight,
+          unCrawlerBlock: btcMainnetBlockHeight - dbBtcMainnetBlockHeight,
+          unParseBlock: btcMainnetBlockHeight - btcMainnetBlockScannedBlockHeight,
+        },
+        BTC_TESTNET: {
+          blockHeight: btcTestnetBlockHeight,
+          db_blockHeight: dbBtcTestnetBlockHeight,
+          blockScanned_blockHeight: btcTestnetBlockScannedBlockHeight,
+          unCrawlerBlock: btcTestnetBlockHeight - dbBtcTestnetBlockHeight,
+          unParseBlock: btcTestnetBlockHeight - btcTestnetBlockScannedBlockHeight,
+        },
+        ETH_MAINNET: {
+          blockHeight: ethMainnetBlockHeight,
+          db_blockHeight: dbEthMainnetBlockHeight,
+          blockScanned_blockHeight: ethMainnetBlockScannedBlockHeight,
+          unCrawlerBlock: ethMainnetBlockHeight - dbEthMainnetBlockHeight,
+          unParseBlock: ethMainnetBlockHeight - ethMainnetBlockScannedBlockHeight,
+        },
+        ETH_TESTNET: {
+          blockHeight: ethTestnetBlockHeight,
+          db_blockHeight: dbEthTestnetBlockHeight,
+          blockScanned_blockHeight: ethTestnetBlockScannedBlockHeight,
+          unCrawlerBlock: ethTestnetBlockHeight - dbEthTestnetBlockHeight,
+          unParseBlock: ethTestnetBlockHeight - ethTestnetBlockScannedBlockHeight,
+        },
+      },
+    });
   }
 }
 
