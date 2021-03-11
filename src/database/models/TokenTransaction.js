@@ -1,5 +1,12 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('TokenTransaction', {
   // PK
+  _id: {
+    type: DataTypes.BIGINT,
+    autoIncrement: true,
+    primaryKey: true,
+    allowNull: false,
+  },
+  // INDEX
   tokenTransaction_id: {
     type: DataTypes.STRING,
     primaryKey: true,
