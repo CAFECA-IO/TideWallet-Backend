@@ -262,13 +262,13 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           return Promise.resolve(syncBlock - 1);
         }
         const step1_1 = new Date().getTime();
-        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:1 blockDataFromPeer: ${(step1_1 - step1) / 1000}sec`);
+        this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:1 blockDataFromPeer: ${(step1_1 - step1) / 1000}sec`);
 
         // 2. save block data into db
         // must success
         await this.insertBlock(syncResult);
         const step2 = new Date().getTime();
-        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:2 insertBlock: ${(step2 - step1_1) / 1000}sec`);
+        this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:2 insertBlock: ${(step2 - step1_1) / 1000}sec`);
 
         // 3. sync tx and receipt
         const txs = syncResult.transactions;
@@ -287,7 +287,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           const step3_1 = new Date().getTime();
           const receipts = await Promise.all(requests).catch((error) => Promise.reject(error));
           const step3_2 = new Date().getTime();
-          console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3_1 receiptFromPeer: ${(step3_2 - step3_1) / 1000}sec`);
+          this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3_1 receiptFromPeer: ${(step3_2 - step3_1) / 1000}sec`);
 
           if (!requests || !receipts) {
             // TODO error handle
@@ -314,7 +314,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         //   const step3_1 = new Date().getTime();
         //   const receipt = await this.receiptFromPeer(transaction.hash);
         //   const step3_2 = new Date().getTime();
-        //   console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3_1 receiptFromPeer: ${(step3_2 - step3_1) / 1000}sec`);
+        //   this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3_1 receiptFromPeer: ${(step3_2 - step3_1) / 1000}sec`);
 
         //   if (!transaction || !receipt) {
         //     // TODO error handle
@@ -322,26 +322,26 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         //   // 4. save unparsed tx and receipt into db
         //   await this.insertUnparsedTransaction(transaction, receipt, timestamp);
         //   const step4 = new Date().getTime();
-        //   console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:4 insertUnparsedTransaction: ${(step4 - step3_2) / 1000}sec`);
+        //   this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:4 insertUnparsedTransaction: ${(step4 - step3_2) / 1000}sec`);
         // }
 
         const step3 = new Date().getTime();
-        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3 full tx receipt sync: ${(step3 - step2) / 1000}sec`);
+        this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3 full tx receipt sync: ${(step3 - step2) / 1000}sec`);
 
         // 4. save unparsed tx and receipt into db
         await this.unparsedTxModel.bulkCreate(insertTx);
         const step4 = new Date().getTime();
-        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:4 insertUnparsedTransaction: ${(step4 - step3) / 1000}sec`);
+        this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:4 insertUnparsedTransaction: ${(step4 - step3) / 1000}sec`);
         // 5. assign parser
         // must success
 
         // 6. after parse done update blockchain table block column
         await this.updateBlockHeight(syncBlock);
         const step6 = new Date().getTime();
-        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:6 updateBlockHeight: ${(step6 - step3) / 1000}sec`);
+        this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:6 updateBlockHeight: ${(step6 - step3) / 1000}sec`);
 
-        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} total receipts sync: ${txs.length}`);
-        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} whole: ${(step6 - step1) / 1000}sec`);
+        this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} total receipts sync: ${txs.length}`);
+        this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} whole: ${(step6 - step1) / 1000}sec`);
       } while (syncBlock < this.peerBlock);
       return Promise.resolve(syncBlock);
     } catch (error) {
