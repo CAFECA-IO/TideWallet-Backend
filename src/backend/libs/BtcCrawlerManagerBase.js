@@ -238,6 +238,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     try {
       let syncBlock = block;
       do {
+        const step1 = new Date().getTime();
         // 1. sync block +1
         this.logger.debug(`[${this.constructor.name}] syncBlock(${syncBlock})`);
         syncBlock += 1;
@@ -249,10 +250,14 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           // end this recursive
           return Promise.resolve(syncBlock - 1);
         }
+        const step1_1 = new Date().getTime();
+        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:1 blockDataFromPeer: ${(step1_1 - step1) / 1000}sec`);
 
         // 2. save block data into db
         // must success
         await this.insertBlock(syncResult);
+        const step2 = new Date().getTime();
+        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:2 insertBlock: ${(step2 - step1_1) / 1000}sec`);
 
         // 3. save unparsed transaction into db
         const txs = syncResult.tx;
@@ -280,12 +285,18 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           }
         }
         await this.unparsedTxModel.bulkCreate(insertTx);
+        const step3 = new Date().getTime();
+        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3 insertUnparsedTransaction: ${(step3 - step2) / 1000}sec`);
 
         // 4. assign parser
         // must success
 
         // 5. after parse done update blockchain table block column
         await this.updateBlockHeight(syncBlock);
+        const step5 = new Date().getTime();
+        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:5 updateBlockHeight: ${(step5 - step3) / 1000}sec`);
+        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} total transaction sync: ${txs.length}`);
+        console.log(`[${this.constructor.name}] syncBlock ${syncBlock} whole: ${(step5 - step1) / 1000}sec`);
       } while (syncBlock < this.peerBlock);
       return Promise.resolve(syncBlock);
     } catch (error) {
