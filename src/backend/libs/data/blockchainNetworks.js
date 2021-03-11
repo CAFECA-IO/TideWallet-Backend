@@ -86,7 +86,7 @@ module.exports = {
     pubKeyHash: 0,
     scriptHash: 0,
     wif: 0,
-    start_block: 9722974,
+    start_block: 27000,
     avg_fee: '0',
   },
 };
