@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('UTXO', {
   },
   // FK
   to_tx: {
-    type: DataTypes.STRING,
+    type: DataTypes.BIGINT,
   },
   txid: {
     type: DataTypes.STRING,

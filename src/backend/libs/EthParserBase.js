@@ -280,7 +280,6 @@ class EthParserBase extends ParserBase {
               transaction_id: transaction.transaction_id, currency_id: currency.currency_id,
             },
             defaults: {
-              tokenTransaction_id: uuidv4(),
               transaction_id: transaction.transaction_id,
               currency_id: currency.currency_id,
               txid: transaction.txid,
@@ -388,7 +387,6 @@ class EthParserBase extends ParserBase {
       });
       if (!insertTx) {
         insertTx = await this.transactionModel.create({
-          transaction_id: uuidv4(),
           currency_id: this.currencyInfo.currency_id,
           txid: tx.hash,
           timestamp,
@@ -489,7 +487,6 @@ class EthParserBase extends ParserBase {
           direction,
         },
         defaults: {
-          addressTokenTransaction_id: uuidv4(),
           currency_id,
           accountAddress_id,
           tokenTransaction_id,
@@ -548,7 +545,6 @@ class EthParserBase extends ParserBase {
           if (!txResult) {
             this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash})`);
             txResult = await this.transactionModel.create({
-              transaction_id: uuidv4(),
               currency_id: this.currencyInfo.currency_id,
               txid: tx.hash,
               source_addresses: tx.from,

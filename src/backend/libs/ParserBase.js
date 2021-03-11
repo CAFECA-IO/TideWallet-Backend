@@ -158,7 +158,6 @@ class ParserBase {
           direction,
         },
         defaults: {
-          addressTransaction_id: uuidv4(),
           currency_id: this.currencyInfo.currency_id,
           accountAddress_id,
           transaction_id,

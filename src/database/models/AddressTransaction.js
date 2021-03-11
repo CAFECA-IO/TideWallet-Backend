@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('AddressTransaction', {
   // PK
-  _id: {
+  addressTransaction_id: {
     type: DataTypes.BIGINT,
     autoIncrement: true,
     primaryKey: true,
@@ -19,11 +19,6 @@ module.exports = (sequelize, DataTypes) => sequelize.define('AddressTransaction'
   // FK
   transaction_id: {
     type: DataTypes.STRING,
-    allowNull: false,
-  },
-  addressTransaction_id: {
-    type: DataTypes.STRING,
-    primaryKey: true,
     allowNull: false,
   },
   amount: {
