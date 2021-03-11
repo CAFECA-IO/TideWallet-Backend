@@ -690,7 +690,7 @@ class Blockchain extends Bot {
     }
     result = await this.blockScannedModel.findOne({
       where: { blockchain_id },
-      order: [['timestamp', 'ASC']],
+      order: [['timestamp', 'DESC']],
     });
     if (result) return result.block;
     return 0;
