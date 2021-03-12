@@ -797,6 +797,7 @@ class Utils {
       if (data.id === checkId) {
         // use address find account
         try {
+          if (!data.result) return '0';
           return new BigNumber(data.result).dividedBy(new BigNumber(10 ** decimals)).toFixed();
 
           // eslint-disable-next-line no-empty
