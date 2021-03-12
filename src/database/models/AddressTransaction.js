@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('AddressTransaction'
   },
   // FK
   transaction_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.BIGINT,
     allowNull: false,
   },
   amount: {

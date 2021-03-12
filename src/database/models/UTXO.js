@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('UTXO', {
   },
   // FK
   transaction_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.BIGINT,
     allowNull: false,
   },
   // FK

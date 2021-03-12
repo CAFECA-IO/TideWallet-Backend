@@ -78,22 +78,22 @@ module.exports = env;
     db.Currency.hasMany(db.AddressTransaction, { foreignKey: 'currency_id' });
     db.AddressTransaction.belongsTo(db.AccountAddress, { foreignKey: 'accountAddress_id' });
     db.AccountAddress.hasMany(db.AddressTransaction, { foreignKey: 'accountAddress_id' });
-    // db.AddressTransaction.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
-    // db.Transaction.hasMany(db.AddressTransaction, { foreignKey: 'transaction_id' });
+    db.AddressTransaction.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
+    db.Transaction.hasMany(db.AddressTransaction, { foreignKey: 'transaction_id' });
 
     // TokenTransaction
     db.TokenTransaction.belongsTo(db.Currency, { foreignKey: 'currency_id' });
     db.Currency.hasMany(db.TokenTransaction, { foreignKey: 'currency_id' });
-    // db.TokenTransaction.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
-    // db.Transaction.hasMany(db.TokenTransaction, { foreignKey: 'transaction_id' });
+    db.TokenTransaction.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
+    db.Transaction.hasMany(db.TokenTransaction, { foreignKey: 'transaction_id' });
 
     // AddressTokenTransaction
     db.AddressTokenTransaction.belongsTo(db.Currency, { foreignKey: 'currency_id' });
     db.Currency.hasMany(db.AddressTokenTransaction, { foreignKey: 'currency_id' });
     db.AddressTokenTransaction.belongsTo(db.AccountAddress, { foreignKey: 'accountAddress_id' });
     db.AccountAddress.hasMany(db.AddressTokenTransaction, { foreignKey: 'accountAddress_id' });
-    // db.AddressTokenTransaction.belongsTo(db.TokenTransaction, { foreignKey: 'tokenTransaction_id' });
-    // db.TokenTransaction.hasMany(db.AddressTokenTransaction, { foreignKey: 'tokenTransaction_id' });
+    db.AddressTokenTransaction.belongsTo(db.TokenTransaction, { foreignKey: 'tokenTransaction_id' });
+    db.TokenTransaction.hasMany(db.AddressTokenTransaction, { foreignKey: 'tokenTransaction_id' });
 
     // UTXO
     db.UTXO.belongsTo(db.Currency, { foreignKey: 'currency_id' });
