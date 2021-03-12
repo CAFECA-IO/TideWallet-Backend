@@ -75,7 +75,7 @@ module.exports = {
     blockchain_id: '80000CFC',
     name: 'Cafeca',
     coin_type: 3324,
-    network_id: 0,
+    network_id: 3324,
     publish: true,
     description: 'Cafeca description',
     block: 0,
