@@ -79,7 +79,8 @@ class ParserBase {
     this.logger.debug(`[${this.constructor.name}] getCurrencyInfo`);
     try {
       const result = await this.currencyModel.findOne({
-        where: { blockchain_id: this.bcid },
+        where: { blockchain_id: this.bcid, type: 1 },
+        attributes: ['currency_id'],
       });
       return result;
     } catch (error) {
@@ -158,7 +159,6 @@ class ParserBase {
           direction,
         },
         defaults: {
-          addressTransaction_id: uuidv4(),
           currency_id: this.currencyInfo.currency_id,
           accountAddress_id,
           transaction_id,

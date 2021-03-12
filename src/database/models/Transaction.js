@@ -1,7 +1,8 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('Transaction', {
   // PK
   transaction_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.BIGINT,
+    autoIncrement: true,
     primaryKey: true,
     allowNull: false,
   },
@@ -56,5 +57,11 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Transaction', {
   tableName: 'Transaction',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
-  indexes: [{ fields: ['currency_id'] }],
+  indexes: [
+    { fields: ['currency_id'] },
+    {
+      unique: true,
+      fields: ['txid'],
+    },
+  ],
 });

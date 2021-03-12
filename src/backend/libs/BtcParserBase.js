@@ -213,7 +213,6 @@ class BtcParserBase extends ParserBase {
     } = await BtcParserBase.parseBTCTxAmounts.call(this, tx);
 
     await this.sequelize.transaction(async (transaction) => {
-      const transaction_id = uuidv4();
       // 1. insert tx
       const findTransaction = await this.transactionModel.findOrCreate({
         where: {
@@ -221,7 +220,6 @@ class BtcParserBase extends ParserBase {
           txid: tx.txid,
         },
         defaults: {
-          transaction_id,
           currency_id: currencyInfo.currency_id,
           txid: tx.txid,
           timestamp: timestamp || null,
@@ -281,7 +279,7 @@ class BtcParserBase extends ParserBase {
                 utxo_id: uuidv4(),
                 currency_id: currencyInfo.currency_id,
                 accountAddress_id: findAccountAddress.accountAddress_id,
-                transaction_id,
+                transaction_id: findTransaction[0].transaction_id,
                 txid: tx.txid,
                 vout: outputData.n,
                 type: outputData.scriptPubKey.type,
@@ -307,7 +305,7 @@ class BtcParserBase extends ParserBase {
           });
           if (findExistUTXO) {
             await this.utxoModel.update({
-              to_tx: transaction_id,
+              to_tx: findTransaction[0].transaction_id,
               on_block_timestamp: tx.timestamp,
             },
             {
@@ -344,14 +342,13 @@ class BtcParserBase extends ParserBase {
             where: {
               currency_id: currencyInfo.currency_id,
               accountAddress_id: accountAddressFrom.accountAddress_id,
-              transaction_id,
+              transaction_id: findTransaction[0].transaction_id,
               direction: 0,
             },
             defaults: {
-              addressTransaction_id: uuidv4(),
               currency_id: currencyInfo.currency_id,
               accountAddress_id: accountAddressFrom.accountAddress_id,
-              transaction_id,
+              transaction_id: findTransaction[0].transaction_id,
               amount: sourceAddressAmount,
               direction: 0,
             },
@@ -389,14 +386,13 @@ class BtcParserBase extends ParserBase {
             where: {
               currency_id: currencyInfo.currency_id,
               accountAddress_id: accountAddressTo.accountAddress_id,
-              transaction_id,
+              transaction_id: findTransaction[0].transaction_id,
               direction: 1,
             },
             defaults: {
-              addressTransaction_id: uuidv4(),
               currency_id: currencyInfo.currency_id,
               accountAddress_id: accountAddressTo.accountAddress_id,
-              transaction_id,
+              transaction_id: findTransaction[0].transaction_id,
               amount: destinationAddressAmount,
               direction: 1,
             },

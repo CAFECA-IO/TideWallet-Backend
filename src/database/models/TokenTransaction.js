@@ -1,13 +1,14 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('TokenTransaction', {
   // PK
   tokenTransaction_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.BIGINT,
+    autoIncrement: true,
     primaryKey: true,
     allowNull: false,
   },
   // FK
   transaction_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.BIGINT,
     allowNull: false,
   },
   // FK

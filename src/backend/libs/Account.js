@@ -220,7 +220,7 @@ class Account extends Bot {
           let { balance } = accountCurrency;
           const { Currency, currency_id, accountCurrency_id } = accountCurrency;
 
-          if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C') {
+          if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C' || account.blockchain_id === '80000CFC') {
             // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
             const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: account.blockchain_id } });
             if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
@@ -307,7 +307,7 @@ class Account extends Bot {
       for (let j = 0; j < findAccountCurrencies.length; j++) {
         const accountCurrency = findAccountCurrencies[j];
         let { balance = '0' } = accountCurrency;
-        if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C') {
+        if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC') {
           // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
           const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
           if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
@@ -567,7 +567,7 @@ class Account extends Bot {
               : null;
             txs.push({
               txid: txInfo.TokenTransaction.Transaction.txid,
-              status: (isToken) ? findTxByAddress.result : 'success',
+              status: (isToken) ? txInfo.TokenTransaction.result : 'success',
               amount,
               symbol: findAccountCurrency.Currency.symbol, // "unit"
               direction: txInfo.TokenTransaction.direction === 0 ? 'send' : 'receive',
@@ -657,7 +657,6 @@ class Account extends Bot {
         ],
       });
 
-      // console.log('findAccountCurrency', findAccountCurrency);
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
