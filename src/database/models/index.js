@@ -100,8 +100,8 @@ module.exports = env;
     db.Currency.hasMany(db.UTXO, { foreignKey: 'currency_id' });
     db.UTXO.belongsTo(db.AccountAddress, { foreignKey: 'accountAddress_id' });
     db.AccountAddress.hasMany(db.UTXO, { foreignKey: 'accountAddress_id' });
-    // db.UTXO.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
-    // db.Transaction.hasMany(db.UTXO, { foreignKey: 'transaction_id' });
+    db.UTXO.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
+    db.Transaction.hasMany(db.UTXO, { foreignKey: 'transaction_id' });
     db.UTXO.belongsTo(db.Transaction, { foreignKey: 'to_tx' });
     db.Transaction.hasMany(db.UTXO, { foreignKey: 'to_tx' });
 
