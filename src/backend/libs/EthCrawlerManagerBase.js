@@ -308,6 +308,8 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                 retry: 0,
               });
             }
+            const step3_3 = new Date().getTime();
+            this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3_2 find unparsed tx: ${(step3_3 - step3_2) / 1000}sec`);
           }
         }
         // for (const transaction of txs) {

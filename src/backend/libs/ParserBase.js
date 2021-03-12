@@ -37,7 +37,7 @@ class ParserBase {
       return result.block;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
-      return 0;
+      return Promise.reject(error);
     }
   }
 

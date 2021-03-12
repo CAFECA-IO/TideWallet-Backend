@@ -23,7 +23,7 @@ class Manager extends Bot {
     this.name = 'Manager';
     this._crawlerManagers = [];
     this.rateSyncInterval = 86400000;
-    this.cryptoRateSyncInterval = 360000;
+    this.cryptoRateSyncInterval = 3600000;
   }
 
   init({
@@ -37,15 +37,19 @@ class Manager extends Bot {
       this.fiatCurrencyRateModel = this.database.db.FiatCurrencyRate;
       this.currencyModel = this.database.db.Currency;
 
-      setInterval(() => {
+      if (this.config.syncSwitch.cryptoRate) {
+        setInterval(() => {
+          this.syncCryptoRate();
+        }, this.cryptoRateSyncInterval);
         this.syncCryptoRate();
-      }, this.cryptoRateSyncInterval);
-      this.syncCryptoRate();
+      }
 
-      setInterval(() => {
+      if (this.config.syncSwitch.rate) {
+        setInterval(() => {
+          this.syncRate();
+        }, this.rateSyncInterval);
         this.syncRate();
-      }, this.rateSyncInterval);
-      this.syncRate();
+      }
       return this;
     });
   }
@@ -131,8 +135,8 @@ class Manager extends Bot {
   createManager() {
     this.logger.log('createManager');
     const result = [];
-    const { syncBlockchain } = this.config;
-    const blockchainSet = Object.keys(syncBlockchain);
+    const { syncSwitch } = this.config;
+    const syncSwitchSet = Object.keys(syncSwitch);
 
     /**
      * 'bitcoin_mainnet',
@@ -141,8 +145,8 @@ class Manager extends Bot {
      * 'ethereum_ropsten',
      * 'cafeca'
      */
-    blockchainSet.forEach((blockchianName) => {
-      if (!syncBlockchain[blockchianName]) return;
+    syncSwitchSet.forEach((blockchianName) => {
+      if (!syncSwitch[blockchianName]) return;
       this.logger.log(blockchianName);
       switch (blockchianName) {
         case 'bitcoin_mainnet':
