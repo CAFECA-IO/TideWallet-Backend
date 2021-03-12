@@ -415,6 +415,7 @@ class Blockchain extends Bot {
       switch (blockchain_id) {
         case '8000003C':
         case '8000025B':
+        case '80000CFC':
           option = { ...blockchainConfig };
           option.data = {
             jsonrpc: '2.0',
@@ -477,10 +478,7 @@ class Blockchain extends Bot {
             payload: { txid },
           });
         default:
-          return new ResponseFormat({
-            message: 'Publish Transaction',
-            payload: {},
-          });
+          return new ResponseFormat({ message: 'blockchain not support', code: Codes.BLOCKCHAIN_NOT_SUPPORT });
       }
     } catch (e) {
       this.logger.error('PublishTransaction e:', e);
@@ -702,6 +700,7 @@ class Blockchain extends Bot {
     const btcTestnetBlockHeight = await this.btcBlockHeight('80000001');
     const ethMainnetBlockHeight = await this.ethBlockHeight('8000003C');
     const ethTestnetBlockHeight = await this.ethBlockHeight('8000025B');
+    const cfcBlockHeight = await this.ethBlockHeight('80000CFC');
 
     const _dbBtcMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000000');
     const dbBtcMainnetBlockHeight = _dbBtcMainnetBlockHeight ? _dbBtcMainnetBlockHeight.block : 0;
@@ -711,11 +710,14 @@ class Blockchain extends Bot {
     const dbEthMainnetBlockHeight = _dbEthMainnetBlockHeight ? _dbEthMainnetBlockHeight.block : 0;
     const _dbEthTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '8000025B');
     const dbEthTestnetBlockHeight = _dbEthTestnetBlockHeight ? _dbEthTestnetBlockHeight.block : 0;
+    const _dbCFCBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000CFC');
+    const dbCFCBlockHeight = _dbCFCBlockHeight ? _dbCFCBlockHeight.block : 0;
 
     const btcMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000000');
     const btcTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000001');
     const ethMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000003C');
     const ethTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000025B');
+    const cfcBlockScannedBlockHeight = await this.findBlockScannedHeight('80000CFC');
 
     return new ResponseFormat({
       message: 'Block Height',
@@ -747,6 +749,13 @@ class Blockchain extends Bot {
           blockScanned_blockHeight: ethTestnetBlockScannedBlockHeight,
           unCrawlerBlock: ethTestnetBlockHeight - dbEthTestnetBlockHeight,
           unParseBlock: ethTestnetBlockHeight - ethTestnetBlockScannedBlockHeight,
+        },
+        CFC: {
+          blockHeight: cfcBlockHeight,
+          db_blockHeight: dbCFCBlockHeight,
+          blockScanned_blockHeight: cfcBlockScannedBlockHeight,
+          unCrawlerBlock: cfcBlockHeight - dbCFCBlockHeight,
+          unParseBlock: cfcBlockHeight - cfcBlockScannedBlockHeight,
         },
       },
     });
