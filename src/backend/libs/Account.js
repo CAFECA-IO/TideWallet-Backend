@@ -567,7 +567,7 @@ class Account extends Bot {
               : null;
             txs.push({
               txid: txInfo.TokenTransaction.Transaction.txid,
-              status: (isToken) ? findTxByAddress.result : 'success',
+              status: (isToken) ? findTxByAddress.TokenTransaction.result : 'success',
               amount,
               symbol: findAccountCurrency.Currency.symbol, // "unit"
               direction: txInfo.TokenTransaction.direction === 0 ? 'send' : 'receive',
