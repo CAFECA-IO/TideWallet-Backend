@@ -39,4 +39,5 @@ module.exports = (sequelize, DataTypes) => sequelize.define('UnparsedTransaction
   tableName: 'UnparsedTransaction',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
+  indexes: [{ unique: true, fields: ['txid'] }],
 });

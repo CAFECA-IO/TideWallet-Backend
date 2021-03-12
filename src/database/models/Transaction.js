@@ -57,5 +57,11 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Transaction', {
   tableName: 'Transaction',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
-  indexes: [{ fields: ['currency_id'] }],
+  indexes: [
+    { fields: ['currency_id'] },
+    {
+      unique: true,
+      fields: ['txid'],
+    },
+  ],
 });
