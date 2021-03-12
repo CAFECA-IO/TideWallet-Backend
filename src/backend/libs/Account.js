@@ -220,7 +220,7 @@ class Account extends Bot {
           let { balance } = accountCurrency;
           const { Currency, currency_id, accountCurrency_id } = accountCurrency;
 
-          if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C') {
+          if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C' || account.blockchain_id === '80000CFC') {
             // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
             const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: account.blockchain_id } });
             if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
@@ -307,7 +307,7 @@ class Account extends Bot {
       for (let j = 0; j < findAccountCurrencies.length; j++) {
         const accountCurrency = findAccountCurrencies[j];
         let { balance = '0' } = accountCurrency;
-        if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C') {
+        if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC') {
           // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
           const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
           if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
