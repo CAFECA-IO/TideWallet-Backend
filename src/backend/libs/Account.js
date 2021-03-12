@@ -657,7 +657,6 @@ class Account extends Bot {
         ],
       });
 
-      // console.log('findAccountCurrency', findAccountCurrency);
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
