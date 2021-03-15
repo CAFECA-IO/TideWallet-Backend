@@ -86,6 +86,10 @@ ormEnable = true
 [jwt]
 secret = ""
 
+[rabbitmq]
+host = "amqp://localhost"
+maxParsers = 20
+
 [api]
 pathname = [
   "get | /,/version | Static.Utils.readPackageInfo",

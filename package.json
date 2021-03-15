@@ -10,6 +10,7 @@
   },
   "bundleDependencies": false,
   "dependencies": {
+    "amqplib": "^0.7.1",
     "base58": "^2.0.1",
     "bignumber.js": "^9.0.1",
     "bip32": "^2.0.6",
