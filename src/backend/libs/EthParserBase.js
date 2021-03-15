@@ -425,7 +425,6 @@ class EthParserBase extends ParserBase {
           currency_id: this.currencyInfo.currency_id,
         },
         defaults: {
-          receipt_id: uuidv4(),
           transaction_id: insertTx.transaction_id,
           currency_id: this.currencyInfo.currency_id,
           contract_address: receipt.contractAddress,
