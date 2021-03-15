@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require('uuid');
+const amqp = require('amqplib');
 
 class ParserBase {
   constructor(blockchainId, config, database, logger) {
@@ -20,11 +20,14 @@ class ParserBase {
     this.accountCurrencyModel = this.database.db.AccountCurrency;
     this.addressTransactionModel = this.database.db.AddressTransaction;
     this.pendingTransactionModel = this.database.db.PendingTransaction;
+
+    this.amqpHost = this.config.rabbitmq.host;
   }
 
   async init() {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
+    this.queueChannel = amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
     return this;
   }
 
@@ -86,6 +89,26 @@ class ParserBase {
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] currencyModel error ${error}`);
       return {};
+    }
+  }
+
+  async getJobCallBack() {
+    this.logger.debug(`[${this.constructor.name}] getJobCallBack`);
+    try {
+      const q = `${this.constructor.name}JobCallback`;
+      await this.queueChannel.assertQueue(q, { durable: true });
+
+      return await this.queueChannel.consume(q, (msg) => {
+        const job = JSON.parse(msg.content.toString());
+
+        // IMPORTENT!!! remove from queue
+        this.queueChannel.ack(msg);
+
+        return job;
+      }, { noAck: false });
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] getJobCallBack error: ${error}`);
+      return Promise.reject(error);
     }
   }
 
@@ -169,6 +192,21 @@ class ParserBase {
       return result;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction}) error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
+  async setJob(job) {
+    this.logger.debug(`[${this.constructor.name}] setJob()`);
+    try {
+      const q = `${this.constructor.name}Job`;
+      const strJob = JSON.stringify(job);
+      const bufJob = Buffer.from(strJob);
+      await this.queueChannel.assertQueue(q, { durable: true });
+
+      await this.queueChannel.sendToQueue(q, bufJob, { persistent: true });
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] setJob() error:`, error);
       return Promise.reject(error);
     }
   }
