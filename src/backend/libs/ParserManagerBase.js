@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require('uuid');
+const amqp = require('amqplib');
 
 class ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
@@ -25,6 +25,10 @@ class ParserManagerBase {
   async init() {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
+    this.queueChannel = await amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
+    this.jobQueue = `${this.constructor.name}Job`;
+    this.jobCallback = `${this.constructor.name}JobCallback`;
+    await this.setJob({ msg: 'hi test!!!' });
     return this;
   }
 
@@ -58,12 +62,32 @@ class ParserManagerBase {
     this.logger.debug(`[${this.constructor.name}] getCurrencyInfo`);
     try {
       const result = await this.currencyModel.findOne({
-        where: { blockchain_id: this.bcid },
+        where: { blockchain_id: this.bcid, type: 1 },
+        attributes: ['currency_id'],
       });
       return result;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] currencyModel error ${error}`);
       return {};
+    }
+  }
+
+  async getJobCallback() {
+    this.logger.debug(`[${this.constructor.name}] getJobCallback`);
+    try {
+      await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
+
+      return await this.queueChannel.consume(this.jobCallback, (msg) => {
+        const job = JSON.parse(msg.content.toString());
+
+        // IMPORTENT!!! remove from queue
+        this.queueChannel.ack(msg);
+
+        return job;
+      }, { noAck: false });
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] getJobJobCallback error: ${error}`);
+      return Promise.reject(error);
     }
   }
 
@@ -125,29 +149,17 @@ class ParserManagerBase {
     }
   }
 
-  async setAddressTransaction(accountAddress_id, transaction_id, amount, direction) {
-    this.logger.debug(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction})`);
+  async setJob(job) {
+    this.logger.debug(`[${this.constructor.name}] setJob()`);
     try {
-      const result = await this.addressTransactionModel.findOrCreate({
-        where: {
-          currency_id: this.currencyInfo.currency_id,
-          accountAddress_id,
-          transaction_id,
-          amount,
-          direction,
-        },
-        defaults: {
-          addressTransaction_id: uuidv4(),
-          currency_id: this.currencyInfo.currency_id,
-          accountAddress_id,
-          transaction_id,
-          amount,
-          direction,
-        },
-      });
-      return result;
+      const strJob = JSON.stringify(job);
+      const bufJob = Buffer.from(strJob);
+      await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
+
+      await this.queueChannel.sendToQueue(this.jobQueue, bufJob, { persistent: true });
+      console.log('set job: ', job);
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction}) error: ${error}`);
+      this.logger.error(`[${this.constructor.name}] setJob() error:`, error);
       return Promise.reject(error);
     }
   }

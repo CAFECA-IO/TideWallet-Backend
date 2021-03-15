@@ -27,7 +27,12 @@ class ParserBase {
   async init() {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
-    this.queueChannel = amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
+    this.queueChannel = await amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
+    this.jobQueue = `${this.constructor.name}Job`;
+    this.jobCallback = `${this.constructor.name}JobCallback`;
+
+    const job = await this.getJob().then((res) => res);
+    console.log('job:', job);
     return this;
   }
 
@@ -92,22 +97,21 @@ class ParserBase {
     }
   }
 
-  async getJobCallBack() {
-    this.logger.debug(`[${this.constructor.name}] getJobCallBack`);
+  getJob() {
+    this.logger.debug(`[${this.constructor.name}] getJob`);
     try {
-      const q = `${this.constructor.name}JobCallback`;
-      await this.queueChannel.assertQueue(q, { durable: true });
+      this.queueChannel.assertQueue(this.jobQueue, { durable: true });
 
-      return await this.queueChannel.consume(q, (msg) => {
-        const job = JSON.parse(msg.content.toString());
-
+      return this.queueChannel.consume(this.jobQueue, (msg) => {
+        console.log('Received %s', msg.content.toString());
+        const job = msg.content.toString();
         // IMPORTENT!!! remove from queue
         this.queueChannel.ack(msg);
-
+        console.log('getJob:', job);
         return job;
       }, { noAck: false });
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] getJobCallBack error: ${error}`);
+      this.logger.error(`[${this.constructor.name}] getJob error: ${error}`);
       return Promise.reject(error);
     }
   }
@@ -196,17 +200,16 @@ class ParserBase {
     }
   }
 
-  async setJob(job) {
-    this.logger.debug(`[${this.constructor.name}] setJob()`);
+  async setJobCallback(res) {
+    this.logger.debug(`[${this.constructor.name}] setJobCallback()`);
     try {
-      const q = `${this.constructor.name}Job`;
-      const strJob = JSON.stringify(job);
-      const bufJob = Buffer.from(strJob);
-      await this.queueChannel.assertQueue(q, { durable: true });
+      const strRes = JSON.stringify(res);
+      const bufRes = Buffer.from(strRes);
+      await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
 
-      await this.queueChannel.sendToQueue(q, bufJob, { persistent: true });
+      await this.queueChannel.sendToQueue(this.jobQueue, bufRes, { persistent: true });
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] setJob() error:`, error);
+      this.logger.error(`[${this.constructor.name}] setJobCallback() error:`, error);
       return Promise.reject(error);
     }
   }

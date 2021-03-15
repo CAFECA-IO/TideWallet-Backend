@@ -17,6 +17,8 @@ const EthRopstenParser = require('./EthRopstenParser');
 const EthParser = require('./EthParser');
 const CfcParser = require('./CfcParser');
 
+const ParserManagerBase = require('./ParserManagerBase');
+
 class Manager extends Bot {
   constructor() {
     super();
@@ -137,6 +139,7 @@ class Manager extends Bot {
     const result = [];
     const { syncSwitch } = this.config;
     const syncSwitchSet = Object.keys(syncSwitch);
+    result.push(new ParserManagerBase('8000003C', this.config, this.database, this.logger));
 
     /**
      * 'bitcoin_mainnet',
