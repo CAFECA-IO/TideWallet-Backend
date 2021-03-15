@@ -28,8 +28,8 @@ class ParserBase {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
     this.queueChannel = await amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
-    this.jobQueue = `${this.bcid}Job`;
-    this.jobCallback = `${this.bcid}JobCallback`;
+    this.jobQueue = `${this.bcid}ParseJob`;
+    this.jobCallback = `${this.bcid}ParseJobCallback`;
 
     return this;
   }
