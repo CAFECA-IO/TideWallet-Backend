@@ -1,7 +1,8 @@
 module.exports = (sequelize, DataTypes) => sequelize.define('BlockScanned', {
   // PK
   blockScanned_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.BIGINT,
+    autoIncrement: true,
     primaryKey: true,
     allowNull: false,
   },
