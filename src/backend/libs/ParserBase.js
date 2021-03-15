@@ -31,8 +31,10 @@ class ParserBase {
     this.jobQueue = `${this.constructor.name}Job`;
     this.jobCallback = `${this.constructor.name}JobCallback`;
 
-    const job = await this.getJob().then((res) => res); // for test
-    console.log('job:', job); // for test
+    // -- for test message queue by Wayne
+    const job = await this.getJob().then((res) => res);
+    console.log('job:', job);
+
     return this;
   }
 
@@ -103,11 +105,16 @@ class ParserBase {
       this.queueChannel.assertQueue(this.jobQueue, { durable: true });
 
       return this.queueChannel.consume(this.jobQueue, (msg) => {
-        console.log('Received %s', msg.content.toString()); // for test
+        // -- for test message queue by Wayne
+        console.log('Received %s', msg.content.toString());
+
         const job = msg.content.toString();
         // IMPORTENT!!! remove from queue
         this.queueChannel.ack(msg);
-        console.log('getJob:', job); // for test
+
+        // -- for test message queue by Wayne
+        console.log('getJob:', job);
+
         return job;
       }, { noAck: false });
     } catch (error) {
