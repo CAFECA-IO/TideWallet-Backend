@@ -26,10 +26,8 @@ class ParserManagerBase {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
     this.queueChannel = await amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
-    this.jobQueue = `${this.constructor.name}Job`;
-    this.jobCallback = `${this.constructor.name}JobCallback`;
-    // -- for test message queue by Wayne
-    await this.setJob({ msg: 'hi test!!!' });
+    this.jobQueue = `${this.bcid}Job`;
+    this.jobCallback = `${this.bcid}JobCallback`;
 
     return this;
   }
@@ -159,8 +157,6 @@ class ParserManagerBase {
       await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
 
       await this.queueChannel.sendToQueue(this.jobQueue, bufJob, { persistent: true });
-      // -- for test message queue by Wayne
-      console.log('set job: ', job);
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] setJob() error:`, error);
       return Promise.reject(error);

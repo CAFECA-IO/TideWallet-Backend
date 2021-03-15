@@ -28,12 +28,8 @@ class ParserBase {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
     this.queueChannel = await amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
-    this.jobQueue = `${this.constructor.name}Job`;
-    this.jobCallback = `${this.constructor.name}JobCallback`;
-
-    // -- for test message queue by Wayne
-    const job = await this.getJob().then((res) => res);
-    console.log('job:', job);
+    this.jobQueue = `${this.bcid}Job`;
+    this.jobCallback = `${this.bcid}JobCallback`;
 
     return this;
   }
@@ -99,24 +95,20 @@ class ParserBase {
     }
   }
 
-  getJob() {
+  async getJob() {
     this.logger.debug(`[${this.constructor.name}] getJob`);
     try {
-      this.queueChannel.assertQueue(this.jobQueue, { durable: true });
+      let job;
+      await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
+      await this.queueChannel.consume(this.jobQueue, (msg) => {
+        job = JSON.parse(msg.content.toString());
 
-      return this.queueChannel.consume(this.jobQueue, (msg) => {
-        // -- for test message queue by Wayne
-        console.log('Received %s', msg.content.toString());
-
-        const job = msg.content.toString();
         // IMPORTENT!!! remove from queue
         this.queueChannel.ack(msg);
 
-        // -- for test message queue by Wayne
-        console.log('getJob:', job);
-
         return job;
       }, { noAck: false });
+      return job;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] getJob error: ${error}`);
       return Promise.reject(error);

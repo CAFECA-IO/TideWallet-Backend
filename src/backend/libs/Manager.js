@@ -139,8 +139,6 @@ class Manager extends Bot {
     const result = [];
     const { syncSwitch } = this.config;
     const syncSwitchSet = Object.keys(syncSwitch);
-    // -- for test message queue by Wayne
-    result.push(new ParserManagerBase('8000003C', this.config, this.database, this.logger));
 
     /**
      * 'bitcoin_mainnet',
