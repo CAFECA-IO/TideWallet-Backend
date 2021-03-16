@@ -111,10 +111,11 @@ class ParserBase {
       await this.queueChannel.consume(this.jobQueue, async (msg) => {
         const job = JSON.parse(msg.content.toString());
 
+        await this.doJob(job);
+
         // IMPORTENT!!! remove from queue
         this.queueChannel.ack(msg);
 
-        await this.doJob(job);
         return job;
       }, { noAck: false });
     } catch (error) {
