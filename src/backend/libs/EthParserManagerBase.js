@@ -48,7 +48,9 @@ class EthParserManagerBase extends ParserManagerBase {
         for (const tx of txs) {
           const transaction = JSON.parse(tx.transaction);
           const receipt = JSON.parse(tx.receipt);
-          await this.setJob({ transaction, receipt, timestamp: tx.timestamp });
+          await this.setJob({
+            unparsedTransaction_id: tx.unparsedTransaction_id, transaction, receipt, timestamp: tx.timestamp,
+          });
         }
       }
     } catch (error) {
@@ -59,6 +61,7 @@ class EthParserManagerBase extends ParserManagerBase {
   }
 
   async doCallback(job) {
+    // job = { success: bool, unparsedTransaction_id: number, retry: number }
     this.jobDoneList.push(job);
     if (this.jobDoneList.length === this.jobLength) {
       // 3. update failed unparsed retry
