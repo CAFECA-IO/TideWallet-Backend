@@ -1,5 +1,4 @@
 const BigNumber = require('bignumber.js');
-const Web3 = require('web3');
 const ParserManagerBase = require('./ParserManagerBase');
 
 class EthParserManagerBase extends ParserManagerBase {
@@ -16,7 +15,6 @@ class EthParserManagerBase extends ParserManagerBase {
   async init() {
     await super.init();
     this.isParsing = false;
-    this.web3 = new Web3();
     setInterval(async () => {
       await this.doParse();
     }, this.syncInterval);
@@ -26,7 +24,7 @@ class EthParserManagerBase extends ParserManagerBase {
   }
 
   async createJob() {
-    this.logger.error(`[${this.constructor.name}] createJob`);
+    this.logger.debug(`[${this.constructor.name}] createJob`);
     // 1. load unparsed transactions per block from UnparsedTransaction
     // 2. check has unparsed transaction
     // 2-1. if no parse update balance
@@ -42,13 +40,10 @@ class EthParserManagerBase extends ParserManagerBase {
         await this.updateBalance();
         this.isParsing = false;
       } else {
-        this.jobLength = 0;
         this.jobDoneList = [];
 
         for (const tx of txs) {
-          const transaction = JSON.parse(tx.transaction);
-          const receipt = JSON.parse(tx.receipt);
-          await this.setJob({ transaction, receipt, timestamp: tx.timestamp });
+          await this.setJob(tx);
         }
       }
     } catch (error) {
@@ -59,8 +54,13 @@ class EthParserManagerBase extends ParserManagerBase {
   }
 
   async doCallback(job) {
+    this.isParsing = true;
+    // job = { ...UnparsedTransaction, success: bool }
     this.jobDoneList.push(job);
-    if (this.jobDoneList.length === this.jobLength) {
+    // ++ maybe change some check rule
+    const queueStatus = await this.queueChannel.checkQueue(this.jobQueue);
+    const cbQueueStatus = await this.queueChannel.checkQueue(this.jobCallback);
+    if (queueStatus.messageCount === 0 && cbQueueStatus.messageCount === 0) {
       // 3. update failed unparsed retry
       // 4. remove parsed transaction from UnparsedTransaction table
       try {

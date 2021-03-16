@@ -22,74 +22,22 @@ class EthParserBase extends ParserBase {
     await super.init();
     this.isParsing = false;
     this.web3 = new Web3();
-    setInterval(async () => {
-      await this.doParse();
-    }, this.syncInterval);
 
-    this.doParse();
     return this;
   }
 
-  async doParse() {
-    if (this.isParsing) {
-      this.logger.log(`[${this.constructor.name}] doParse is parsing`);
-      return;
-    }
-    this.isParsing = true;
-    // step:
-    // 1. load unparsed transactions per block from UnparsedTransaction
-    // 2. set queue
-    // 3. assign parser
-    // 4. update failed unparsed retry
-    // 5. remove parsed transaction from UnparsedTransaction table
-    // 6. update balance
-
+  async doJob(job) {
     try {
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        // 1. load unparsed transactions per block from UnparsedTransaction
-        this.block = await this.blockNumberFromDB();
-        const txs = await this.getUnparsedTxs();
-        if (!txs || txs.length < 1) break;
-
-        // 2. set queue
-        // TODO job queue
-
-        // 3. assign parser
-        // TODO get job from queue
-        // TODO multiple thread
-        const failedList = [];
-        for (const tx of txs) {
-          try {
-            const transaction = JSON.parse(tx.transaction);
-            const receipt = JSON.parse(tx.receipt);
-            await this.parseTx(transaction, receipt, tx.timestamp);
-          } catch (error) {
-            failedList.push(tx);
-          }
-        }
-
-        // 4. update failed unparsed retry
-        let successParsedTxs = txs;
-        successParsedTxs = successParsedTxs.filter((tx) => failedList.every((failedTx) => tx.unparsedTransaction_id !== failedTx.unparsedTransaction_id));
-
-        for (const failedTx of failedList) {
-          await this.updateRetry(failedTx);
-        }
-
-        // 5. remove parsed transaction from UnparsedTransaction table
-        for (const tx of successParsedTxs) {
-          await this.removeParsedTx(tx);
-        }
-      }
-
-      await this.updateBalance();
-      this.isParsing = false;
+      const unParsedTx = job;
+      const transaction = JSON.parse(unParsedTx.transaction);
+      const receipt = JSON.parse(unParsedTx.receipt);
+      await this.parseTx(transaction, receipt, unParsedTx.timestamp);
+      job.success = true;
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
-      this.isParsing = false;
-      return Promise.resolve();
+      this.logger.error(`[${this.constructor.name}] doJob error: ${error}`);
+      job.success = false;
     }
+    return this.setJobCallback(job);
   }
 
   async findOrCreateCurrency(contractAddress) {
@@ -361,7 +309,6 @@ class EthParserBase extends ParserBase {
     // 1. insert tx
     // 2. insert recript
     // 3. parse receipt to check is token transfer
-    // 3-1. if yes insert token transaction
     // 4. check from address is regist address
     // 5. add mapping table
     // 6. check to address is regist address
@@ -373,10 +320,11 @@ class EthParserBase extends ParserBase {
       const bnGasPrice = new BigNumber(tx.gasPrice, 16);
       const bnGasUsed = new BigNumber(receipt.gasUsed, 16);
       const fee = bnGasPrice.multipliedBy(bnGasUsed).toFixed();
+      const currentBlock = await this.blockNumberFromDB();
       let txStatus = null;
       if (receipt.status !== '0x1') {
         txStatus = false;
-      } else if (this.block - parseInt(tx.blockNumber, 16) >= 6) {
+      } else if (currentBlock - parseInt(tx.blockNumber, 16) >= 6) {
         txStatus = true;
       }
       let insertTx = await this.transactionModel.findOne({
@@ -440,9 +388,6 @@ class EthParserBase extends ParserBase {
       // 3. parse receipt to check is token transfer
       await this.parseReceiptTopic(receipt, insertTx);
 
-      // 3-1. if yes insert token transaction
-      // TODO
-
       // 4. check from address is regist address
       const accountAddressFrom = await this.checkRegistAddress(from);
       if (accountAddressFrom) {
@@ -496,125 +441,6 @@ class EthParserBase extends ParserBase {
       return result;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction}) error: ${error}`);
-      return Promise.reject(error);
-    }
-  }
-
-  async updateBalance() {
-    this.logger.debug(`[${this.constructor.name}] updateBalance`);
-    // step:
-    // 1. update pending transaction
-    try {
-      await this.parsePendingTransaction();
-    } catch (error) {
-      this.logger.debug(`[${this.constructor.name}] updateBalance error: ${error}`);
-      return Promise.reject(error);
-    }
-  }
-
-  async parsePendingTransaction() {
-    this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
-    // step:
-    // 1. find all transaction where status is null(means pending transaction)
-    // 2. get last pending transaction from pendingTransaction table
-    // 3. create transaction which is not in step 1 array
-    // 4. update result to false which is not in step 2 array
-    try {
-      // 1. find all transaction where status is null(means pending transaction)
-      const transactions = await this.getTransactionsResultNull();
-
-      // 2. get last pending transaction from pendingTransaction table
-      const pendingTxs = await this.getPendingTransactionFromDB();
-
-      // 3. create transaction which is not in step 1 array
-      const newTxs = pendingTxs.filter((pendingTx) => transactions.every((transaction) => pendingTx.hash !== transaction.txid));
-      for (const tx of newTxs) {
-        try {
-          const bnAmount = new BigNumber(tx.value, 16);
-          const bnGasPrice = new BigNumber(tx.gasPrice, 16);
-          const bnGas = new BigNumber(tx.gas, 16);
-          const fee = bnGasPrice.multipliedBy(bnGas).toFixed();
-
-          let txResult = await this.transactionModel.findOne({
-            where: {
-              currency_id: this.currencyInfo.currency_id,
-              txid: tx.hash,
-            },
-          });
-          if (!txResult) {
-            this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash})`);
-            txResult = await this.transactionModel.create({
-              currency_id: this.currencyInfo.currency_id,
-              txid: tx.hash,
-              source_addresses: tx.from,
-              destination_addresses: tx.to ? tx.to : '',
-              amount: bnAmount.toFixed(),
-              note: tx.input,
-              block: parseInt(tx.blockNumber, 16),
-              nonce: parseInt(tx.nonce, 16),
-              fee,
-              gas_price: bnGasPrice.toFixed(),
-            });
-          } else {
-            const updateResult = await this.transactionModel.update(
-              {
-                source_addresses: tx.from,
-                destination_addresses: tx.to ? tx.to : '',
-                amount: bnAmount.toFixed(),
-                note: tx.input,
-                block: parseInt(tx.blockNumber, 16),
-                nonce: parseInt(tx.nonce, 16),
-                gas_price: bnGasPrice.toFixed(),
-              }, {
-                where: {
-                  currency_id: this.currencyInfo.currency_id,
-                  txid: tx.hash,
-                },
-                returning: true,
-              },
-            );
-            [, [txResult]] = updateResult;
-          }
-        } catch (error) {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash}) error: ${error}`);
-        }
-      }
-
-      // 4. update result which is not in step 2 array
-      const missingTxs = transactions.filter((transaction) => (pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid) && this.block - transaction.block >= 6));
-      for (const tx of missingTxs) {
-        try {
-          if (tx.block) {
-            await this.transactionModel.update(
-              {
-                result: true,
-              },
-              {
-                where: {
-                  currency_id: this.currencyInfo.currency_id,
-                  txid: tx.txid,
-                },
-              },
-            );
-          } else {
-            await this.transactionModel.update(
-              {
-                result: false,
-              },
-              {
-                where: {
-                  currency_id: this.currencyInfo.currency_id,
-                  txid: tx.txid,
-                },
-              },
-            );
-          }
-        } catch (error) {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
-        }
-      }
-    } catch (error) {
-      this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
       return Promise.reject(error);
     }
   }

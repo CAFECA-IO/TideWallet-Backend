@@ -18,7 +18,7 @@ class ParserManagerBase {
     this.pendingTransactionModel = this.database.db.PendingTransaction;
 
     this.parsers = [];
-    this.maxParsers = this.config.rabbitmq.maxParsers || 20;
+    this.maxParsers = this.config.rabbitmq.maxParsers || 5;
     this.amqpHost = this.config.rabbitmq.host;
   }
 
@@ -29,8 +29,8 @@ class ParserManagerBase {
     this.jobQueue = `${this.bcid}ParseJob`;
     this.jobCallback = `${this.bcid}ParseJobCallback`;
 
-    this.jobLength = 0;
     this.jobDoneList = [];
+    this.getJobCallback();
     return this;
   }
 
@@ -84,6 +84,7 @@ class ParserManagerBase {
     this.logger.debug(`[${this.constructor.name}] getJobCallback`);
     try {
       await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
+      this.queueChannel.prefetch(1);
       await this.queueChannel.consume(this.jobCallback, async (msg) => {
         const job = JSON.parse(msg.content.toString());
 
@@ -165,7 +166,6 @@ class ParserManagerBase {
       await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
 
       await this.queueChannel.sendToQueue(this.jobQueue, bufJob, { persistent: true });
-      this.jobLength += 1;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] setJob() error:`, error);
       return Promise.reject(error);
