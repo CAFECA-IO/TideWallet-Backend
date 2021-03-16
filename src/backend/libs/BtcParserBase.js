@@ -454,7 +454,7 @@ class BtcParserBase extends ParserBase {
           let balance = new BigNumber(0);
           for (const addressItem of findAllAddress) {
             const findUTXOByAddress = await this.utxoModel.findAll({
-              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: false } },
+              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
               attributes: ['amount'],
             });
 

@@ -114,4 +114,5 @@ pathname = [
   "get | /api/v1/crypto/rate | Bot.Blockchain.CryptoRate",
   "get | /api/v1/blockchain/:blockchain_id/contract/:contract | Bot.Blockchain.TokenInfo",
   "get | /api/v1/blockchains/height | Bot.Blockchain.BlockHeight",
+  "get | /api/v1/blockchains/height/metrics | Bot.Blockchain.BlockHeightMetrics",
 ]

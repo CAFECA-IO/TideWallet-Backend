@@ -843,12 +843,14 @@ class Utils {
   }
 
   static dividedByDecimal(amount, decimal) {
+    if (typeof decimal === 'undefined' || decimal === null) return '0';
     let _amount = (amount instanceof BigNumber) ? amount : new BigNumber(amount);
     if (typeof amount === 'string' && (amount).indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
     return _amount.dividedBy(new BigNumber(10 ** decimal)).toFixed();
   }
 
   static multipliedByDecimal(amount, decimal) {
+    if (typeof decimal === 'undefined' || decimal === null) return '0';
     let _amount = (amount instanceof BigNumber) ? amount : new BigNumber(amount);
     if (typeof amount === 'string' && (amount).indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
     return _amount.multipliedBy(new BigNumber(10 ** decimal)).toFixed();
