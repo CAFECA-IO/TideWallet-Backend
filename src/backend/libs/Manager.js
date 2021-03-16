@@ -17,8 +17,6 @@ const EthRopstenParser = require('./EthRopstenParser');
 const EthParser = require('./EthParser');
 const CfcParser = require('./CfcParser');
 
-const ParserManagerBase = require('./ParserManagerBase');
-
 class Manager extends Bot {
   constructor() {
     super();

@@ -81,6 +81,13 @@ class ParserBase {
     }
   }
 
+  // eslint-disable-next-line no-unused-vars
+  async doJob(job) {
+    // need override
+    await this.parseTx();
+    return Promise.resolve();
+  }
+
   async getCurrencyInfo() {
     this.logger.debug(`[${this.constructor.name}] getCurrencyInfo`);
     try {
@@ -98,17 +105,16 @@ class ParserBase {
   async getJob() {
     this.logger.debug(`[${this.constructor.name}] getJob`);
     try {
-      let job;
       await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
-      await this.queueChannel.consume(this.jobQueue, (msg) => {
-        job = JSON.parse(msg.content.toString());
+      await this.queueChannel.consume(this.jobQueue, async (msg) => {
+        const job = JSON.parse(msg.content.toString());
 
         // IMPORTENT!!! remove from queue
         this.queueChannel.ack(msg);
 
+        await this.doJob(job);
         return job;
       }, { noAck: false });
-      return job;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] getJob error: ${error}`);
       return Promise.reject(error);
@@ -215,6 +221,9 @@ class ParserBase {
 
   async parseTx() {
     // need override
+    const res = {};
+    await this.setJobCallback(res);
+    return Promise.resolve();
   }
 
   async parsePendingTransaction() {

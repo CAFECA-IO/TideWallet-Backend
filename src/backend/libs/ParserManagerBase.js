@@ -29,6 +29,8 @@ class ParserManagerBase {
     this.jobQueue = `${this.bcid}ParseJob`;
     this.jobCallback = `${this.bcid}ParseJobCallback`;
 
+    this.jobLength = 0;
+    this.jobDoneList = [];
     return this;
   }
 
@@ -58,6 +60,12 @@ class ParserManagerBase {
     }
   }
 
+  // eslint-disable-next-line no-unused-vars
+  async doCallback(job) {
+    // need override
+    return Promise.resolve();
+  }
+
   async getCurrencyInfo() {
     this.logger.debug(`[${this.constructor.name}] getCurrencyInfo`);
     try {
@@ -76,13 +84,13 @@ class ParserManagerBase {
     this.logger.debug(`[${this.constructor.name}] getJobCallback`);
     try {
       await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
-
-      return await this.queueChannel.consume(this.jobCallback, (msg) => {
+      await this.queueChannel.consume(this.jobCallback, async (msg) => {
         const job = JSON.parse(msg.content.toString());
 
         // IMPORTENT!!! remove from queue
         this.queueChannel.ack(msg);
 
+        await this.doCallback(job);
         return job;
       }, { noAck: false });
     } catch (error) {
@@ -157,6 +165,7 @@ class ParserManagerBase {
       await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
 
       await this.queueChannel.sendToQueue(this.jobQueue, bufJob, { persistent: true });
+      this.jobLength += 1;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] setJob() error:`, error);
       return Promise.reject(error);
