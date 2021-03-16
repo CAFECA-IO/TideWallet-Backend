@@ -117,7 +117,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       const insertResult = await this.blockScannedModel.findOrCreate({
         where: { blockchain_id: this.bcid, block: parseInt(blockData.number, 16) },
         defaults: {
-          blockScanned_id: uuidv4(),
           blockchain_id: this.bcid,
           block: parseInt(blockData.number, 16),
           block_hash: blockData.hash,
