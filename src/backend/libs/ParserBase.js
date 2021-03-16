@@ -30,6 +30,7 @@ class ParserBase {
     this.queueChannel = await amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
     this.jobQueue = `${this.bcid}ParseJob`;
     this.jobCallback = `${this.bcid}ParseJobCallback`;
+    this.getJob();
 
     return this;
   }
@@ -106,6 +107,7 @@ class ParserBase {
     this.logger.debug(`[${this.constructor.name}] getJob`);
     try {
       await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
+      this.queueChannel.prefetch(1);
       await this.queueChannel.consume(this.jobQueue, async (msg) => {
         const job = JSON.parse(msg.content.toString());
 
@@ -206,13 +208,13 @@ class ParserBase {
   }
 
   async setJobCallback(res) {
-    this.logger.debug(`[${this.constructor.name}] setJobCallback()`);
+    this.logger.debug(`[${this.constructor.name}] setJobCallback(${res})`);
     try {
       const strRes = JSON.stringify(res);
       const bufRes = Buffer.from(strRes);
-      await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
+      await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
 
-      await this.queueChannel.sendToQueue(this.jobQueue, bufRes, { persistent: true });
+      await this.queueChannel.sendToQueue(this.jobCallback, bufRes, { persistent: true });
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] setJobCallback() error:`, error);
       return Promise.reject(error);

@@ -14,7 +14,9 @@ const CfcCrawlerManager = require('./CfcCrawlerManager');
 // parser
 const BtcTestnetParser = require('./BtcTestnetParser');
 const EthRopstenParser = require('./EthRopstenParser');
-const EthParser = require('./EthParser');
+// -- temp for test parser manager by wayne
+// const EthParser = require('./EthParser');
+const EthParserManager = require('./EthParserManager');
 const CfcParser = require('./CfcParser');
 
 class Manager extends Bot {
@@ -159,7 +161,9 @@ class Manager extends Bot {
           break;
         case 'ethereum_mainnet':
           result.push(new EthCrawlerManager(this.config, this.database, this.logger));
-          result.push(new EthParser(this.config, this.database, this.logger));
+          // result.push(new EthParser(this.config, this.database, this.logger));
+          // -- temp for test parser manager by wayne
+          result.push(new EthParserManager(this.config, this.database, this.logger));
           break;
         case 'ethereum_ropsten':
           result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
