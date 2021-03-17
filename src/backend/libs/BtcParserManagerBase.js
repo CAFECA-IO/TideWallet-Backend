@@ -32,7 +32,7 @@ class BtcParserManagerBase extends ParserManagerBase {
   }
 
   async createJob() {
-    this.logger.error(`[${this.constructor.name}] createJob`);
+    this.logger.debug(`[${this.constructor.name}] createJob`);
     // 1. load unparsed transactions per block from UnparsedTransaction
     // 2. check has unparsed transaction
     // 2-1. if no parse update balance
@@ -48,12 +48,11 @@ class BtcParserManagerBase extends ParserManagerBase {
         await this.updateBalance();
         this.isParsing = false;
       } else {
-        this.jobLength = 0;
         this.jobDoneList = [];
+        this.numberOfJobs = 0;
 
         for (const tx of txs) {
-          const transaction = JSON.parse(tx.transaction);
-          await this.setJob({ transaction, timestamp: tx.timestamp });
+          await this.setJob(tx);
         }
       }
     } catch (error) {
@@ -64,8 +63,10 @@ class BtcParserManagerBase extends ParserManagerBase {
   }
 
   async doCallback(job) {
+    this.isParsing = true;
+    // job = { ...UnparsedTransaction, success: bool }
     this.jobDoneList.push(job);
-    if (this.jobDoneList.length === this.jobLength) {
+    if (this.jobDoneList.length === this.numberOfJobs) {
       // 3. update failed unparsed retry
       // 4. remove parsed transaction from UnparsedTransaction table
       try {

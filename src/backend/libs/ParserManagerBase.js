@@ -33,6 +33,8 @@ class ParserManagerBase {
     this.jobCallback = `${this.bcid}ParseJobCallback`;
 
     // clear queue
+    await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
+    await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
     await this.queueChannel.purgeQueue(this.jobQueue);
     await this.queueChannel.purgeQueue(this.jobCallback);
 
@@ -91,7 +93,6 @@ class ParserManagerBase {
   async getJobCallback() {
     this.logger.debug(`[${this.constructor.name}] getJobCallback`);
     try {
-      await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
       await this.queueChannel.consume(this.jobCallback, async (msg) => {
         const job = JSON.parse(msg.content.toString());
 
@@ -170,7 +171,6 @@ class ParserManagerBase {
     try {
       const strJob = JSON.stringify(job);
       const bufJob = Buffer.from(strJob);
-      await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
 
       await this.queueChannel.sendToQueue(this.jobQueue, bufJob, { persistent: true });
 

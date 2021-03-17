@@ -23,73 +23,22 @@ class BtcParserBase extends ParserBase {
   async init() {
     await super.init();
     this.isParsing = false;
-    setInterval(() => {
-      this.doParse();
-    }, this.syncInterval);
-
-    this.doParse();
     return this;
   }
 
-  async doParse() {
-    if (this.isParsing) {
-      this.logger.log(`[${this.constructor.name}] doParse is parsing`);
-      return;
-    }
-    this.isParsing = true;
-    // step:
-    // 1. load unparsed transactions per block from UnparsedTransaction
-    // 2. set queue
-    // 3. assign parser
-    // 4. update failed unparsed retry
-    // 5. remove parsed transaction from UnparsedTransaction table
-    // 6. update balance
-
+  async doJob(job) {
     try {
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        // 1. load unparsed transactions per block from UnparsedTransaction
-        this.block = await this.blockNumberFromDB();
-        const txs = await this.getUnparsedTxs();
-        if (!txs || txs.length < 1) break;
+      const unParsedTx = job;
+      const transaction = JSON.parse(unParsedTx.transaction);
+      // await this.parseTx(transaction, unParsedTx.timestamp);
+      await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, transaction.time);
 
-        // 2. set queue
-        // TODO job queue
-
-        // 3. assign parser
-        // TODO get job from queue
-        // TODO multiple thread
-        const failedList = [];
-        for (const tx of txs) {
-          try {
-            const transaction = JSON.parse(tx.transaction);
-            await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, tx.timestamp);
-          } catch (error) {
-            failedList.push(tx);
-          }
-        }
-
-        // 4. update failed unparsed retry
-        let successParsedTxs = txs;
-        successParsedTxs = successParsedTxs.filter((tx) => failedList.every((failedTx) => tx.unparsedTransaction_id !== failedTx.unparsedTransaction_id));
-
-        for (const failedTx of failedList) {
-          await this.updateRetry(failedTx);
-        }
-
-        // 5. remove parsed transaction from UnparsedTransaction table
-        for (const tx of successParsedTxs) {
-          await this.removeParsedTx(tx);
-        }
-      }
-
-      await this.updateBalance();
-      this.isParsing = false;
+      job.success = true;
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
-      this.isParsing = false;
-      return Promise.resolve();
+      this.logger.error(`[${this.constructor.name}] doJob error: ${error}`);
+      job.success = false;
     }
+    return job;
   }
 
   async blockHeightByBlockHashFromPeer(block) {

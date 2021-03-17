@@ -5,14 +5,15 @@ const Bot = require('./Bot');
 
 // crawler
 const BtcCrawlerManager = require('./BtcCrawlerManager');
-const BtcParser = require('./BtcParser');
+
 const BtcTestnetCrawlerManager = require('./BtcTestnetCrawlerManager');
 const EthCrawlerManager = require('./EthCrawlerManager');
 const EthRopstenCrawlerManager = require('./EthRopstenCrawlerManager');
 const CfcCrawlerManager = require('./CfcCrawlerManager');
 
 // parser
-const BtcTestnetParser = require('./BtcTestnetParser');
+const BtcParserManager = require('./BtcParserManager');
+const BtcTestnetParserManager = require('./BtcTestnetParserManager');
 const EthRopstenParser = require('./EthRopstenParser');
 // -- temp for test parser manager by wayne
 // const EthParser = require('./EthParser');
@@ -153,11 +154,11 @@ class Manager extends Bot {
       switch (blockchianName) {
         case 'bitcoin_mainnet':
           result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
-          result.push(new BtcParser(this.config, this.database, this.logger));
+          result.push(new BtcParserManager(this.config, this.database, this.logger));
           break;
         case 'bitcoin_testnet':
           result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
-          result.push(new BtcTestnetParser(this.config, this.database, this.logger));
+          result.push(new BtcTestnetParserManager(this.config, this.database, this.logger));
           break;
         case 'ethereum_mainnet':
           result.push(new EthCrawlerManager(this.config, this.database, this.logger));
