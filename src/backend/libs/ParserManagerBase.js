@@ -144,20 +144,18 @@ class ParserManagerBase {
     this.logger.debug(`[${this.constructor.name}] getUnparsedTxs`);
     try {
       const { Op } = this.Sequelize;
-      const oldest = await this.unparsedTxModel.findAll({
-        limit: 1,
+      const oldest = await this.unparsedTxModel.findOne({
         where: { blockchain_id: this.bcid, retry: { [Op.lt]: this.maxRetry } },
-        order: [['timestamp', 'ASC']],
+        order: [['unparsedTransaction_id', 'ASC']],
       });
 
-      if (!oldest || oldest.length === 0) {
+      if (!oldest) {
         this.logger.log(`[${this.constructor.name}] getUnparsedTxs not found`);
         return [];
       }
 
-      const { timestamp } = oldest[0];
       const result = await this.unparsedTxModel.findAll({
-        where: { blockchain_id: this.bcid, timestamp, retry: { [Op.lt]: this.maxRetry } },
+        where: { blockchain_id: this.bcid, timestamp: oldest.timestamp, retry: { [Op.lt]: this.maxRetry } },
       });
       return result;
     } catch (error) {
