@@ -33,6 +33,8 @@ class ParserManagerBase {
     this.jobCallback = `${this.bcid}ParseJobCallback`;
 
     // clear queue
+    await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
+    await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
     await this.queueChannel.purgeQueue(this.jobQueue);
     await this.queueChannel.purgeQueue(this.jobCallback);
 
@@ -91,7 +93,6 @@ class ParserManagerBase {
   async getJobCallback() {
     this.logger.debug(`[${this.constructor.name}] getJobCallback`);
     try {
-      await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
       await this.queueChannel.consume(this.jobCallback, async (msg) => {
         const job = JSON.parse(msg.content.toString());
 
@@ -143,20 +144,18 @@ class ParserManagerBase {
     this.logger.debug(`[${this.constructor.name}] getUnparsedTxs`);
     try {
       const { Op } = this.Sequelize;
-      const oldest = await this.unparsedTxModel.findAll({
-        limit: 1,
+      const oldest = await this.unparsedTxModel.findOne({
         where: { blockchain_id: this.bcid, retry: { [Op.lt]: this.maxRetry } },
-        order: [['timestamp', 'ASC']],
+        order: [['unparsedTransaction_id', 'ASC']],
       });
 
-      if (!oldest || oldest.length === 0) {
+      if (!oldest) {
         this.logger.log(`[${this.constructor.name}] getUnparsedTxs not found`);
         return [];
       }
 
-      const { timestamp } = oldest[0];
       const result = await this.unparsedTxModel.findAll({
-        where: { blockchain_id: this.bcid, timestamp, retry: { [Op.lt]: this.maxRetry } },
+        where: { blockchain_id: this.bcid, timestamp: oldest.timestamp, retry: { [Op.lt]: this.maxRetry } },
       });
       return result;
     } catch (error) {
@@ -170,7 +169,6 @@ class ParserManagerBase {
     try {
       const strJob = JSON.stringify(job);
       const bufJob = Buffer.from(strJob);
-      await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
 
       await this.queueChannel.sendToQueue(this.jobQueue, bufJob, { persistent: true });
 
