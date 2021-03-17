@@ -1,11 +1,11 @@
 const { v4: uuidv4 } = require('uuid');
 const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue');
-const ParserBase = require('./ParserBase');
+const ParserManagerBase = require('./ParserManagerBase');
 const Utils = require('./Utils');
 const HDWallet = require('./HDWallet');
 
-class BtcParserBase extends ParserBase {
+class BtcParserManagerBase extends ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
     super(blockchainId, config, database, logger);
 
@@ -23,22 +23,90 @@ class BtcParserBase extends ParserBase {
   async init() {
     await super.init();
     this.isParsing = false;
+    setInterval(() => {
+      this.doParse();
+    }, this.syncInterval);
+
+    this.doParse();
     return this;
   }
 
-  async doJob(job) {
+  async createJob() {
+    this.logger.error(`[${this.constructor.name}] createJob`);
+    // 1. load unparsed transactions per block from UnparsedTransaction
+    // 2. check has unparsed transaction
+    // 2-1. if no parse update balance
+    // 2-2. if yes setJob
     try {
-      const unParsedTx = job;
-      const transaction = JSON.parse(unParsedTx.transaction);
-      // await this.parseTx(transaction, unParsedTx.timestamp);
-      await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, transaction.time);
+      // 1. load unparsed transactions per block from UnparsedTransaction
+      this.block = await this.blockNumberFromDB();
+      const txs = await this.getUnparsedTxs();
 
-      job.success = true;
+      // 2. check has unparsed transaction
+      if (!txs || txs.length < 1) {
+        // 2-1. if no parse update balance
+        await this.updateBalance();
+        this.isParsing = false;
+      } else {
+        this.jobDoneList = [];
+        this.numberOfJobs = 0;
+
+        for (const tx of txs) {
+          await this.setJob(tx);
+        }
+      }
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] doJob error: ${error}`);
-      job.success = false;
+      this.logger.error(`[${this.constructor.name}] createJob error: ${error}`);
+      this.isParsing = false;
+      return Promise.resolve(error);
     }
-    return job;
+  }
+
+  async doCallback(job) {
+    this.isParsing = true;
+    // job = { ...UnparsedTransaction, success: bool }
+    this.jobDoneList.push(job);
+    if (this.jobDoneList.length === this.numberOfJobs) {
+      // 3. update failed unparsed retry
+      // 4. remove parsed transaction from UnparsedTransaction table
+      try {
+        const successParsedTxs = this.jobDoneList.filter((tx) => tx.success === true);
+        const failedList = this.jobDoneList.filter((tx) => tx.success === false);
+
+        // 3. update failed unparsed retry
+        for (const failedTx of failedList) {
+          await this.updateRetry(failedTx);
+        }
+
+        // 4. remove parsed transaction from UnparsedTransaction table
+        for (const tx of successParsedTxs) {
+          await this.removeParsedTx(tx);
+        }
+
+        await this.createJob();
+      } catch (error) {
+        this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
+        this.isParsing = false;
+        return Promise.resolve();
+      }
+    }
+  }
+
+  async doParse() {
+    if (this.isParsing) {
+      this.logger.log(`[${this.constructor.name}] doParse is parsing`);
+      return;
+    }
+    this.isParsing = true;
+    // step:
+    // 1. load unparsed transactions per block from UnparsedTransaction
+    // 2. check has unparsed transaction
+    // 2-1. if no parse update balance
+    // 2-2. if yes setJob
+    // 3. update failed unparsed retry
+    // 4. remove parsed transaction from UnparsedTransaction table
+
+    await this.createJob();
   }
 
   async blockHeightByBlockHashFromPeer(block) {
@@ -159,7 +227,7 @@ class BtcParserBase extends ParserBase {
     this.logger.debug(`[${this.constructor.name}] parseTx(${tx.txid})`);
     const {
       fee, to, source_addresses, destination_addresses, note,
-    } = await BtcParserBase.parseBTCTxAmounts.call(this, tx);
+    } = await BtcParserManagerBase.parseBTCTxAmounts.call(this, tx);
 
     await this.sequelize.transaction(async (transaction) => {
       // 1. insert tx
@@ -403,7 +471,7 @@ class BtcParserBase extends ParserBase {
           let balance = new BigNumber(0);
           for (const addressItem of findAllAddress) {
             const findUTXOByAddress = await this.utxoModel.findAll({
-              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
+              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: false } },
               attributes: ['amount'],
             });
 
@@ -462,7 +530,7 @@ class BtcParserBase extends ParserBase {
       for (const txid of newTxids) {
         try {
           const tx = await this.getTransactionByTxidFromPeer(txid);
-          await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.time);
+          await BtcParserManagerBase.parseTx.call(this, tx, this.currencyInfo, tx.time);
         } catch (error) {
           this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
         }
@@ -567,4 +635,4 @@ class BtcParserBase extends ParserBase {
   }
 }
 
-module.exports = BtcParserBase;
+module.exports = BtcParserManagerBase;

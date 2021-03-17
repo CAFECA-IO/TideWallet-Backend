@@ -1,6 +1,6 @@
 const amqp = require('amqplib');
 
-class ParserBase {
+class ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
     this.bcid = blockchainId;
     this.database = database;
@@ -15,27 +15,32 @@ class ParserBase {
     this.unparsedTxModel = this.database.db.UnparsedTransaction;
 
     this.transactionModel = this.database.db.Transaction;
-    this.accountModel = this.database.db.Account;
-    this.accountAddressModel = this.database.db.AccountAddress;
-    this.accountCurrencyModel = this.database.db.AccountCurrency;
-    this.addressTransactionModel = this.database.db.AddressTransaction;
     this.pendingTransactionModel = this.database.db.PendingTransaction;
 
+    this.parsers = [];
+    this.maxParsers = this.config.rabbitmq.maxParsers || 5;
     this.amqpHost = this.config.rabbitmq.host;
   }
 
   async init() {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
+
+    // message queue
     this.queueChannel = await amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
     this.queueChannel.prefetch(1);
     this.jobQueue = `${this.bcid}ParseJob`;
     this.jobCallback = `${this.bcid}ParseJobCallback`;
-    await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
+
+    // clear queue
     await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
+    await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
+    await this.queueChannel.purgeQueue(this.jobQueue);
+    await this.queueChannel.purgeQueue(this.jobCallback);
 
-    this.getJob();
-
+    this.numberOfJobs = 0;
+    this.jobDoneList = [];
+    this.getJobCallback();
     return this;
   }
 
@@ -65,31 +70,9 @@ class ParserBase {
     }
   }
 
-  async checkRegistAddress(address) {
-    this.logger.debug(`[${this.constructor.name}] checkRegistAddress(${address})`);
-
-    try {
-      const accountAddress = await this.accountAddressModel.findOne({
-        where: { address },
-        include: [
-          {
-            model: this.accountModel,
-            attributes: ['blockchain_id'],
-            where: { blockchain_id: this.bcid },
-          },
-        ],
-      });
-      return accountAddress;
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] checkRegistAddress(${address}) error: ${error}`);
-      return Promise.reject(error);
-    }
-  }
-
   // eslint-disable-next-line no-unused-vars
-  async doJob(job) {
+  async doCallback(job) {
     // need override
-    await this.parseTx();
     return Promise.resolve();
   }
 
@@ -98,7 +81,7 @@ class ParserBase {
     try {
       const result = await this.currencyModel.findOne({
         where: { blockchain_id: this.bcid, type: 1 },
-        attributes: ['currency_id', 'decimals'],
+        attributes: ['currency_id'],
       });
       return result;
     } catch (error) {
@@ -107,22 +90,20 @@ class ParserBase {
     }
   }
 
-  async getJob() {
-    this.logger.debug(`[${this.constructor.name}] getJob`);
+  async getJobCallback() {
+    this.logger.debug(`[${this.constructor.name}] getJobCallback`);
     try {
-      await this.queueChannel.consume(this.jobQueue, async (msg) => {
+      await this.queueChannel.consume(this.jobCallback, async (msg) => {
         const job = JSON.parse(msg.content.toString());
-        const jobDone = await this.doJob(job);
 
         // IMPORTENT!!! remove from queue
-        await this.queueChannel.ack(msg);
+        this.queueChannel.ack(msg);
 
-        await this.setJobCallback(jobDone);
-
+        await this.doCallback(job);
         return job;
       }, { noAck: false });
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] getJob error: ${error}`);
+      this.logger.error(`[${this.constructor.name}] getJobJobCallback error: ${error}`);
       return Promise.reject(error);
     }
   }
@@ -159,55 +140,77 @@ class ParserBase {
     }
   }
 
-  async setAddressTransaction(accountAddress_id, transaction_id, amount, direction) {
-    this.logger.debug(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction})`);
+  async getUnparsedTxs() {
+    this.logger.debug(`[${this.constructor.name}] getUnparsedTxs`);
     try {
-      const result = await this.addressTransactionModel.findOrCreate({
-        where: {
-          currency_id: this.currencyInfo.currency_id,
-          accountAddress_id,
-          transaction_id,
-          amount,
-          direction,
-        },
-        defaults: {
-          currency_id: this.currencyInfo.currency_id,
-          accountAddress_id,
-          transaction_id,
-          amount,
-          direction,
-        },
+      const { Op } = this.Sequelize;
+      const oldest = await this.unparsedTxModel.findOne({
+        where: { blockchain_id: this.bcid, retry: { [Op.lt]: this.maxRetry } },
+        order: [['unparsedTransaction_id', 'ASC']],
+      });
+
+      if (!oldest) {
+        this.logger.log(`[${this.constructor.name}] getUnparsedTxs not found`);
+        return [];
+      }
+
+      const result = await this.unparsedTxModel.findAll({
+        where: { blockchain_id: this.bcid, timestamp: oldest.timestamp, retry: { [Op.lt]: this.maxRetry } },
       });
       return result;
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction}) error: ${error}`);
-      return Promise.reject(error);
+      this.logger.error(`[${this.constructor.name}] getUnparsedTxs error ${error}`);
+      return {};
     }
   }
 
-  async setJobCallback(res) {
-    this.logger.debug(`[${this.constructor.name}] setJobCallback(${res})`);
+  async setJob(job) {
+    this.logger.debug(`[${this.constructor.name}] setJob()`);
     try {
-      const strRes = JSON.stringify(res);
-      const bufRes = Buffer.from(strRes);
-      await this.queueChannel.sendToQueue(this.jobCallback, bufRes, { persistent: true });
+      const strJob = JSON.stringify(job);
+      const bufJob = Buffer.from(strJob);
+
+      await this.queueChannel.sendToQueue(this.jobQueue, bufJob, { persistent: true });
+
+      this.numberOfJobs += 1;
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] setJobCallback() error:`, error);
+      this.logger.error(`[${this.constructor.name}] setJob() error:`, error);
       return Promise.reject(error);
     }
   }
 
-  async parseTx() {
+  async removeParsedTx(tx) {
+    this.logger.debug(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id})`);
+    try {
+      await this.unparsedTxModel.destroy({
+        where: { unparsedTransaction_id: tx.unparsedTransaction_id },
+      });
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id}) error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
+  async updateBalance() {
     // need override
-    const res = {};
-    await this.setJobCallback(res);
     return Promise.resolve();
   }
 
-  async parsePendingTransaction() {
-    // need override
-    return Promise.resolve();
+  async updateRetry(tx) {
+    this.logger.debug(`[${this.constructor.name}] updateRetry(${tx.unparsedTransaction_id})`);
+    try {
+      return await this.unparsedTxModel.update(
+        {
+          retry: tx.retry + 1,
+          last_retry: Math.floor(Date.now() / 1000),
+        },
+        { where: { unparsedTransaction_id: tx.unparsedTransaction_id } },
+      );
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] updateRetry(${tx.unparsedTransaction_id}) error: ${error}`);
+      return Promise.reject(error);
+    }
   }
 }
 
-module.exports = ParserBase;
+module.exports = ParserManagerBase;
