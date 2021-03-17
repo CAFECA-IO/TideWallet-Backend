@@ -159,32 +159,6 @@ class ParserBase {
     }
   }
 
-  async getUnparsedTxs() {
-    this.logger.debug(`[${this.constructor.name}] getUnparsedTxs`);
-    try {
-      const { Op } = this.Sequelize;
-      const oldest = await this.unparsedTxModel.findAll({
-        limit: 1,
-        where: { blockchain_id: this.bcid, retry: { [Op.lt]: this.maxRetry } },
-        order: [['timestamp', 'ASC']],
-      });
-
-      if (!oldest || oldest.length === 0) {
-        this.logger.log(`[${this.constructor.name}] getUnparsedTxs not found`);
-        return [];
-      }
-
-      const { timestamp } = oldest[0];
-      const result = await this.unparsedTxModel.findAll({
-        where: { blockchain_id: this.bcid, timestamp, retry: { [Op.lt]: this.maxRetry } },
-      });
-      return result;
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] getUnparsedTxs error ${error}`);
-      return {};
-    }
-  }
-
   async setAddressTransaction(accountAddress_id, transaction_id, amount, direction) {
     this.logger.debug(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction})`);
     try {
@@ -233,39 +207,6 @@ class ParserBase {
   async parsePendingTransaction() {
     // need override
     return Promise.resolve();
-  }
-
-  async removeParsedTx(tx) {
-    this.logger.debug(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id})`);
-    try {
-      return await this.unparsedTxModel.destroy({
-        where: { unparsedTransaction_id: tx.unparsedTransaction_id },
-      });
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id}) error: ${error}`);
-      return Promise.reject(error);
-    }
-  }
-
-  async updateBalance() {
-    // need override
-    return Promise.resolve();
-  }
-
-  async updateRetry(tx) {
-    this.logger.debug(`[${this.constructor.name}] updateRetry(${tx.unparsedTransaction_id})`);
-    try {
-      return await this.unparsedTxModel.update(
-        {
-          retry: tx.retry + 1,
-          last_retry: Math.floor(Date.now() / 1000),
-        },
-        { where: { unparsedTransaction_id: tx.unparsedTransaction_id } },
-      );
-    } catch (error) {
-      this.logger.error(`[${this.constructor.name}] updateRetry(${tx.unparsedTransaction_id}) error: ${error}`);
-      return Promise.reject(error);
-    }
   }
 }
 

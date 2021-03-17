@@ -5,7 +5,6 @@ const Bot = require('./Bot');
 
 // crawler
 const BtcCrawlerManager = require('./BtcCrawlerManager');
-
 const BtcTestnetCrawlerManager = require('./BtcTestnetCrawlerManager');
 const EthCrawlerManager = require('./EthCrawlerManager');
 const EthRopstenCrawlerManager = require('./EthRopstenCrawlerManager');
@@ -14,11 +13,9 @@ const CfcCrawlerManager = require('./CfcCrawlerManager');
 // parser
 const BtcParserManager = require('./BtcParserManager');
 const BtcTestnetParserManager = require('./BtcTestnetParserManager');
-const EthRopstenParser = require('./EthRopstenParser');
-// -- temp for test parser manager by wayne
-// const EthParser = require('./EthParser');
 const EthParserManager = require('./EthParserManager');
-const CfcParser = require('./CfcParser');
+const EthRopstenParserManager = require('./EthRopstenParserManager');
+const CfcParserManager = require('./CfcParserManager');
 
 class Manager extends Bot {
   constructor() {
@@ -162,17 +159,15 @@ class Manager extends Bot {
           break;
         case 'ethereum_mainnet':
           result.push(new EthCrawlerManager(this.config, this.database, this.logger));
-          // result.push(new EthParser(this.config, this.database, this.logger));
-          // -- temp for test parser manager by wayne
           result.push(new EthParserManager(this.config, this.database, this.logger));
           break;
         case 'ethereum_ropsten':
           result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
-          result.push(new EthRopstenParser(this.config, this.database, this.logger));
+          result.push(new EthRopstenParserManager(this.config, this.database, this.logger));
           break;
         case 'cafeca':
           result.push(new CfcCrawlerManager(this.config, this.database, this.logger));
-          result.push(new CfcParser(this.config, this.database, this.logger));
+          result.push(new CfcParserManager(this.config, this.database, this.logger));
           break;
         default:
       }
