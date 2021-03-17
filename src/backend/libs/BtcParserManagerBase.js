@@ -32,7 +32,7 @@ class BtcParserManagerBase extends ParserManagerBase {
   }
 
   async createJob() {
-    this.logger.debug(`[${this.constructor.name}] createJob`);
+    this.logger.error(`[${this.constructor.name}] createJob`);
     // 1. load unparsed transactions per block from UnparsedTransaction
     // 2. check has unparsed transaction
     // 2-1. if no parse update balance
