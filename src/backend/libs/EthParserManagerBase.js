@@ -30,8 +30,8 @@ class EthParserManagerBase extends ParserManagerBase {
     // 2-1. if no parse update balance
     // 2-2. if yes setJob
     try {
+      this.block = await this.blockNumberFromDB(); // used by pending transaction
       // 1. load unparsed transactions per block from UnparsedTransaction
-      this.block = await this.blockNumberFromDB();
       const txs = await this.getUnparsedTxs();
 
       // 2. check has unparsed transaction
@@ -41,6 +41,7 @@ class EthParserManagerBase extends ParserManagerBase {
         this.isParsing = false;
       } else {
         this.jobDoneList = [];
+        this.numberOfJobs = 0;
 
         for (const tx of txs) {
           await this.setJob(tx);
@@ -57,10 +58,7 @@ class EthParserManagerBase extends ParserManagerBase {
     this.isParsing = true;
     // job = { ...UnparsedTransaction, success: bool }
     this.jobDoneList.push(job);
-    // ++ maybe change some check rule
-    const queueStatus = await this.queueChannel.checkQueue(this.jobQueue);
-    const cbQueueStatus = await this.queueChannel.checkQueue(this.jobCallback);
-    if (queueStatus.messageCount === 0 && cbQueueStatus.messageCount === 0) {
+    if (this.jobDoneList.length === this.numberOfJobs) {
       // 3. update failed unparsed retry
       // 4. remove parsed transaction from UnparsedTransaction table
       try {

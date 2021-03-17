@@ -37,7 +37,7 @@ class EthParserBase extends ParserBase {
       this.logger.error(`[${this.constructor.name}] doJob error: ${error}`);
       job.success = false;
     }
-    return this.setJobCallback(job);
+    return job;
   }
 
   async findOrCreateCurrency(contractAddress) {

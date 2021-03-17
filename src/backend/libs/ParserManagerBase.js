@@ -25,10 +25,18 @@ class ParserManagerBase {
   async init() {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
+
+    // message queue
     this.queueChannel = await amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
+    this.queueChannel.prefetch(1);
     this.jobQueue = `${this.bcid}ParseJob`;
     this.jobCallback = `${this.bcid}ParseJobCallback`;
 
+    // clear queue
+    await this.queueChannel.purgeQueue(this.jobQueue);
+    await this.queueChannel.purgeQueue(this.jobCallback);
+
+    this.numberOfJobs = 0;
     this.jobDoneList = [];
     this.getJobCallback();
     return this;
@@ -84,7 +92,6 @@ class ParserManagerBase {
     this.logger.debug(`[${this.constructor.name}] getJobCallback`);
     try {
       await this.queueChannel.assertQueue(this.jobCallback, { durable: true });
-      this.queueChannel.prefetch(1);
       await this.queueChannel.consume(this.jobCallback, async (msg) => {
         const job = JSON.parse(msg.content.toString());
 
@@ -166,6 +173,8 @@ class ParserManagerBase {
       await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
 
       await this.queueChannel.sendToQueue(this.jobQueue, bufJob, { persistent: true });
+
+      this.numberOfJobs += 1;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] setJob() error:`, error);
       return Promise.reject(error);
@@ -175,7 +184,7 @@ class ParserManagerBase {
   async removeParsedTx(tx) {
     this.logger.debug(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id})`);
     try {
-      return await this.unparsedTxModel.destroy({
+      await this.unparsedTxModel.destroy({
         where: { unparsedTransaction_id: tx.unparsedTransaction_id },
       });
     } catch (error) {
