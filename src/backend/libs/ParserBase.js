@@ -28,6 +28,7 @@ class ParserBase {
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
     this.queueChannel = await amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
+    this.queueChannel.prefetch(1);
     this.jobQueue = `${this.bcid}ParseJob`;
     this.jobCallback = `${this.bcid}ParseJobCallback`;
     this.getJob();
@@ -107,14 +108,14 @@ class ParserBase {
     this.logger.debug(`[${this.constructor.name}] getJob`);
     try {
       await this.queueChannel.assertQueue(this.jobQueue, { durable: true });
-      this.queueChannel.prefetch(1);
       await this.queueChannel.consume(this.jobQueue, async (msg) => {
         const job = JSON.parse(msg.content.toString());
-
-        await this.doJob(job);
+        const jobDone = await this.doJob(job);
 
         // IMPORTENT!!! remove from queue
-        this.queueChannel.ack(msg);
+        await this.queueChannel.ack(msg);
+
+        await this.setJobCallback(jobDone);
 
         return job;
       }, { noAck: false });
