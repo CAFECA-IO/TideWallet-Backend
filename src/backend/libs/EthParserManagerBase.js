@@ -75,7 +75,7 @@ class EthParserManagerBase extends ParserManagerBase {
           await this.removeParsedTx(tx);
         }
 
-        await this.createJob();
+        this.createJob();
       } catch (error) {
         this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
         this.isParsing = false;
