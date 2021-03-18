@@ -48,3 +48,34 @@ vi ./private/config.toml
 npm install
 npm start
 ```
+
+## deploy all microservices
+
+**所有要部署的agent機器需已安裝 Python@2.7.15, python-apt 跟 SSH**
+
+本腳本使用 Ansible 撰寫，因此需要先行安裝 **Ansible@2.8.1**(太新版會有問題)
+
+```
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install python-pip 
+pip install -Iv ansible==2.8.1
+```
+
+### Step1. copy ssh config, edit it!
+
+```
+cp ./tool/inventory.sample ./tool/inventory
+```
+
+### Step2. change run script(if you want custom script)
+
+```
+vim ./tool/sh.yml
+```
+
+### Step3. run ansible-playbook
+
+```
+ansible-playbook tool/playbook.yml
+```

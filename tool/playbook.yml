@@ -1,0 +1,7 @@
+---
+- hosts: multi
+  vars_files: sh.yml
+  tasks:
+    - name: ssh & run shell
+      shell: "{{ run_script }}"
+

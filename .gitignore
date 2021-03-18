@@ -107,3 +107,4 @@ env.js
 .vscode
 private
 PIDs
+tool/inventory
