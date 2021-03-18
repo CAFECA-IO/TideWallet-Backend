@@ -70,6 +70,7 @@
   },
   "scripts": {
     "start": "bin/main.js",
+    "deploy": "ansible-playbook tool/playbook.yml",
     "migrateDB": "./node_modules/.bin/sequelize db:migrate --env development --config ./env.js --migrations-path ./src/database/migrations --models-path ./src/database/models",
     "deleteDB": "./node_modules/.bin/sequelize db:migrate:undo:all --env development --config ./env.js --migrations-path ./src/database/migrations --models-path ./src/database/models",
     "undoDB": "./node_modules/.bin/sequelize db:migrate:undo --env development --config ./env.js --migrations-path ./src/database/migrations --models-path ./src/database/models",
