@@ -92,18 +92,23 @@ class ParserManagerBase {
 
   async getJobCallback() {
     this.logger.debug(`[${this.constructor.name}] getJobCallback`);
+    let tmpMsg;
     try {
       await this.queueChannel.consume(this.jobCallback, async (msg) => {
+        tmpMsg = msg;
         const job = JSON.parse(msg.content.toString());
+
+        await this.doCallback(job);
 
         // IMPORTENT!!! remove from queue
         this.queueChannel.ack(msg);
 
-        await this.doCallback(job);
         return job;
       }, { noAck: false });
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] getJobJobCallback error: ${error}`);
+      // back to queue
+      this.queueChannel.nack(tmpMsg);
       return Promise.reject(error);
     }
   }

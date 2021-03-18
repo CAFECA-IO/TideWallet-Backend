@@ -272,60 +272,26 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         // 3. sync tx and receipt
         const txs = syncResult.transactions;
         const timestamp = parseInt(syncResult.timestamp, 16);
-        // slice job to speed up
-        const requestsPerJob = 20;
+
         const insertTx = [];
-
-        for (let i = 0; i < txs.length; i += requestsPerJob) {
-          const transactions = txs.slice(i, i + requestsPerJob);
-          const requests = [];
-          for (const transaction of transactions) {
-            const receipt = this.receiptFromPeer(transaction.hash);
-            requests.push(receipt);
-          }
-          const step3_1 = new Date().getTime();
-          const receipts = await Promise.all(requests).catch((error) => Promise.reject(error));
-          const step3_2 = new Date().getTime();
-          this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3_1 receiptFromPeer: ${(step3_2 - step3_1) / 1000}sec`);
-
-          if (!requests || !receipts) {
-            // TODO error handle
-          }
-
-          for (let j = 0; j < transactions.length; j++) {
-            // check tx is not in db
-            const findTX = await this.unparsedTxModel.findOne({
-              where: { blockchain_id: this.bcid, txid: transactions[j].hash },
+        for (const transaction of txs) {
+          // check tx is not in db
+          const findTX = await this.unparsedTxModel.findOne({
+            where: { blockchain_id: this.bcid, txid: transaction.hash },
+          });
+          if (!findTX) {
+            insertTx.push({
+              blockchain_id: this.bcid,
+              txid: transaction.hash,
+              transaction: JSON.stringify(transaction),
+              // -- move to parser by wayne
+              // receipt: JSON.stringify(receipts[j]),
+              receipt: '',
+              timestamp,
+              retry: 0,
             });
-            if (!findTX) {
-              insertTx.push({
-                blockchain_id: this.bcid,
-                txid: transactions[j].hash,
-                transaction: JSON.stringify(transactions[j]),
-                receipt: JSON.stringify(receipts[j]),
-                timestamp,
-                retry: 0,
-              });
-            }
           }
-          const step3_3 = new Date().getTime();
-          this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3_2 find unparsed tx: ${(step3_3 - step3_2) / 1000}sec`);
         }
-        // for (const transaction of txs) {
-        //   const step3_1 = new Date().getTime();
-        //   const receipt = await this.receiptFromPeer(transaction.hash);
-        //   const step3_2 = new Date().getTime();
-        //   this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3_1 receiptFromPeer: ${(step3_2 - step3_1) / 1000}sec`);
-
-        //   if (!transaction || !receipt) {
-        //     // TODO error handle
-        //   }
-        //   // 4. save unparsed tx and receipt into db
-        //   await this.insertUnparsedTransaction(transaction, receipt, timestamp);
-        //   const step4 = new Date().getTime();
-        //   this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:4 insertUnparsedTransaction: ${(step4 - step3_2) / 1000}sec`);
-        // }
-
         const step3 = new Date().getTime();
         this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3 full tx receipt sync: ${(step3 - step2) / 1000}sec`);
 
@@ -349,24 +315,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       this.logger.error(`[${this.constructor.name}] syncBlock() error: ${error}`);
       return Promise.reject();
     }
-  }
-
-  async receiptFromPeer(txid) {
-    this.logger.debug(`[${this.constructor.name}] receiptFromPeer(${txid})`);
-    const type = 'getReceipt';
-    const options = dvalue.clone(this.options);
-    options.data = this.constructor.cmd({ type, txid });
-    const checkId = options.data.id;
-    const data = await Utils.ETHRPC(options);
-    if (data instanceof Object) {
-      if (data.id !== checkId) {
-        this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
-        return Promise.reject();
-      }
-      return Promise.resolve(data.result);
-    }
-    this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
-    return Promise.reject();
   }
 
   async transactionFromPeer(txid) {
@@ -445,14 +393,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
         result = {
           jsonrpc: '2.0',
           method: 'eth_getTransactionByHash',
-          params: [txid],
-          id: dvalue.randomID(),
-        };
-        break;
-      case 'getReceipt':
-        result = {
-          jsonrpc: '2.0',
-          method: 'eth_getTransactionReceipt',
           params: [txid],
           id: dvalue.randomID(),
         };

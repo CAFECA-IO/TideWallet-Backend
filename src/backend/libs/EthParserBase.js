@@ -30,7 +30,7 @@ class EthParserBase extends ParserBase {
     try {
       const unParsedTx = job;
       const transaction = JSON.parse(unParsedTx.transaction);
-      const receipt = JSON.parse(unParsedTx.receipt);
+      const receipt = await this.receiptFromPeer(transaction.hash);
       await this.parseTx(transaction, receipt, unParsedTx.timestamp);
       job.success = true;
     } catch (error) {
@@ -419,6 +419,24 @@ class EthParserBase extends ParserBase {
     }
   }
 
+  async receiptFromPeer(txid) {
+    this.logger.debug(`[${this.constructor.name}] receiptFromPeer(${txid})`);
+    const type = 'getReceipt';
+    const options = dvalue.clone(this.options);
+    options.data = this.constructor.cmd({ type, txid });
+    const checkId = options.data.id;
+    const data = await Utils.ETHRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
+        return Promise.reject();
+      }
+      return Promise.resolve(data.result);
+    }
+    this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
+    return Promise.reject();
+  }
+
   async setAddressTokenTransaction(currency_id, accountAddress_id, amount, tokenTransaction_id, direction) {
     this.logger.debug(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction})`);
     try {
@@ -446,7 +464,7 @@ class EthParserBase extends ParserBase {
   }
 
   static cmd({
-    type, address, command,
+    type, address, command, txid,
   }) {
     let result;
     switch (type) {
@@ -458,6 +476,14 @@ class EthParserBase extends ParserBase {
             to: address,
             data: command,
           }, 'latest'],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getReceipt':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_getTransactionReceipt',
+          params: [txid],
           id: dvalue.randomID(),
         };
         break;

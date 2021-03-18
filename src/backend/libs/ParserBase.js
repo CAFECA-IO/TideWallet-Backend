@@ -109,8 +109,10 @@ class ParserBase {
 
   async getJob() {
     this.logger.debug(`[${this.constructor.name}] getJob`);
+    let tmpMsg;
     try {
       await this.queueChannel.consume(this.jobQueue, async (msg) => {
+        tmpMsg = msg;
         const job = JSON.parse(msg.content.toString());
         const jobDone = await this.doJob(job);
 
@@ -123,6 +125,8 @@ class ParserBase {
       }, { noAck: false });
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] getJob error: ${error}`);
+      // back to queue
+      this.queueChannel.nack(tmpMsg);
       return Promise.reject(error);
     }
   }
