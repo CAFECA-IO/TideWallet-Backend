@@ -3,7 +3,7 @@ const CfcParser = require('./CfcParser');
 
 class CfcParserManager extends EthParserManagerBase {
   constructor(config, database, logger) {
-    super('8000025B', config, database, logger);
+    super('80000CFC', config, database, logger);
 
     this.options = config.blockchain.ethereum_mainnet;
   }
