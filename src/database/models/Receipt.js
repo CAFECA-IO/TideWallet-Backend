@@ -6,12 +6,11 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Receipt', {
     primaryKey: true,
     allowNull: false,
   },
-  // FK
+  // UK
   transaction_id: {
     type: DataTypes.BIGINT,
     allowNull: false,
   },
-  // FK
   currency_id: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -37,9 +36,11 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Receipt', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+
 }, {
   timestamps: false,
   tableName: 'Receipt',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
+  indexes: [{ unique: true, fields: ['transaction_id'] }],
 });

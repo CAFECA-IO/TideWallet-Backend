@@ -835,7 +835,7 @@ class Account extends Bot {
       payload.sort((a, b) => b.timestamp - a.timestamp);
 
       return new ResponseFormat({
-        message: 'List Transactions',
+        message: 'List Unspent Transaction Outputs',
         payload,
       });
     } catch (e) {
