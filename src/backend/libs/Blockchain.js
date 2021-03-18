@@ -18,6 +18,7 @@ class Blockchain extends Bot {
     super();
     this.name = 'Blockchain';
     this.tags = {};
+    this.cacheBlockchainInfo = {};
   }
 
   init({
@@ -696,12 +697,18 @@ class Blockchain extends Bot {
   }
 
   async BlockHeight() {
+    const now = Math.floor(Date.now() / 1000);
+    if (this.cacheBlockchainInfo && (now - this.cacheBlockchainInfo.timestamp) < 30) return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo });
     const findBlockchain = await this.blockchainModel.findAll({});
-    const btcMainnetBlockHeight = await this.btcBlockHeight('80000000');
-    const btcTestnetBlockHeight = await this.btcBlockHeight('80000001');
-    const ethMainnetBlockHeight = await this.ethBlockHeight('8000003C');
-    const ethTestnetBlockHeight = await this.ethBlockHeight('8000025B');
-    const cfcBlockHeight = await this.ethBlockHeight('80000CFC');
+    const BlockHeightsFromPeer = await Promise.all([
+      this.btcBlockHeight('80000000'),
+      this.btcBlockHeight('80000001'),
+      this.ethBlockHeight('8000003C'),
+      this.ethBlockHeight('8000025B'),
+      this.ethBlockHeight('80000CFC'),
+    ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+    if (BlockHeightsFromPeer.code === Codes.RPC_ERROR) return BlockHeightsFromPeer;
+    const [btcMainnetBlockHeight, btcTestnetBlockHeight, ethMainnetBlockHeight, ethTestnetBlockHeight, cfcBlockHeight] = BlockHeightsFromPeer;
 
     const _dbBtcMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000000');
     const dbBtcMainnetBlockHeight = _dbBtcMainnetBlockHeight ? _dbBtcMainnetBlockHeight.block : 0;
@@ -720,9 +727,9 @@ class Blockchain extends Bot {
     const ethTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000025B');
     const cfcBlockScannedBlockHeight = await this.findBlockScannedHeight('80000CFC');
 
-    return new ResponseFormat({
-      message: 'Block Height',
-      payload: {
+    this.cacheBlockchainInfo = {
+      timestamp: Math.floor(Date.now() / 1000),
+      data: {
         BTC_MAINNET: {
           blockHeight: btcMainnetBlockHeight,
           db_blockHeight: dbBtcMainnetBlockHeight,
@@ -759,7 +766,9 @@ class Blockchain extends Bot {
           unParseBlock: cfcBlockHeight - cfcBlockScannedBlockHeight,
         },
       },
-    });
+    };
+
+    return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo });
   }
 
   async BlockHeightMetrics() {
