@@ -34,6 +34,7 @@ class BtcParserBase extends ParserBase {
       await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, transaction.time);
 
       job.success = true;
+      job.updateBalanceAccounts = this.updateBalanceAccounts;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] doJob error: ${error}`);
       job.success = false;
@@ -132,7 +133,7 @@ class BtcParserBase extends ParserBase {
         // TODO: need pubkey => P2PK address
         destination_addresses.push({
           addresses: outputData.scriptPubKey.hex,
-          amount: new BigNumber(outputData.value || '0', this.decimal),
+          amount: Utils.multipliedByDecimal(outputData.value || '0', this.decimal),
         });
       }
     }
@@ -384,159 +385,6 @@ class BtcParserBase extends ParserBase {
         }
       }
     });
-  }
-
-  async updateBalance() {
-    this.logger.debug(`[${this.constructor.name}] updateBalance`);
-    // step:
-    // 1. update pending transaction
-    // 2. update balance
-    try {
-      await this.parsePendingTransaction();
-      // update balance
-      for (const accountID of Object.keys(this.updateBalanceAccounts)) {
-        if (this.updateBalanceAccounts[accountID] && this.updateBalanceAccounts[accountID].retryCount < 3) {
-          const findAllAddress = await this.accountAddressModel.findAll({
-            where: { account_id: accountID },
-            attributes: ['accountAddress_id'],
-          });
-          let balance = new BigNumber(0);
-          for (const addressItem of findAllAddress) {
-            const findUTXOByAddress = await this.utxoModel.findAll({
-              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
-              attributes: ['amount'],
-            });
-
-            for (const utxoItem of findUTXOByAddress) {
-              balance = balance.plus(new BigNumber(utxoItem.amount));
-            }
-          }
-
-          try {
-            await this.accountCurrencyModel.update({
-              balance: balance.toFixed(),
-            },
-            {
-              where: {
-                account_id: accountID,
-                currency_id: this.currencyInfo.currency_id,
-              },
-            });
-
-            delete this.updateBalanceAccounts[accountID];
-          } catch (e) {
-            this.updateBalanceAccounts[accountID].retryCount += 1;
-          }
-        } else {
-          this.logger.error(`this.updateBalanceAccounts[${accountID}] update error!`);
-          this.updateBalanceAccounts[accountID].retryCount += 1;
-
-          // if error after 3 block, reset retryCount, and retry it
-          if (this.updateBalanceAccounts[accountID].retryCount > 6) {
-            this.updateBalanceAccounts[accountID].retryCount = 0;
-          }
-        }
-      }
-    } catch (error) {
-      this.logger.debug(`[${this.constructor.name}] updateBalance error: ${error}`);
-      return Promise.reject(error);
-    }
-  }
-
-  async parsePendingTransaction() {
-    this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
-    // step:
-    // 1. find all transaction where status is null(means pending transaction)
-    // 2. get last pending transaction from pendingTransaction table
-    // 3. create transaction which is not in step 1 array
-    // 4. update result which is not in step 2 array
-    try {
-      // 1. find all transaction where status is null(means pending transaction)
-      const transactions = await this.getTransactionsResultNull();
-
-      // 2. get last pending transaction from pendingTransaction table
-      const pendingTxids = await this.getPendingTransactionFromDB();
-
-      // 3. create transaction which is not in step 1 array
-      const newTxids = pendingTxids.filter((pendingTxid) => transactions.every((transaction) => pendingTxid !== transaction.txid));
-      for (const txid of newTxids) {
-        try {
-          const tx = await this.getTransactionByTxidFromPeer(txid);
-          await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.time);
-        } catch (error) {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
-        }
-      }
-
-      // 4. update result which is not in step 2 array
-      const missingTxs = transactions.filter((transaction) => (pendingTxids.every((pendingTxid) => pendingTxid !== transaction.txid) && this.block - transaction.block >= 6));
-      for (const tx of missingTxs) {
-        try {
-          if (tx.block) {
-            await this.transactionModel.update(
-              {
-                result: true,
-              },
-              {
-                where: {
-                  currency_id: this.currencyInfo.currency_id,
-                  txid: tx.txid,
-                },
-              },
-            );
-          } else {
-            const peerTx = await this.getTransactionByTxidFromPeer(tx.txid).catch((error) => error);
-            if (peerTx.blockhash) {
-              const blockData = await this.blockDataFromDB(peerTx.blockhash);
-              tx.block = blockData.block;
-              tx.timestamp = peerTx.blocktime;
-              tx.result = tx.confirmations >= 6 ? true : null;
-            } else if (peerTx.code === -5) {
-              tx.result = false;
-            }
-            await this.transactionModel.update(
-              {
-                block: tx.block,
-                timestamp: tx.timestamp,
-                result: tx.result,
-              },
-              {
-                where: {
-                  currency_id: this.currencyInfo.currency_id,
-                  txid: tx.txid,
-                },
-              },
-            );
-          }
-
-          const findAddressTransaction = await this.addressTransactionModel.findOne({
-            include: [
-              {
-                model: this.transactionModel,
-                attributes: ['transaction_id', 'txid', 'currency_id'],
-                where: {
-                  currency_id: this.currencyInfo.currency_id,
-                  txid: tx.txid,
-                },
-              },
-              {
-                model: this.accountAddressModel,
-                attributes: ['account_id'],
-              },
-            ],
-            attributes: ['addressTransaction_id', 'currency_id', 'transaction_id'],
-          });
-          if (findAddressTransaction) {
-            this.updateBalanceAccounts[findAddressTransaction.AccountAddress.account_id] = { retryCount: 0 };
-          }
-        } catch (error) {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
-        }
-      }
-    } catch (error) {
-      this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
-      return Promise.reject(error);
-    }
   }
 
   static cmd({
