@@ -47,6 +47,7 @@ class BtcParserManagerBase extends ParserManagerBase {
       if (!txs || txs.length < 1) {
         // 2-1. if no parse update balance
         await this.updateBalance();
+        this.updateBalanceAccounts = {};
         this.isParsing = false;
       } else {
         this.jobDoneList = [];
@@ -234,7 +235,7 @@ class BtcParserManagerBase extends ParserManagerBase {
           let balance = new BigNumber(0);
           for (const addressItem of findAllAddress) {
             const findUTXOByAddress = await this.utxoModel.findAll({
-              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: false } },
+              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
               attributes: ['amount'],
             });
 
@@ -275,6 +276,7 @@ class BtcParserManagerBase extends ParserManagerBase {
   }
 
   async parsePendingTransaction() {
+    // ++ too large in btc mainnet, may use msg queue to speedup
     this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
     // step:
     // 1. find all transaction where status is null(means pending transaction)
