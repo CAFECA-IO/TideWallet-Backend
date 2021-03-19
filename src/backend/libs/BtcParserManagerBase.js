@@ -10,6 +10,7 @@ class BtcParserManagerBase extends ParserManagerBase {
     super(blockchainId, config, database, logger);
 
     this.utxoModel = this.database.db.UTXO;
+    this.accountAddressModel = this.database.db.AccountAddress;
     this.receiptModel = this.database.db.Receipt;
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
@@ -66,6 +67,7 @@ class BtcParserManagerBase extends ParserManagerBase {
     this.isParsing = true;
     // job = { ...UnparsedTransaction, success: bool, updateBalanceAccounts }
     this.jobDoneList.push(job);
+    this.updateBalanceAccounts = { ...this.updateBalanceAccounts, ...job.updateBalanceAccounts };
     if (this.jobDoneList.length === this.numberOfJobs) {
       // 3. update failed unparsed retry
       // 4. remove parsed transaction from UnparsedTransaction table
@@ -80,13 +82,12 @@ class BtcParserManagerBase extends ParserManagerBase {
 
         // 4. remove parsed transaction from UnparsedTransaction table
         for (const tx of successParsedTxs) {
-          this.updateBalanceAccounts = { ...this.updateBalanceAccounts, ...job.updateBalanceAccounts };
           await this.removeParsedTx(tx);
         }
 
         this.createJob();
       } catch (error) {
-        this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
+        this.logger.error(`[${this.constructor.name}] doCallback error: ${error}`);
         this.isParsing = false;
         return Promise.resolve();
       }
@@ -268,7 +269,7 @@ class BtcParserManagerBase extends ParserManagerBase {
         }
       }
     } catch (error) {
-      this.logger.debug(`[${this.constructor.name}] updateBalance error: ${error}`);
+      this.logger.error(`[${this.constructor.name}] updateBalance error: ${error}`);
       return Promise.reject(error);
     }
   }

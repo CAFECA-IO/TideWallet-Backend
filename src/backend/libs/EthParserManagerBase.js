@@ -77,7 +77,7 @@ class EthParserManagerBase extends ParserManagerBase {
 
         this.createJob();
       } catch (error) {
-        this.logger.error(`[${this.constructor.name}] doParse error: ${error}`);
+        this.logger.error(`[${this.constructor.name}] doCallback error: ${error}`);
         this.isParsing = false;
         return Promise.resolve();
       }
@@ -108,7 +108,7 @@ class EthParserManagerBase extends ParserManagerBase {
     try {
       await this.parsePendingTransaction();
     } catch (error) {
-      this.logger.debug(`[${this.constructor.name}] updateBalance error: ${error}`);
+      this.logger.error(`[${this.constructor.name}] updateBalance error: ${error}`);
       return Promise.reject(error);
     }
   }
