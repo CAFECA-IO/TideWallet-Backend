@@ -698,7 +698,7 @@ class Blockchain extends Bot {
 
   async BlockHeight() {
     const now = Math.floor(Date.now() / 1000);
-    if (this.cacheBlockchainInfo && (now - this.cacheBlockchainInfo.timestamp) < 30) return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo });
+    if (this.cacheBlockchainInfo && (now - this.cacheBlockchainInfo.timestamp) < 30) return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo.data });
     const findBlockchain = await this.blockchainModel.findAll({});
     const BlockHeightsFromPeer = await Promise.all([
       this.btcBlockHeight('80000000'),
@@ -768,7 +768,7 @@ class Blockchain extends Bot {
       },
     };
 
-    return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo });
+    return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo.data });
   }
 
   async BlockHeightMetrics() {
