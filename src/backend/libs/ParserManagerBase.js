@@ -81,7 +81,7 @@ class ParserManagerBase {
     try {
       const result = await this.currencyModel.findOne({
         where: { blockchain_id: this.bcid, type: 1 },
-        attributes: ['currency_id'],
+        attributes: ['currency_id', 'decimals'],
       });
       return result;
     } catch (error) {

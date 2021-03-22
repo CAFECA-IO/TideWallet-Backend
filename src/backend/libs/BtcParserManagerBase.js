@@ -244,7 +244,7 @@ class BtcParserManagerBase extends ParserManagerBase {
 
           try {
             await this.accountCurrencyModel.update({
-              balance: balance.toFixed(),
+              balance: Utils.dividedByDecimal(balance, this.currencyInfo.decimals),
             },
             {
               where: {
