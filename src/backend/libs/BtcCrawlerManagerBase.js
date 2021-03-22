@@ -1,5 +1,4 @@
 const dvalue = require('dvalue');
-const { v4: uuidv4 } = require('uuid');
 
 const CrawlerManagerBase = require('./CrawlerManagerBase');
 const Utils = require('./Utils');

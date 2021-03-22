@@ -157,6 +157,7 @@ class BtcParserBase extends ParserBase {
     // 5. add mapping table
     // 6. check to address is regist address
     // 7. add mapping table
+    // 8. if vout has account address, and the key index is newest, update number_of_internal_key or number_of_external_key += 1
     this.logger.debug(`[${this.constructor.name}] parseTx(${tx.txid})`);
     const {
       fee, to, source_addresses, destination_addresses, note,
@@ -248,7 +249,7 @@ class BtcParserBase extends ParserBase {
         if (!inputData.coinbase) {
           const findExistUTXO = await this.utxoModel.findOne({
             where: {
-              txid: tx.txid,
+              txid: inputData.txid,
               vout: inputData.vout,
             },
             transaction,
@@ -272,7 +273,7 @@ class BtcParserBase extends ParserBase {
       const _source_addresses = JSON.parse(source_addresses);
       for (let i = 0; i < _source_addresses.length; i++) {
         const sourceAddress = Array.isArray(_source_addresses[i].addresses) ? _source_addresses[i].addresses[0] : _source_addresses[i].addresses;
-        const sourceAddressAmount = Utils.dividedByDecimal(new BigNumber(_source_addresses[i].amount), currencyInfo.decimals);
+        const sourceAddressAmount = _source_addresses[i].amount;
         const accountAddressFrom = await this.accountAddressModel.findOne({
           where: { address: sourceAddress },
           include: [
@@ -310,7 +311,7 @@ class BtcParserBase extends ParserBase {
       const _destination_addresses = JSON.parse(destination_addresses);
       for (let i = 0; i < _destination_addresses.length; i++) {
         const destinationAddress = Array.isArray(_destination_addresses[i].addresses) ? _destination_addresses[i].addresses[0] : _destination_addresses[i].addresses;
-        const destinationAddressAmount = Utils.dividedByDecimal(new BigNumber(_destination_addresses[i].amount), currencyInfo.decimals);
+        const destinationAddressAmount = _destination_addresses[i].amount;
         const accountAddressTo = await this.accountAddressModel.findOne({
           where: { address: destinationAddress },
           include: [
@@ -349,9 +350,18 @@ class BtcParserBase extends ParserBase {
             transaction,
           });
 
-          // 8. if vout has account change address, update number_of_internal_key += 1
-          if (accountAddressTo.chain_index === 1) {
-            const accountCurrency = await this.accountCurrencyModel.increment(
+          // 8. if vout has account address, and the key index is newest, update number_of_internal_key or number_of_external_key += 1
+          const accountCurrency = await this.accountCurrencyModel.findOne(
+            {
+              where: {
+                account_id: accountAddressTo.Account.account_id,
+                currency_id: currencyInfo.currency_id,
+              },
+              transaction,
+            },
+          );
+          if (accountAddressTo.chain_index === 1 && accountCurrency && (accountCurrency.number_of_internal_key === accountAddressTo.key_index)) {
+            const newAccountCurrency = await this.accountCurrencyModel.increment(
               { number_of_internal_key: 1 },
               {
                 where: {
@@ -362,12 +372,12 @@ class BtcParserBase extends ParserBase {
               },
             );
 
-            if (accountCurrency && accountCurrency.length > 0 && accountCurrency[0] && accountCurrency[0][0] && accountCurrency[0][0][0]) {
+            if (newAccountCurrency && newAccountCurrency.length > 0 && newAccountCurrency[0] && newAccountCurrency[0][0] && newAccountCurrency[0][0][0]) {
               const hdWallet = new HDWallet({ extendPublicKey: accountAddressTo.Account.extend_public_key });
               const coinType = accountAddressTo.Account.Blockchain.coin_type;
               const wallet = hdWallet.getWalletInfo({
                 change: 1,
-                index: accountCurrency[0][0][0].number_of_internal_key,
+                index: newAccountCurrency[0][0][0].number_of_internal_key,
                 coinType,
                 blockchainID: accountAddressTo.Account.blockchain_id,
               });
@@ -376,7 +386,39 @@ class BtcParserBase extends ParserBase {
                 accountAddress_id: uuidv4(),
                 account_id: accountAddressTo.Account.account_id,
                 chain_index: 1,
-                key_index: accountCurrency[0][0][0].number_of_internal_key,
+                key_index: newAccountCurrency[0][0][0].number_of_internal_key,
+                public_key: wallet.publicKey,
+                address: wallet.address,
+              });
+            }
+          }
+          if (accountAddressTo.chain_index === 0 && accountCurrency && (accountCurrency.number_of_external_key === accountAddressTo.key_index)) {
+            const newAccountCurrency = await this.accountCurrencyModel.increment(
+              { number_of_external_key: 1 },
+              {
+                where: {
+                  account_id: accountAddressTo.Account.account_id,
+                  currency_id: currencyInfo.currency_id,
+                },
+                transaction,
+              },
+            );
+
+            if (newAccountCurrency && newAccountCurrency.length > 0 && newAccountCurrency[0] && newAccountCurrency[0][0] && newAccountCurrency[0][0][0]) {
+              const hdWallet = new HDWallet({ extendPublicKey: accountAddressTo.Account.extend_public_key });
+              const coinType = accountAddressTo.Account.Blockchain.coin_type;
+              const wallet = hdWallet.getWalletInfo({
+                change: 0,
+                index: newAccountCurrency[0][0][0].number_of_external_key,
+                coinType,
+                blockchainID: accountAddressTo.Account.blockchain_id,
+              });
+
+              await this.accountAddressModel.create({
+                accountAddress_id: uuidv4(),
+                account_id: accountAddressTo.Account.account_id,
+                chain_index: 0,
+                key_index: newAccountCurrency[0][0][0].number_of_external_key,
                 public_key: wallet.publicKey,
                 address: wallet.address,
               });
