@@ -272,7 +272,7 @@ class BtcParserBase extends ParserBase {
       const _source_addresses = JSON.parse(source_addresses);
       for (let i = 0; i < _source_addresses.length; i++) {
         const sourceAddress = Array.isArray(_source_addresses[i].addresses) ? _source_addresses[i].addresses[0] : _source_addresses[i].addresses;
-        const sourceAddressAmount = Utils.dividedByDecimal(new BigNumber(_source_addresses[i].amount), currencyInfo.decimals);
+        const sourceAddressAmount = _source_addresses[i].amount;
         const accountAddressFrom = await this.accountAddressModel.findOne({
           where: { address: sourceAddress },
           include: [
@@ -310,7 +310,7 @@ class BtcParserBase extends ParserBase {
       const _destination_addresses = JSON.parse(destination_addresses);
       for (let i = 0; i < _destination_addresses.length; i++) {
         const destinationAddress = Array.isArray(_destination_addresses[i].addresses) ? _destination_addresses[i].addresses[0] : _destination_addresses[i].addresses;
-        const destinationAddressAmount = Utils.dividedByDecimal(new BigNumber(_destination_addresses[i].amount), currencyInfo.decimals);
+        const destinationAddressAmount = _destination_addresses[i].amount;
         const accountAddressTo = await this.accountAddressModel.findOne({
           where: { address: destinationAddress },
           include: [
