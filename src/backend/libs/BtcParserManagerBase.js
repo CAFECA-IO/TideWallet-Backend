@@ -1,9 +1,7 @@
-const { v4: uuidv4 } = require('uuid');
 const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue');
 const ParserManagerBase = require('./ParserManagerBase');
 const Utils = require('./Utils');
-const HDWallet = require('./HDWallet');
 
 class BtcParserManagerBase extends ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
@@ -14,6 +12,7 @@ class BtcParserManagerBase extends ParserManagerBase {
     this.receiptModel = this.database.db.Receipt;
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
+    this.accountCurrencyModel = this.database.db.AccountCurrency;
     this.options = {};
     this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
     this.decimal = 8;
@@ -47,7 +46,6 @@ class BtcParserManagerBase extends ParserManagerBase {
       if (!txs || txs.length < 1) {
         // 2-1. if no parse update balance
         await this.updateBalance();
-        this.updateBalanceAccounts = {};
         this.isParsing = false;
       } else {
         this.jobDoneList = [];
@@ -235,7 +233,7 @@ class BtcParserManagerBase extends ParserManagerBase {
           let balance = new BigNumber(0);
           for (const addressItem of findAllAddress) {
             const findUTXOByAddress = await this.utxoModel.findAll({
-              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.not]: null } },
+              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.eq]: null } },
               attributes: ['amount'],
             });
 
@@ -257,6 +255,7 @@ class BtcParserManagerBase extends ParserManagerBase {
 
             delete this.updateBalanceAccounts[accountID];
           } catch (e) {
+            this.logger.error(`this.updateBalanceAccounts[${accountID}] update error: ${e}`);
             this.updateBalanceAccounts[accountID].retryCount += 1;
           }
         } else {
