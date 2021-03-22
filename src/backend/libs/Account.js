@@ -567,7 +567,8 @@ class Account extends Bot {
               : null;
             txs.push({
               txid: txInfo.TokenTransaction.Transaction.txid,
-              status: (isToken) ? txInfo.TokenTransaction.result : 'success',
+              // eslint-disable-next-line no-nested-ternary
+              status: (isToken) ? (txInfo.TokenTransaction.result ? 'success' : 'failed') : 'success',
               amount,
               symbol: findAccountCurrency.Currency.symbol, // "unit"
               direction: txInfo.TokenTransaction.direction === 0 ? 'send' : 'receive',
