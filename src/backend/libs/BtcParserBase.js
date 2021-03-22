@@ -248,7 +248,7 @@ class BtcParserBase extends ParserBase {
         if (!inputData.coinbase) {
           const findExistUTXO = await this.utxoModel.findOne({
             where: {
-              txid: tx.txid,
+              txid: inputData.txid,
               vout: inputData.vout,
             },
             transaction,
