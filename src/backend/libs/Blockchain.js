@@ -678,7 +678,7 @@ class Blockchain extends Bot {
   async findBlockScannedHeight(blockchain_id) {
     const findBtcMainnetUnparsedTxTimestamp = await this.unparsedTransactionModel.findOne({
       where: { blockchain_id, retry: 0 },
-      order: [['unparsedTransaction_id', 'ASC']],
+      order: [['timestamp', 'ASC']],
       attributes: ['timestamp'],
     });
 
