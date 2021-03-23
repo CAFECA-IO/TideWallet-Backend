@@ -521,6 +521,7 @@ class Blockchain extends Bot {
         attributes: ['currency_id', 'exchange_rate', 'symbol'],
         where: {
           [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
+          exchange_rate: { [this.Sequelize.Op.not]: null },
         },
       });
       const payload = [];
