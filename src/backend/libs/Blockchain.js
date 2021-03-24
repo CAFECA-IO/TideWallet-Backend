@@ -521,6 +521,7 @@ class Blockchain extends Bot {
         attributes: ['currency_id', 'exchange_rate', 'symbol'],
         where: {
           [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
+          exchange_rate: { [this.Sequelize.Op.not]: null },
         },
       });
       const payload = [];
@@ -677,7 +678,7 @@ class Blockchain extends Bot {
   async findBlockScannedHeight(blockchain_id) {
     const findBtcMainnetUnparsedTxTimestamp = await this.unparsedTransactionModel.findOne({
       where: { blockchain_id, retry: 0 },
-      order: [['unparsedTransaction_id', 'ASC']],
+      order: [['timestamp', 'ASC']],
       attributes: ['timestamp'],
     });
 

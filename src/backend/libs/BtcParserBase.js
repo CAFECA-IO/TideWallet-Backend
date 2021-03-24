@@ -31,7 +31,7 @@ class BtcParserBase extends ParserBase {
       const unParsedTx = job;
       const transaction = JSON.parse(unParsedTx.transaction);
       // await this.parseTx(transaction, unParsedTx.timestamp);
-      await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, transaction.time);
+      await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, unParsedTx.timestamp);
 
       job.success = true;
       job.updateBalanceAccounts = this.updateBalanceAccounts;

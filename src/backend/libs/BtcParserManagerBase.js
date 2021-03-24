@@ -294,7 +294,7 @@ class BtcParserManagerBase extends ParserManagerBase {
       for (const txid of newTxids) {
         try {
           const tx = await this.getTransactionByTxidFromPeer(txid);
-          await BtcParserManagerBase.parseTx.call(this, tx, this.currencyInfo, tx.time);
+          await BtcParserManagerBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
         } catch (error) {
           this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
         }
