@@ -41,7 +41,9 @@ class Receptor extends Bot {
       .then(() => this.createPem())
       .then((options) => {
         const app = new Koa();
-        app.use(staticServe(this.config.base.static))
+        app
+          .use(Utils.crossOrigin())
+          .use(staticServe(this.config.base.static))
           .use(bodyParser({ multipart: true }))
           .use(this.router.routes())
           .use(this.router.allowedMethods())
