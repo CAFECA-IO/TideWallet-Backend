@@ -43,7 +43,6 @@ class Receptor extends Bot {
         const app = new Koa();
         const corsOptions = {
           credentials: true,
-          allowMethods: '*',
         };
         app
           .use(Utils.crossOrigin(corsOptions))

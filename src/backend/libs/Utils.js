@@ -622,7 +622,7 @@ class Utils {
         if (options.credentials === true) {
           if (origin === '*') {
             // `credentials` can't be true when the `origin` is set to `*`
-            ctx.remove('Access-Control-Allow-Credentials');
+            // -- ctx.remove('Access-Control-Allow-Credentials');
           } else {
             ctx.set('Access-Control-Allow-Credentials', 'true');
           }
