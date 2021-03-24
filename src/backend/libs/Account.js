@@ -780,7 +780,7 @@ class Account extends Bot {
         txid: utxo.txid,
         utxo_id: utxo.utxo_id,
         vout: utxo.vout,
-        'type:': this._formatUTXOType(utxo.type),
+        type: utxo.type,
         amount: utxo.amount,
         script: utxo.script,
         timestamp: utxo.on_block_timestamp,
