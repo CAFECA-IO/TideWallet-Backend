@@ -8,6 +8,7 @@ const bodyParser = require('koa-body');
 const staticServe = require('koa-static');
 const compress = require('koa-compress');
 const helmet = require('koa-helmet');
+const cors = require('koa-cors');
 const zlib = require('zlib');
 const Utils = require('./Utils');
 const ResponseFormat = require('./ResponseFormat');
@@ -45,7 +46,7 @@ class Receptor extends Bot {
           credentials: true,
         };
         app
-          .use(Utils.crossOrigin(corsOptions))
+          .use(cors(corsOptions))
           .use(staticServe(this.config.base.static))
           .use(bodyParser({ multipart: true }))
           .use(this.router.routes())
