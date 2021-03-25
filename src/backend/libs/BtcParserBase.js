@@ -138,10 +138,12 @@ class BtcParserBase extends ParserBase {
       }
     }
 
+    // if from = 0, it from COINBASE
+    const fee = from === new BigNumber(0) ? new BigNumber(0) : new BigNumber(from).minus(new BigNumber(to));
     return {
       from: Utils.multipliedByDecimal(from, this.decimal),
       to: Utils.multipliedByDecimal(to, this.decimal),
-      fee: new BigNumber(from).minus(new BigNumber(to)),
+      fee,
       source_addresses: JSON.stringify(source_addresses),
       destination_addresses: JSON.stringify(destination_addresses),
       note,

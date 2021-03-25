@@ -154,7 +154,7 @@ class Manager extends Bot {
           result.push(new BtcParserManager(this.config, this.database, this.logger));
           break;
         case 'bitcoin_testnet':
-          result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
+          // result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
           result.push(new BtcTestnetParserManager(this.config, this.database, this.logger));
           break;
         case 'ethereum_mainnet':
