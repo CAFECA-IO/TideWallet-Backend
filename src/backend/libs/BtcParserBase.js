@@ -101,7 +101,7 @@ class BtcParserBase extends ParserBase {
       if (inputData.txid) {
         const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid, vout: inputData.vout } });
         if (findUXTO) {
-          from = from.plus(new BigNumber(findUXTO.amount));
+          from = from.plus(Utils.multipliedByDecimal(new BigNumber(findUXTO.amount), this.decimal));
         }
 
         // TODO: change use promise all
@@ -144,6 +144,8 @@ class BtcParserBase extends ParserBase {
       }
     }
 
+    console.log('to:', to.toFixed());
+    console.log('to:', Utils.multipliedByDecimal(to, this.decimal));
     // if from = 0, it from COINBASE
     const fee = from === new BigNumber(0) ? new BigNumber(0) : new BigNumber(from).minus(new BigNumber(to));
     return {
@@ -188,7 +190,7 @@ class BtcParserBase extends ParserBase {
           fee: Utils.multipliedByDecimal(fee, currencyInfo.decimals),
           note,
           block: tx.height ? tx.height : null,
-          result: tx.confirmations >= 6 ? true : null,
+          result: tx.confirmations >= 6,
         },
         transaction,
       });
