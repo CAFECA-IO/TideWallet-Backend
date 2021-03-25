@@ -99,7 +99,7 @@ class BtcParserBase extends ParserBase {
     for (const inputData of tx.vin) {
       // if coinbase, continue
       if (inputData.txid) {
-        const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid } });
+        const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid, vout: inputData.vout } });
         if (findUXTO) {
           from = from.plus(new BigNumber(findUXTO.amount));
         }
