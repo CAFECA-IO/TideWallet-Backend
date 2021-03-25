@@ -1,4 +1,5 @@
 const Bot = require('./Bot');
+const Utils = require('./Utils');
 const ResponseFormat = require('./ResponseFormat');
 const Codes = require('./Codes');
 
@@ -28,28 +29,32 @@ class Explore extends Bot {
         offset: Number(index),
         limit: Number(limit) + 1,
         order: [['transaction_id', 'DESC']],
-        attributes: ['transaction_id', 'currency_id', 'txid', 'timestamp', 'source_addresses', 'destination_addresses', 'amount', 'block'],
+        attributes: ['transaction_id', 'currency_id', 'txid', 'timestamp', 'source_addresses', 'destination_addresses', 'amount', 'block', 'fee'],
         include: [
           {
             model: this.currencyModel,
-            attributes: ['name'],
+            attributes: ['name', 'icon', 'symbol', 'decimals'],
           },
         ],
         raw: true,
       });
 
-      const items = findTransactionList.map((item) => {
-        const result = { ...item };
-        result.currency_name = result['Currency.name'];
-        delete result['Currency.name'];
-        return result;
-      });
-      const findAllAmount = await this.transactionModel.findAndCountAll({});
-
+      const items = findTransactionList.map((item) => ({
+        iconUrl: item['Currency.icon'],
+        txHash: item.txid,
+        symbol: item['Currency.symbol'],
+        block: item.block,
+        timestamp: item.timestamp,
+        from: item.source_addresses,
+        to: item.destination_addresses,
+        value: Utils.dividedByDecimal(item.amount, item['Currency.decimals']),
+        fee: Utils.dividedByDecimal(item.fee, item['Currency.decimals']),
+      }));
+      const findAllAmount = await this.transactionModel.count();
       const meta = {
         hasNext: false,
         nextIndex: 0,
-        count: findAllAmount.count || 0,
+        count: findAllAmount || 0,
       };
 
       if (items.length > Number(limit)) {
