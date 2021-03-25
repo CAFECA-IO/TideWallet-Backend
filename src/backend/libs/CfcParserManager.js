@@ -1,5 +1,4 @@
 const EthParserManagerBase = require('./EthParserManagerBase');
-const CfcParser = require('./CfcParser');
 
 class CfcParserManager extends EthParserManagerBase {
   constructor(config, database, logger) {
@@ -10,13 +9,6 @@ class CfcParserManager extends EthParserManagerBase {
 
   async init() {
     await super.init();
-
-    // add parser
-    for (let i = 0; i < this.maxParsers; i++) {
-      const parser = new CfcParser(this.config, this.database, this.logger);
-      await parser.init();
-      this.parsers.push(parser);
-    }
   }
 }
 
