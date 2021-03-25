@@ -19,6 +19,7 @@ class Blockchain extends Bot {
     this.name = 'Blockchain';
     this.tags = {};
     this.cacheBlockchainInfo = {};
+    this.updateBalanceAccounts = {};
   }
 
   init({
@@ -464,7 +465,7 @@ class Blockchain extends Bot {
           if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
           if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
 
-          console.log('rpc response:', data);
+          console.log('rpc response:', JSON.stringify(data));
 
           const findCurrency = await this.currencyModel.findOne({
             where: {
