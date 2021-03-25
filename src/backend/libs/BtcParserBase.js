@@ -63,11 +63,17 @@ class BtcParserBase extends ParserBase {
     return Promise.reject(data.error);
   }
 
-  async getTransactionByTxidFromPeer(txid) {
+  static async getTransactionByTxidFromPeer(txid) {
     this.logger.debug(`[${this.constructor.name}] getTransactionByTxidFromPeer(${txid})`);
-    const type = 'getTransaction';
-    const options = dvalue.clone(this.options);
-    options.data = this.constructor.cmd({ type, txid });
+
+    const blockchainConfig = Utils.getBlockchainConfig('80000001');
+    const options = { ...blockchainConfig };
+    options.data = {
+      jsonrpc: '1.0',
+      method: 'getrawtransaction',
+      params: [txid, true],
+      id: dvalue.randomID(),
+    };
     const checkId = options.data.id;
     const data = await Utils.BTCRPC(options);
     if (data instanceof Object) {
@@ -99,7 +105,7 @@ class BtcParserBase extends ParserBase {
         }
 
         // TODO: change use promise all
-        const txInfo = await this.getTransactionByTxidFromPeer(inputData.txid);
+        const txInfo = await BtcParserBase.getTransactionByTxidFromPeer.call(this, inputData.txid);
         if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
           if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.addresses) {
             source_addresses.push({
