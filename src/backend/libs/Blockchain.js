@@ -2,6 +2,7 @@
 const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue'); const { v4: uuidv4 } = require('uuid');
 const ecrequest = require('ecrequest');
+// ++ remove after extract to instance class
 const BtcParserBase = require('./BtcParserBase');
 const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
 const Codes = require('./Codes');
@@ -32,6 +33,7 @@ class Blockchain extends Bot {
       this.unparsedTransactionModel = this.database.db.UnparsedTransaction;
 
       // used by BtcParserBase.parseTx.call
+      // ++ remove after extract to instance class
       this.transactionModel = this.database.db.Transaction;
       this.accountAddressModel = this.database.db.AccountAddress;
       this.utxoModel = this.database.db.UTXO;
@@ -392,6 +394,7 @@ class Blockchain extends Bot {
       return;
     }
     try {
+      // ++ change after extract to instance class
       await BtcParserBase.parseTx.call(this, tx, currencyInfo, 0);
     } catch (error) {
       this.logger.error('saveBTCPublishTransaction retry error:', error.message);
