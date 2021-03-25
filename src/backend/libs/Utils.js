@@ -906,6 +906,136 @@ class Utils {
     for (let i = 0; i < length; i++) { key += charset.charAt(Math.floor(Math.random() * charset.length)); }
     return key;
   }
+
+  static async getTokenNameFromPeer(options, address) {
+    try {
+      const command = '0x06fdde03'; // erc20 get name
+      options.data = {
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{
+          to: address,
+          data: command,
+        }, 'latest'],
+        id: dvalue.randomID(),
+      };
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error('getTokenNameFromPeer fail');
+          return null;
+        }
+        if (data.result) {
+          const nameEncode = data.result;
+          if (nameEncode.length !== 194) return nameEncode;
+          const name = this.web3.eth.abi.decodeParameter('string', nameEncode);
+          return Promise.resolve(name);
+        }
+      }
+      this.logger.error(`getTokenNameFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`getTokenNameFromPeer(${address}) error: ${error}`);
+      return null;
+    }
+  }
+
+  static async getTokenSymbolFromPeer(options, address) {
+    try {
+      const command = '0x95d89b41'; // erc20 get synbol
+      options.data = {
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{
+          to: address,
+          data: command,
+        }, 'latest'],
+        id: dvalue.randomID(),
+      };
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error('getTokenSymbolFromPeer fail');
+          return null;
+        }
+        if (data.result) {
+          const symbolEncode = data.result;
+          if (symbolEncode.length !== 194) return symbolEncode;
+          const symbol = this.web3.eth.abi.decodeParameter('string', symbolEncode);
+          return Promise.resolve(symbol);
+        }
+      }
+      this.logger.error(`getTokenSymbolFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`getTokenSymbolFromPeer(${address}) error: ${error}`);
+      return null;
+    }
+  }
+
+  static async getTokenDecimalFromPeer(options, address) {
+    try {
+      const command = '0x313ce567'; // erc20 get decimals
+      options.data = {
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{
+          to: address,
+          data: command,
+        }, 'latest'],
+        id: dvalue.randomID(),
+      };
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error('getTokenDecimalFromPeer fail');
+          return null;
+        }
+        const decimals = data.result;
+        if (data.result) { return Promise.resolve(parseInt(decimals, 16)); }
+      }
+      this.logger.error(`getTokenDecimalFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`getTokenDecimalFromPeer(${address}) error: ${error}`);
+      return null;
+    }
+  }
+
+  static async getTokenTotalSupplyFromPeer(options, address) {
+    try {
+      const command = '0x18160ddd'; // erc20 get total supply
+      options.data = {
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{
+          to: address,
+          data: command,
+        }, 'latest'],
+        id: dvalue.randomID(),
+      };
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error('getTokenTotalSupplyFromPeer fail');
+          return null;
+        }
+        if (data.result) {
+          const bnTotalSupply = new BigNumber(data.result, 16);
+          return Promise.resolve(bnTotalSupply.toFixed());
+        }
+      }
+      this.logger.error(`getTokenTotalSupplyFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`getTokenTotalSupplyFromPeer(${address}) error: ${error}`);
+      return null;
+    }
+  }
 }
 
 module.exports = Utils;

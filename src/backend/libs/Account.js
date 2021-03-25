@@ -1,9 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
-const Web3 = require('web3');
 const BigNumber = require('bignumber.js');
 const ecrequest = require('ecrequest');
-const EthRopstenParser = require('./EthRopstenParser');
-const EthParser = require('./EthParser');
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Utils = require('./Utils');
@@ -82,25 +79,26 @@ class Account extends Bot {
         } else {
           // if not found token in DB, parse token contract info from blockchain
 
-          let ParserClass = '';
+          let options = '';
           switch (blockchain_id) {
             case '8000003C':
-              ParserClass = EthParser;
+              options = this.config.blockchain.ethereum_mainnet;
               break;
             case '8000025B':
-              ParserClass = EthRopstenParser;
+              options = this.config.blockchain.ethereum_testnet;
+              break;
+            case '80000CFC':
+              options = this.config.blockchain.cafeca;
               break;
             default:
               return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
           }
 
-          const _parserInstance = new ParserClass(this.config, this.database, this.logger);
-          _parserInstance.web3 = new Web3();
           const tokenInfoFromPeer = await Promise.all([
-            _parserInstance.getTokenNameFromPeer(contract),
-            _parserInstance.getTokenSymbolFromPeer(contract),
-            _parserInstance.getTokenDecimalFromPeer(contract),
-            _parserInstance.getTokenTotalSupplyFromPeer(contract),
+            Utils.getTokenNameFromPeer(options, contract),
+            Utils.getTokenSymbolFromPeer(options, contract),
+            Utils.getTokenDecimalFromPeer(options, contract),
+            Utils.getTokenTotalSupplyFromPeer(options, contract),
           ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
           if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
 
