@@ -472,7 +472,7 @@ class Blockchain extends Bot {
               blockchain_id,
               type: 1,
             },
-            attributes: ['currency_id', 'decimals', 'blockchain_id'],
+            attributes: ['currency_id', 'decimals', 'blockchain_id', 'decimals'],
             include: [
               {
                 model: this.blockchainModel,
@@ -482,7 +482,7 @@ class Blockchain extends Bot {
           });
 
           this.bcid = blockchain_id;
-
+          this.decimal = findCurrency.decimals;
           const _data = { ...data.result, height: findCurrency.Blockchain.block };
 
           await this.saveBTCPublishTransaction(_data, findCurrency, 0);
