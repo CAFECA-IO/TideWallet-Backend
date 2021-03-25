@@ -1,11 +1,9 @@
 /* eslint-disable no-case-declarations */
 const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue'); const { v4: uuidv4 } = require('uuid');
-const Web3 = require('web3');
 const ecrequest = require('ecrequest');
-const EthParser = require('./EthParser');
+// ++ remove after extract to instance class
 const BtcParserBase = require('./BtcParserBase');
-const EthRopstenParser = require('./EthRopstenParser');
 const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
 const Codes = require('./Codes');
 const Utils = require('./Utils');
@@ -35,6 +33,7 @@ class Blockchain extends Bot {
       this.unparsedTransactionModel = this.database.db.UnparsedTransaction;
 
       // used by BtcParserBase.parseTx.call
+      // ++ remove after extract to instance class
       this.transactionModel = this.database.db.Transaction;
       this.accountAddressModel = this.database.db.AccountAddress;
       this.utxoModel = this.database.db.UTXO;
@@ -395,6 +394,7 @@ class Blockchain extends Bot {
       return;
     }
     try {
+      // ++ change after extract to instance class
       await BtcParserBase.parseTx.call(this, tx, currencyInfo, 0);
     } catch (error) {
       this.logger.error('saveBTCPublishTransaction retry error:', error.message);
@@ -564,24 +564,25 @@ class Blockchain extends Bot {
       }
 
       // if not found token in DB, parse token contract info from blockchain
-      let ParserClass = '';
+      let options = '';
       switch (blockchain_id) {
         case '8000003C':
-          ParserClass = EthParser;
+          options = this.config.blockchain.ethereum_mainnet;
           break;
         case '8000025B':
-          ParserClass = EthRopstenParser;
+          options = this.config.blockchain.ethereum_testnet;
+          break;
+        case '80000CFC':
+          options = this.config.blockchain.cafeca;
           break;
         default:
           return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
       }
-      const _parserInstance = new ParserClass(this.config, this.database, this.logger);
-      _parserInstance.web3 = new Web3();
       const tokenInfoFromPeer = await Promise.all([
-        _parserInstance.getTokenNameFromPeer(contract),
-        _parserInstance.getTokenSymbolFromPeer(contract),
-        _parserInstance.getTokenDecimalFromPeer(contract),
-        _parserInstance.getTokenTotalSupplyFromPeer(contract),
+        Utils.getTokenNameFromPeer(options, contract),
+        Utils.getTokenSymbolFromPeer(options, contract),
+        Utils.getTokenDecimalFromPeer(options, contract),
+        Utils.getTokenTotalSupplyFromPeer(options, contract),
       ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
       if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
 

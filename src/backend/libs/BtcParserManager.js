@@ -1,5 +1,4 @@
 const BtcParserManagerBase = require('./BtcParserManagerBase');
-const BtcParser = require('./BtcParser');
 
 class BtcParserManager extends BtcParserManagerBase {
   constructor(config, database, logger) {
@@ -10,13 +9,6 @@ class BtcParserManager extends BtcParserManagerBase {
 
   async init() {
     await super.init();
-
-    // add parser
-    for (let i = 0; i < this.maxParsers; i++) {
-      const parser = new BtcParser(this.config, this.database, this.logger);
-      await parser.init();
-      this.parsers.push(parser);
-    }
   }
 }
 

@@ -17,8 +17,6 @@ class ParserManagerBase {
     this.transactionModel = this.database.db.Transaction;
     this.pendingTransactionModel = this.database.db.PendingTransaction;
 
-    this.parsers = [];
-    this.maxParsers = this.config.rabbitmq.maxParsers || 5;
     this.amqpHost = this.config.rabbitmq.host;
   }
 
