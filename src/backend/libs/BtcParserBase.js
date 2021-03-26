@@ -99,11 +99,11 @@ class BtcParserBase extends ParserBase {
     for (const inputData of tx.vin) {
       // if coinbase, continue
       if (inputData.txid) {
-        const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid, vout: inputData.vout } });
-        if (findUXTO) {
-          console.log('findUXTO.amount:', findUXTO.amount);
-          from = from.plus(Utils.dividedByDecimal(findUXTO.amount, this.decimal));
-        }
+        // const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid, vout: inputData.vout } });
+        // if (findUXTO) {
+        //   from = from.plus(Utils.dividedByDecimal(findUXTO.amount, this.decimal));
+        //   console.log('findUXTO.amount:', from);
+        // }
         // TODO: change use promise all
         const txInfo = await BtcParserBase.getTransactionByTxidFromPeer.call(this, inputData.txid);
         if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
