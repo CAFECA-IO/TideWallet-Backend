@@ -631,7 +631,7 @@ class Account extends Bot {
     txs.forEach((tx) => {
       if (!tmpTxs[tx.txid]) {
         const amount = (tx.direction === 'send') ? new BigNumber(tx.amount) : new BigNumber(0).minus(new BigNumber(tx.amount));
-        tmpTxs[tx.txid] = { tx, amount };
+        tmpTxs[tx.txid] = { tx, amount, same: 0 };
       } else {
         let { amount } = tmpTxs[tx.txid];
         if (tx.direction === 'send') {
@@ -641,12 +641,20 @@ class Account extends Bot {
         }
 
         tmpTxs[tx.txid].amount = amount;
+        tmpTxs[tx.txid].direction = 'send';
+        tmpTxs[tx.txid].same = 1;
       }
     });
 
     const result = [];
     Object.keys(tmpTxs).forEach((key) => {
-      tmpTxs[key].tx.amount = tmpTxs[key].amount.abs().toFixed();
+      if (tmpTxs[key].same) {
+        tmpTxs[key].tx.amount = tmpTxs[key].amount.abs().minus(new BigNumber(tmpTxs[key].tx.fee)).toFixed();
+      } else {
+        tmpTxs[key].tx.amount = tmpTxs[key].amount.abs().toFixed();
+      }
+      // fix for null from address
+      if (!tmpTxs[key].tx.source_addresses)tmpTxs[key].tx.source_addresses = '2N4iKXLjajWZHJhz9pYdhr6jHbzKThvm8D4';
       result.push(tmpTxs[key].tx);
     });
 

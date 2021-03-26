@@ -387,7 +387,7 @@ class Blockchain extends Bot {
     }
   }
 
-  async saveBTCPublishTransaction(tx, currencyInfo, retryCount = 0) {
+  async saveBTCPublishTransaction(tx, currencyInfo, timestamp, retryCount = 0) {
     if (retryCount > 3) {
       this.logger.error('saveBTCPublishTransaction retry error');
       this.logger.error('saveBTCPublishTransaction tx', JSON.stringify(tx));
@@ -396,11 +396,11 @@ class Blockchain extends Bot {
     }
     try {
       // ++ change after extract to instance class
-      await BtcParserBase.parseTx.call(this, tx, currencyInfo, 0);
+      await BtcParserBase.parseTx.call(this, tx, currencyInfo, timestamp);
     } catch (error) {
       this.logger.error('saveBTCPublishTransaction retry error:', error.message);
       setTimeout(() => {
-        this.saveBTCPublishTransaction(tx, currencyInfo, retryCount += 1);
+        this.saveBTCPublishTransaction(tx, currencyInfo, timestamp, retryCount += 1);
       }, 300);
     }
   }
@@ -483,7 +483,7 @@ class Blockchain extends Bot {
           this.decimal = findCurrency.decimals;
           const _data = { ...data.result, height: findCurrency.Blockchain.block };
 
-          await this.saveBTCPublishTransaction(_data, findCurrency, 0);
+          await this.saveBTCPublishTransaction(_data, findCurrency, Math.floor(Date.now() / 1000), 0);
 
           return new ResponseFormat({
             message: 'Publish Transaction',
