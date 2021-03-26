@@ -641,6 +641,7 @@ class Account extends Bot {
         }
 
         tmpTxs[tx.txid].amount = amount;
+        tmpTxs[tx.txid].direction = 'send';
       }
     });
 
@@ -703,10 +704,10 @@ class Account extends Bot {
       }
 
       // merge internal txs
-      const payload = this._mergeInternalTxs({ txs: result });
+      // const payload = this._mergeInternalTxs({ txs: result });
 
       // sort by timestamps
-      payload.sort((a, b) => b.timestamp - a.timestamp);
+      const payload = result.sort((a, b) => b.timestamp - a.timestamp);
 
       return new ResponseFormat({
         message: 'List Transactions',
