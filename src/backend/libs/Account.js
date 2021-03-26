@@ -653,6 +653,7 @@ class Account extends Bot {
       } else {
         tmpTxs[key].tx.amount = tmpTxs[key].amount.abs().toFixed();
       }
+      if (!tmpTxs[key].tx.source_addresses)tmpTxs[key].tx.source_addresses = '0';
       result.push(tmpTxs[key].tx);
     });
 
