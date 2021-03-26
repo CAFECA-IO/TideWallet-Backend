@@ -653,8 +653,6 @@ class Account extends Bot {
       } else {
         tmpTxs[key].tx.amount = tmpTxs[key].amount.abs().toFixed();
       }
-      if (!tmpTxs[key].tx.timestamp)tmpTxs[key].tx.timestamp = 1616759040;
-      if (!tmpTxs[key].tx.source_addresses) tmpTxs[key].tx.source_addresses = '2N4iKXLjajWZHJhz9pYdhr6jHbzKThvm8D4';
       result.push(tmpTxs[key].tx);
     });
 
