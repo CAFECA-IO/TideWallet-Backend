@@ -387,7 +387,7 @@ class Blockchain extends Bot {
     }
   }
 
-  async saveBTCPublishTransaction(tx, currencyInfo, retryCount = 0) {
+  async saveBTCPublishTransaction(tx, currencyInfo, timestamp, retryCount = 0) {
     if (retryCount > 3) {
       this.logger.error('saveBTCPublishTransaction retry error');
       this.logger.error('saveBTCPublishTransaction tx', JSON.stringify(tx));
@@ -396,11 +396,11 @@ class Blockchain extends Bot {
     }
     try {
       // ++ change after extract to instance class
-      await BtcParserBase.parseTx.call(this, tx, currencyInfo, 0);
+      await BtcParserBase.parseTx.call(this, tx, currencyInfo, timestamp);
     } catch (error) {
       this.logger.error('saveBTCPublishTransaction retry error:', error.message);
       setTimeout(() => {
-        this.saveBTCPublishTransaction(tx, currencyInfo, retryCount += 1);
+        this.saveBTCPublishTransaction(tx, currencyInfo, timestamp, retryCount += 1);
       }, 300);
     }
   }
@@ -483,7 +483,7 @@ class Blockchain extends Bot {
           this.decimal = findCurrency.decimals;
           const _data = { ...data.result, height: findCurrency.Blockchain.block };
 
-          await this.saveBTCPublishTransaction(_data, findCurrency, 0);
+          await this.saveBTCPublishTransaction(_data, findCurrency, Math.floor(Date.now() / 1000), 0);
 
           return new ResponseFormat({
             message: 'Publish Transaction',
@@ -786,30 +786,31 @@ class Blockchain extends Bot {
   async BlockHeightMetrics() {
     const data = await this.BlockHeight();
 
-    return `BTC_MAINNET_BLOCKHEIGHT ${data.payload.BTC_MAINNET.blockHeight}
-BTC_MAINNET_DB_BLOCKHEIGHT ${data.payload.BTC_MAINNET.db_blockHeight}
-BTC_MAINNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BTC_MAINNET.blockScanned_blockHeight}
-BTC_MAINNET_UNCRAWLERBLOCK ${data.payload.BTC_MAINNET.unCrawlerBlock}
-BTC_MAINNET_UNPARSEBLOCK ${data.payload.BTC_MAINNET.unParseBlock}
+    return `
+    BTC_MAINNET_BLOCKHEIGHT ${data.payload.BTC_MAINNET.blockHeight}
+    BTC_MAINNET_DB_BLOCKHEIGHT ${data.payload.BTC_MAINNET.db_blockHeight}
+    BTC_MAINNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BTC_MAINNET.blockScanned_blockHeight}
+    BTC_MAINNET_UNCRAWLERBLOCK ${data.payload.BTC_MAINNET.unCrawlerBlock}
+    BTC_MAINNET_UNPARSEBLOCK ${data.payload.BTC_MAINNET.unParseBlock}
 
-BTC_TESTNET_BLOCKHEIGHT ${data.payload.BTC_TESTNET.blockHeight}
-BTC_TESTNET_DB_BLOCKHEIGHT ${data.payload.BTC_TESTNET.db_blockHeight}
-BTC_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BTC_TESTNET.blockScanned_blockHeight}
-BTC_TESTNET_UNCRAWLERBLOCK ${data.payload.BTC_TESTNET.unCrawlerBlock}
-BTC_TESTNET_UNPARSEBLOCK ${data.payload.BTC_TESTNET.unParseBlock}
+    BTC_TESTNET_BLOCKHEIGHT ${data.payload.BTC_TESTNET.blockHeight}
+    BTC_TESTNET_DB_BLOCKHEIGHT ${data.payload.BTC_TESTNET.db_blockHeight}
+    BTC_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BTC_TESTNET.blockScanned_blockHeight}
+    BTC_TESTNET_UNCRAWLERBLOCK ${data.payload.BTC_TESTNET.unCrawlerBlock}
+    BTC_TESTNET_UNPARSEBLOCK ${data.payload.BTC_TESTNET.unParseBlock}
 
-ETH_MAINNET_BLOCKHEIGHT ${data.payload.ETH_MAINNET.blockHeight}
-ETH_MAINNET_DB_BLOCKHEIGHT ${data.payload.ETH_MAINNET.db_blockHeight}
-ETH_MAINNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.ETH_MAINNET.blockScanned_blockHeight}
-ETH_MAINNET_UNCRAWLERBLOCK ${data.payload.ETH_MAINNET.unCrawlerBlock}
-ETH_MAINNET_UNPARSEBLOCK ${data.payload.ETH_MAINNET.unParseBlock}
+    ETH_MAINNET_BLOCKHEIGHT ${data.payload.ETH_MAINNET.blockHeight}
+    ETH_MAINNET_DB_BLOCKHEIGHT ${data.payload.ETH_MAINNET.db_blockHeight}
+    ETH_MAINNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.ETH_MAINNET.blockScanned_blockHeight}
+    ETH_MAINNET_UNCRAWLERBLOCK ${data.payload.ETH_MAINNET.unCrawlerBlock}
+    ETH_MAINNET_UNPARSEBLOCK ${data.payload.ETH_MAINNET.unParseBlock}
 
-ETH_TESTNET_BLOCKHEIGHT ${data.payload.ETH_TESTNET.blockHeight}
-ETH_TESTNET_DB_BLOCKHEIGHT ${data.payload.ETH_TESTNET.db_blockHeight}
-ETH_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.ETH_TESTNET.blockScanned_blockHeight}
-ETH_TESTNET_UNCRAWLERBLOCK ${data.payload.ETH_TESTNET.unCrawlerBlock}
-ETH_TESTNET_UNPARSEBLOCK ${data.payload.ETH_TESTNET.unParseBlock}
-`;
+    ETH_TESTNET_BLOCKHEIGHT ${data.payload.ETH_TESTNET.blockHeight}
+    ETH_TESTNET_DB_BLOCKHEIGHT ${data.payload.ETH_TESTNET.db_blockHeight}
+    ETH_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.ETH_TESTNET.blockScanned_blockHeight}
+    ETH_TESTNET_UNCRAWLERBLOCK ${data.payload.ETH_TESTNET.unCrawlerBlock}
+    ETH_TESTNET_UNPARSEBLOCK ${data.payload.ETH_TESTNET.unParseBlock}
+    `;
   }
 }
 
