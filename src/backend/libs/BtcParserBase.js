@@ -146,6 +146,9 @@ class BtcParserBase extends ParserBase {
 
     // if from = 0, it from COINBASE
     const fee = from === new BigNumber(0) ? new BigNumber(0) : new BigNumber(from).minus(new BigNumber(to));
+    console.log('from:', from.toFixed());
+    console.log('to:', to.toFixed());
+    console.log('fee:', fee.toFixed());
     return {
       from: Utils.multipliedByDecimal(from, this.decimal),
       to: Utils.multipliedByDecimal(to, this.decimal),
@@ -170,6 +173,9 @@ class BtcParserBase extends ParserBase {
     const {
       fee, to, source_addresses, destination_addresses, note,
     } = await BtcParserBase.parseBTCTxAmounts.call(this, tx);
+
+    console.log('currencyInfo.decimals:', currencyInfo.decimals);
+    console.log('fee:', Utils.multipliedByDecimal(fee, currencyInfo.decimals));
 
     await this.sequelize.transaction(async (transaction) => {
       // 1. insert tx
