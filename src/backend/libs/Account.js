@@ -646,7 +646,7 @@ class Account extends Bot {
 
     const result = [];
     Object.keys(tmpTxs).forEach((key) => {
-      tmpTxs[key].tx.amount = tmpTxs[key].amount.toFixed();
+      tmpTxs[key].tx.amount = tmpTxs[key].amount.abs().toFixed();
       result.push(tmpTxs[key].tx);
     });
 
