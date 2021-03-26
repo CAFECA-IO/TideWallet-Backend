@@ -101,25 +101,28 @@ class BtcParserBase extends ParserBase {
       if (inputData.txid) {
         const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid, vout: inputData.vout } });
         if (findUXTO) {
+          console.log('findUXTO.amount:', findUXTO.amount);
           from = from.plus(new BigNumber(findUXTO.amount));
-        }
-
-        // TODO: change use promise all
-        const txInfo = await BtcParserBase.getTransactionByTxidFromPeer.call(this, inputData.txid);
-        if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
-          if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.addresses) {
-            source_addresses.push({
-              addresses: txInfo.vout[inputData.vout].scriptPubKey.addresses,
-              amount: Utils.multipliedByDecimal(txInfo.vout[inputData.vout].value, this.decimal),
-            });
-            from = from.plus(new BigNumber(txInfo.vout[inputData.vout].value || '0'));
-          } else if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.type === 'pubkey') {
-            // TODO: need pubkey => P2PK address
-            source_addresses.push({
-              addresses: txInfo.vout[inputData.vout].scriptPubKey.hex,
-              amount: Utils.multipliedByDecimal(txInfo.vout[inputData.vout].value || '0', this.decimal),
-            });
-            from = from.plus(new BigNumber(txInfo.vout[inputData.vout].value || '0'));
+        } else {
+          // TODO: change use promise all
+          const txInfo = await BtcParserBase.getTransactionByTxidFromPeer.call(this, inputData.txid);
+          if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
+            if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.addresses) {
+              source_addresses.push({
+                addresses: txInfo.vout[inputData.vout].scriptPubKey.addresses,
+                amount: Utils.multipliedByDecimal(txInfo.vout[inputData.vout].value, this.decimal),
+              });
+              console.log('txInfo.vout[inputData.vout].value:', txInfo.vout[inputData.vout].value);
+              from = from.plus(new BigNumber(txInfo.vout[inputData.vout].value || '0'));
+            } else if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.type === 'pubkey') {
+              // TODO: need pubkey => P2PK address
+              source_addresses.push({
+                addresses: txInfo.vout[inputData.vout].scriptPubKey.hex,
+                amount: Utils.multipliedByDecimal(txInfo.vout[inputData.vout].value || '0', this.decimal),
+              });
+              console.log('txInfo.vout[inputData.vout].value:', txInfo.vout[inputData.vout].value);
+              from = from.plus(new BigNumber(txInfo.vout[inputData.vout].value || '0'));
+            }
           }
         }
       }
