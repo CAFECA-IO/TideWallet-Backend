@@ -17,6 +17,7 @@ class Blockchain extends Bot {
     this.name = 'Blockchain';
     this.tags = {};
     this.cacheBlockchainInfo = {};
+    this.updateBalanceAccounts = {};
   }
 
   init({
@@ -469,11 +470,20 @@ class Blockchain extends Bot {
               blockchain_id,
               type: 1,
             },
-            attributes: ['currency_id', 'decimals'],
+            attributes: ['currency_id', 'decimals', 'blockchain_id', 'decimals'],
+            include: [
+              {
+                model: this.blockchainModel,
+                attributes: ['block'],
+              },
+            ],
           });
 
           this.bcid = blockchain_id;
-          await this.saveBTCPublishTransaction(data.result, findCurrency, 0);
+          this.decimal = findCurrency.decimals;
+          const _data = { ...data.result, height: findCurrency.Blockchain.block };
+
+          await this.saveBTCPublishTransaction(_data, findCurrency, 0);
 
           return new ResponseFormat({
             message: 'Publish Transaction',

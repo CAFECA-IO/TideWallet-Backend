@@ -626,6 +626,33 @@ class Account extends Bot {
     }
   }
 
+  _mergeInternalTxs({ txs }) {
+    const tmpTxs = {};
+    txs.forEach((tx) => {
+      if (!tmpTxs[tx.txid]) {
+        const amount = (tx.direction === 'send') ? new BigNumber(tx.amount) : new BigNumber(0).minus(new BigNumber(tx.amount));
+        tmpTxs[tx.txid] = { tx, amount };
+      } else {
+        let { amount } = tmpTxs[tx.txid];
+        if (tx.direction === 'send') {
+          amount = amount.plus(new BigNumber(tx.amount));
+        } else {
+          amount = amount.minus(new BigNumber(tx.amount));
+        }
+
+        tmpTxs[tx.txid].amount = amount;
+      }
+    });
+
+    const result = [];
+    Object.keys(tmpTxs).forEach((key) => {
+      tmpTxs[key].tx.amount = tmpTxs[key].amount.abs().toFixed();
+      result.push(tmpTxs[key].tx);
+    });
+
+    return result;
+  }
+
   async ListTransactions({ params, token }) {
     // account_id -> accountCurrency_id
     const { account_id } = params;
@@ -659,21 +686,24 @@ class Account extends Bot {
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
-      const payload = [];
+      const result = [];
       // find external address txs
       for (let i = 0; i <= number_of_external_key; i++) {
         // find all address
         await this._findAccountTXs({
-          findAccountCurrency, txs: payload, chain_index: 0, key_index: i,
+          findAccountCurrency, txs: result, chain_index: 0, key_index: i,
         });
       }
 
-      // // find internal address txs
-      // for (let i = 0; i <= number_of_internal_key; i++) {
-      //   await this._findAccountTXs({
-      //     findAccountCurrency, txs: payload, chain_index: 1, key_index: i,
-      //   });
-      // }
+      // find internal address txs
+      for (let i = 0; i <= number_of_internal_key; i++) {
+        await this._findAccountTXs({
+          findAccountCurrency, txs: result, chain_index: 1, key_index: i,
+        });
+      }
+
+      // merge internal txs
+      const payload = this._mergeInternalTxs({ txs: result });
 
       // sort by timestamps
       payload.sort((a, b) => b.timestamp - a.timestamp);
@@ -763,7 +793,7 @@ class Account extends Bot {
 
     // find all UTXO
     const findUTXO = await this.utxoModel.findAll({
-      where: { accountAddress_id: findAccountAddress.accountAddress_id, to_tx: { [this.Sequelize.Op.eq]: null } },
+      where: { accountAddress_id: findAccountAddress.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
       include: [
         {
           model: this.accountAddressModel,
