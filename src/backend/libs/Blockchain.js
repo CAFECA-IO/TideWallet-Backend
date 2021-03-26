@@ -786,31 +786,30 @@ class Blockchain extends Bot {
   async BlockHeightMetrics() {
     const data = await this.BlockHeight();
 
-    return `
-    BTC_MAINNET_BLOCKHEIGHT ${data.payload.BTC_MAINNET.blockHeight}
-    BTC_MAINNET_DB_BLOCKHEIGHT ${data.payload.BTC_MAINNET.db_blockHeight}
-    BTC_MAINNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BTC_MAINNET.blockScanned_blockHeight}
-    BTC_MAINNET_UNCRAWLERBLOCK ${data.payload.BTC_MAINNET.unCrawlerBlock}
-    BTC_MAINNET_UNPARSEBLOCK ${data.payload.BTC_MAINNET.unParseBlock}
+    return `BTC_MAINNET_BLOCKHEIGHT ${data.payload.BTC_MAINNET.blockHeight}
+BTC_MAINNET_DB_BLOCKHEIGHT ${data.payload.BTC_MAINNET.db_blockHeight}
+BTC_MAINNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BTC_MAINNET.blockScanned_blockHeight}
+BTC_MAINNET_UNCRAWLERBLOCK ${data.payload.BTC_MAINNET.unCrawlerBlock}
+BTC_MAINNET_UNPARSEBLOCK ${data.payload.BTC_MAINNET.unParseBlock}
 
-    BTC_TESTNET_BLOCKHEIGHT ${data.payload.BTC_TESTNET.blockHeight}
-    BTC_TESTNET_DB_BLOCKHEIGHT ${data.payload.BTC_TESTNET.db_blockHeight}
-    BTC_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BTC_TESTNET.blockScanned_blockHeight}
-    BTC_TESTNET_UNCRAWLERBLOCK ${data.payload.BTC_TESTNET.unCrawlerBlock}
-    BTC_TESTNET_UNPARSEBLOCK ${data.payload.BTC_TESTNET.unParseBlock}
+BTC_TESTNET_BLOCKHEIGHT ${data.payload.BTC_TESTNET.blockHeight}
+BTC_TESTNET_DB_BLOCKHEIGHT ${data.payload.BTC_TESTNET.db_blockHeight}
+BTC_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BTC_TESTNET.blockScanned_blockHeight}
+BTC_TESTNET_UNCRAWLERBLOCK ${data.payload.BTC_TESTNET.unCrawlerBlock}
+BTC_TESTNET_UNPARSEBLOCK ${data.payload.BTC_TESTNET.unParseBlock}
 
-    ETH_MAINNET_BLOCKHEIGHT ${data.payload.ETH_MAINNET.blockHeight}
-    ETH_MAINNET_DB_BLOCKHEIGHT ${data.payload.ETH_MAINNET.db_blockHeight}
-    ETH_MAINNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.ETH_MAINNET.blockScanned_blockHeight}
-    ETH_MAINNET_UNCRAWLERBLOCK ${data.payload.ETH_MAINNET.unCrawlerBlock}
-    ETH_MAINNET_UNPARSEBLOCK ${data.payload.ETH_MAINNET.unParseBlock}
+ETH_MAINNET_BLOCKHEIGHT ${data.payload.ETH_MAINNET.blockHeight}
+ETH_MAINNET_DB_BLOCKHEIGHT ${data.payload.ETH_MAINNET.db_blockHeight}
+ETH_MAINNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.ETH_MAINNET.blockScanned_blockHeight}
+ETH_MAINNET_UNCRAWLERBLOCK ${data.payload.ETH_MAINNET.unCrawlerBlock}
+ETH_MAINNET_UNPARSEBLOCK ${data.payload.ETH_MAINNET.unParseBlock}
 
-    ETH_TESTNET_BLOCKHEIGHT ${data.payload.ETH_TESTNET.blockHeight}
-    ETH_TESTNET_DB_BLOCKHEIGHT ${data.payload.ETH_TESTNET.db_blockHeight}
-    ETH_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.ETH_TESTNET.blockScanned_blockHeight}
-    ETH_TESTNET_UNCRAWLERBLOCK ${data.payload.ETH_TESTNET.unCrawlerBlock}
-    ETH_TESTNET_UNPARSEBLOCK ${data.payload.ETH_TESTNET.unParseBlock}
-    `;
+ETH_TESTNET_BLOCKHEIGHT ${data.payload.ETH_TESTNET.blockHeight}
+ETH_TESTNET_DB_BLOCKHEIGHT ${data.payload.ETH_TESTNET.db_blockHeight}
+ETH_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.ETH_TESTNET.blockScanned_blockHeight}
+ETH_TESTNET_UNCRAWLERBLOCK ${data.payload.ETH_TESTNET.unCrawlerBlock}
+ETH_TESTNET_UNPARSEBLOCK ${data.payload.ETH_TESTNET.unParseBlock}
+`;
   }
 }
 
