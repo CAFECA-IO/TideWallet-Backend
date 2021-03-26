@@ -102,7 +102,7 @@ class BtcParserBase extends ParserBase {
         const findUXTO = await this.utxoModel.findOne({ where: { txid: inputData.txid, vout: inputData.vout } });
         if (findUXTO) {
           console.log('findUXTO.amount:', findUXTO.amount);
-          from = from.plus(new BigNumber(findUXTO.amount));
+          from = from.plus(Utils.dividedByDecimal(findUXTO.amount, this.decimal));
         } else {
           // TODO: change use promise all
           const txInfo = await BtcParserBase.getTransactionByTxidFromPeer.call(this, inputData.txid);
