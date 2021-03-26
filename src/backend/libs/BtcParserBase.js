@@ -144,8 +144,6 @@ class BtcParserBase extends ParserBase {
       }
     }
 
-    console.log('to:', to.toFixed());
-    console.log('to:', Utils.multipliedByDecimal(to, this.decimal));
     // if from = 0, it from COINBASE
     const fee = from === new BigNumber(0) ? new BigNumber(0) : new BigNumber(from).minus(new BigNumber(to));
     return {
