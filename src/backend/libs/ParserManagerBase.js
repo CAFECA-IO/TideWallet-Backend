@@ -149,7 +149,8 @@ class ParserManagerBase {
       const { Op } = this.Sequelize;
       const oldest = await this.unparsedTxModel.findOne({
         where: { blockchain_id: this.bcid, retry: { [Op.lt]: this.maxRetry } },
-        order: [['unparsedTransaction_id', 'ASC']],
+        order: [['timestamp', 'ASC']],
+        attributes: ['timestamp'],
       });
 
       if (!oldest) {

@@ -668,12 +668,12 @@ class Account extends Bot {
         });
       }
 
-      // find internal address txs
-      for (let i = 0; i <= number_of_internal_key; i++) {
-        await this._findAccountTXs({
-          findAccountCurrency, txs: payload, chain_index: 1, key_index: i,
-        });
-      }
+      // // find internal address txs
+      // for (let i = 0; i <= number_of_internal_key; i++) {
+      //   await this._findAccountTXs({
+      //     findAccountCurrency, txs: payload, chain_index: 1, key_index: i,
+      //   });
+      // }
 
       // sort by timestamps
       payload.sort((a, b) => b.timestamp - a.timestamp);
