@@ -713,7 +713,7 @@ class Account extends Bot {
       const payload = this._mergeInternalTxs({ txs: result });
 
       // sort by timestamps
-      payload.sort((a, b) => a.timestamp - b.timestamp);
+      payload.sort((a, b) => b.timestamp - a.timestamp);
 
       return new ResponseFormat({
         message: 'List Transactions',
