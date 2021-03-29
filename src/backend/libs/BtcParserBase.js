@@ -66,7 +66,7 @@ class BtcParserBase extends ParserBase {
   static async getTransactionByTxidFromPeer(txid) {
     this.logger.debug(`[${this.constructor.name}] getTransactionByTxidFromPeer(${txid})`);
 
-    const blockchainConfig = Utils.getBlockchainConfig('80000001');
+    const blockchainConfig = Utils.getBlockchainConfig(this.bcid);
     const options = { ...blockchainConfig };
     options.data = {
       jsonrpc: '1.0',
