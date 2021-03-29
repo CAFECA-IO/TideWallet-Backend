@@ -809,6 +809,12 @@ ETH_TESTNET_DB_BLOCKHEIGHT ${data.payload.ETH_TESTNET.db_blockHeight}
 ETH_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.ETH_TESTNET.blockScanned_blockHeight}
 ETH_TESTNET_UNCRAWLERBLOCK ${data.payload.ETH_TESTNET.unCrawlerBlock}
 ETH_TESTNET_UNPARSEBLOCK ${data.payload.ETH_TESTNET.unParseBlock}
+
+CFC_BLOCKHEIGHT ${data.payload.CFC.blockHeight}
+CFC_DB_BLOCKHEIGHT ${data.payload.CFC.db_blockHeight}
+CFC_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.CFC.blockScanned_blockHeight}
+CFC_UNCRAWLERBLOCK ${data.payload.CFC.unCrawlerBlock}
+CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
 `;
   }
 }
