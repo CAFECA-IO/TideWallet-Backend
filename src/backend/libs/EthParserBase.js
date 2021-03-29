@@ -15,7 +15,6 @@ class EthParserBase extends ParserBase {
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
     this.options = {};
-    this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
   }
 
   async init() {
@@ -428,13 +427,15 @@ class EthParserBase extends ParserBase {
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
-        this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
+        this.logger.error(`[${this.constructor.name}] receipt not found`);
         return Promise.reject();
       }
-      return Promise.resolve(data.result);
+      if (data.result) {
+        return Promise.resolve(data.result);
+      }
     }
-    this.logger.error(`[${this.constructor.name}] \x1b[1m\x1b[90mreceipt not found\x1b[0m\x1b[21m`);
-    return Promise.reject();
+    this.logger.error(`[${this.constructor.name}] receipt not found. error: ${data.error}`);
+    return Promise.reject(data.error);
   }
 
   async setAddressTokenTransaction(currency_id, accountAddress_id, amount, tokenTransaction_id, direction) {
