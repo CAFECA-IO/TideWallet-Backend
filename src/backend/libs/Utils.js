@@ -1036,6 +1036,73 @@ class Utils {
       return null;
     }
   }
+
+  static async ethGetBlockByNumber(option, blockHeight) {
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_getBlockByNumber',
+      params: [`0x${(blockHeight).toString(16)}`, false],
+      id: dvalue.randomID(),
+    };
+    const rs = await this.ETHRPC(option);
+    if (rs && rs.result && rs.result.number !== null) return rs;
+    return null;
+  }
+
+  static async getETHTps(blockchain_id, blockHeight) {
+    const blockchainConfig = this.getBlockchainConfig(blockchain_id);
+    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    const option = { ...blockchainConfig };
+
+    const findAllTxs = await Promise.all([
+      this.ethGetBlockByNumber(option, blockHeight),
+      this.ethGetBlockByNumber(option, blockHeight - 1),
+      this.ethGetBlockByNumber(option, blockHeight - 2),
+    ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+    if (findAllTxs.code === Codes.RPC_ERROR) return 0;
+
+    const timeTaken = findAllTxs[0].result.timestamp - findAllTxs[2].result.timestamp;
+    const transactionCount = findAllTxs.reduce((prev, curr) => {
+      const prevLen = (prev.result) ? prev.result.transactions.length : prev.len;
+      return { len: prevLen + curr.result.transactions.length };
+    }, { len: 0 });
+    const tps = transactionCount.len / timeTaken;
+    return tps.toFixed(2);
+  }
+
+  static async btcGetBlockByNumber(option, blockHeight) {
+    option.data = {
+      jsonrpc: '1.0',
+      method: 'getblockstats',
+      params: [blockHeight, ['time', 'txs']],
+      id: dvalue.randomID(),
+    };
+    const rs = await this.BTCRPC(option);
+    if (rs && rs.result && rs.result.number !== null) return rs;
+    return null;
+  }
+
+  static async getBTCTps(blockchain_id, blockHeight) {
+    const blockchainConfig = this.getBlockchainConfig(blockchain_id);
+    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    const option = { ...blockchainConfig };
+
+    const findAllTxs = await Promise.all([
+      this.btcGetBlockByNumber(option, blockHeight),
+      this.btcGetBlockByNumber(option, blockHeight - 1),
+      this.btcGetBlockByNumber(option, blockHeight - 2),
+    ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+    if (findAllTxs.code === Codes.RPC_ERROR) return 0;
+
+    const timeTaken = findAllTxs[0].result.time - findAllTxs[2].result.time;
+    const transactionCount = findAllTxs.reduce((prev, curr) => {
+      if (prev.result)console.log(prev.result.txs);
+      const prevLen = (prev.result) ? prev.result.txs : prev.len;
+      return { len: prevLen + curr.result.txs };
+    }, { len: 0 });
+    const tps = transactionCount.len / timeTaken;
+    return tps.toFixed(2);
+  }
 }
 
 module.exports = Utils;
