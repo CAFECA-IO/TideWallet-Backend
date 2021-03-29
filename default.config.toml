@@ -123,5 +123,6 @@ pathname = [
   # explore
   "get | /api/v1/explore/info | Bot.Explore.NodeInfo",
   "get | /api/v1/explore/transactions | Bot.Explore.TransactionList",
+  "get | /api/v1/explore/Blocks | Bot.Explore.BlockList",
 
 ]
