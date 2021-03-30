@@ -122,9 +122,12 @@ pathname = [
 
   # explore
   "get | /api/v1/explore/info | Bot.Explore.NodeInfo",
+  "get | /api/v1/explore/address/:address | Bot.Explore.AddressDetail",
+  "get | /api/v1/explore/address/:address/transactions | Bot.Explore.AddressTransactions",
   "get | /api/v1/explore/transactions | Bot.Explore.TransactionList",
   "get | /api/v1/explore/Blocks | Bot.Explore.BlockList",
   "get | /api/v1/explore/blockchain/:blockchain_id/block/:block_id | Bot.Explore.BlockDetail",
   "get | /api/v1/explore/blockchain/:blockchain_id/block/:block_id/transactions | Bot.Explore.BlockTransactions",
+  "post | /api/v1/explore/search/:search_string | Bot.Explore.Search"
 
 ]
