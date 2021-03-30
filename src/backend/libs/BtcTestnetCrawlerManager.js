@@ -7,6 +7,7 @@ class BtcTestnetCrawlerManager extends BtcCrawlerManagerBase {
     this.syncInterval = config.syncInterval.bitcoin ? config.syncInterval.bitcoin : 450000;
     this.feeSyncInterval = config.syncInterval.fee ? config.syncInterval.fee : 3600000;
     this.pendingTxSyncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
+    this.unparsedTxModel = database.db.UnparsedTransaction80000001;
   }
 }
 

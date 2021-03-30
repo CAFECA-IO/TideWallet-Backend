@@ -1,5 +1,3 @@
-const { v4: uuidv4 } = require('uuid');
-
 class CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
     this.bcid = blockchainId;

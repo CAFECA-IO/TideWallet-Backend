@@ -7,6 +7,7 @@ class EthCrawlerManager extends EthCrawlerManagerBase {
     this.syncInterval = config.syncInterval.ethereum ? config.syncInterval.ethereum : 15000;
     this.feeSyncInterval = config.syncInterval.fee ? config.syncInterval.fee : 3600000;
     this.pendingTxSyncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
+    this.unparsedTxModel = database.db.UnparsedTransaction8000003C;
   }
 }
 
