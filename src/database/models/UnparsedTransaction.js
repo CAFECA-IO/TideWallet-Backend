@@ -1,4 +1,4 @@
-module.exports = (sequelize, DataTypes) => sequelize.define('UnparsedTransaction', {
+module.exports = (sequelize, DataTypes, bcid = '') => sequelize.define(`UnparsedTransaction${bcid}`, {
   // PK
   unparsedTransaction_id: {
     type: DataTypes.INTEGER,
@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('UnparsedTransaction
   },
 }, {
   timestamps: false,
-  tableName: 'UnparsedTransaction',
+  tableName: `UnparsedTransaction${bcid}`,
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
   indexes: [
