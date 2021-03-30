@@ -106,7 +106,7 @@ class Explore extends Bot {
         // eslint-disable-next-line no-nested-ternary
         const txCount = (itemJSON.txs !== undefined) ? itemJSON.txs : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
         items.push({
-          blockchainId: item.blockScanned_id,
+          blockchainId: item.blockchain_id,
           name: await this.blockchainIdToName(item.blockchain_id),
           blockHeight: item.block,
           blockHash: item.block_hash,
@@ -129,6 +129,34 @@ class Explore extends Bot {
       return new ResponseFormat({ message: 'Explore Block List', items, meta });
     } catch (e) {
       this.logger.error('BlockList e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
+  }
+
+  async BlockDetail({ params }) {
+    try {
+      const { blockchain_id, block_id } = params;
+
+      const findBlockInfo = await this.blockScannedModel.findOne({
+        where: { blockchain_id, block_hash: block_id },
+        attributes: ['block', 'timestamp', 'result'],
+      });
+      if (!findBlockInfo) return new ResponseFormat({ message: 'block not found', code: Codes.BLOCK_NOT_FOUND });
+
+      const itemJSON = JSON.parse(findBlockInfo.result);
+
+      // eslint-disable-next-line no-nested-ternary
+      const txCount = (itemJSON.txs !== undefined) ? itemJSON.txs : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
+
+      const payload = {
+        blockHeight: findBlockInfo.block,
+        timestamp: findBlockInfo.timestamp,
+        txCount,
+      };
+      return new ResponseFormat({ message: 'Explore Block Detail', payload });
+    } catch (e) {
+      this.logger.error('BlockDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }

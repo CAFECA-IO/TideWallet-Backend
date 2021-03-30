@@ -124,5 +124,7 @@ pathname = [
   "get | /api/v1/explore/info | Bot.Explore.NodeInfo",
   "get | /api/v1/explore/transactions | Bot.Explore.TransactionList",
   "get | /api/v1/explore/Blocks | Bot.Explore.BlockList",
+  "get | /api/v1/explore/blockchain/:blockchain_id/block/:block_id | Bot.Explore.BlockDetail",
+  "get | /api/v1/explore/blockchain/:blockchain_id/block/:block_id/transactions | Bot.Explore.BlockTransactions",
 
 ]
