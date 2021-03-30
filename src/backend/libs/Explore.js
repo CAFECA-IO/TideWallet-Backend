@@ -141,6 +141,7 @@ class Explore extends Bot {
         attributes: ['blockchain_id', 'name', 'block', 'avg_fee'],
       });
 
+      // TODO: use db data to calculator
       // calculator tps
       const tpsItems = [];
       for (let i = 0; i < findBlockchain.length; i++) {
