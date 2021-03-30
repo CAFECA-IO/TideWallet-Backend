@@ -104,7 +104,7 @@ class Explore extends Bot {
         const itemJSON = JSON.parse(item.result);
 
         // eslint-disable-next-line no-nested-ternary
-        const txCount = (itemJSON.txs !== undefined) ? itemJSON.txs : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
+        const txCount = (itemJSON.nTx !== undefined) ? itemJSON.nTx : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
         items.push({
           blockchainId: item.blockchain_id,
           name: await this.blockchainIdToName(item.blockchain_id),
@@ -147,7 +147,7 @@ class Explore extends Bot {
       const itemJSON = JSON.parse(findBlockInfo.result);
 
       // eslint-disable-next-line no-nested-ternary
-      const txCount = (itemJSON.txs !== undefined) ? itemJSON.txs : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
+      const txCount = (itemJSON.nTx !== undefined) ? itemJSON.nTx : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
 
       const payload = {
         blockHeight: findBlockInfo.block,
@@ -155,6 +155,74 @@ class Explore extends Bot {
         txCount,
       };
       return new ResponseFormat({ message: 'Explore Block Detail', payload });
+    } catch (e) {
+      this.logger.error('BlockDetail e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
+  }
+
+  async BlockTransactions({ params, query }) {
+    try {
+      const { blockchain_id, block_id } = params;
+      const { index = 0, limit = 20 } = query;
+
+      const findBlockInfo = await this.blockScannedModel.findOne({
+        where: { blockchain_id, block_hash: block_id },
+        attributes: ['block', 'timestamp', 'result'],
+      });
+      if (!findBlockInfo) return new ResponseFormat({ message: 'block not found', code: Codes.BLOCK_NOT_FOUND });
+
+      const itemJSON = JSON.parse(findBlockInfo.result);
+
+      // eslint-disable-next-line no-nested-ternary
+      const txCount = (itemJSON.nTx !== undefined) ? itemJSON.nTx : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
+      // eslint-disable-next-line no-nested-ternary
+      const txs = (itemJSON.tx !== undefined) ? itemJSON.tx : (itemJSON.transactions) ? itemJSON.transactions : [];
+
+      const items = [];
+      const endIndex = Number(index) + Number(limit) + 1;
+      const loopEndIndex = Math.min(txs.length, endIndex);
+      for (let i = index; i < loopEndIndex; i++) {
+        const txItem = txs[i];
+        const txid = (txItem.txid) ? txItem.txid : txItem.hash;
+        const findTx = await this.transactionModel.findOne({
+          where: { txid },
+          attributes: ['transaction_id', 'currency_id', 'txid', 'timestamp', 'source_addresses', 'destination_addresses', 'amount', 'block', 'fee'],
+          include: [
+            {
+              model: this.currencyModel,
+              attributes: ['blockchain_id', 'name', 'icon', 'symbol', 'decimals'],
+            },
+          ],
+        });
+        if (findTx) {
+          items.push({
+            blockchainId: findTx.Currency.blockchain_id,
+            iconUrl: findTx.Currency.icon,
+            txHash: findTx.txid,
+            symbol: findTx.Currency.symbol,
+            block: findTx.block,
+            timestamp: findTx.timestamp,
+            from: findTx.source_addresses,
+            to: findTx.destination_addresses,
+            value: Utils.dividedByDecimal(findTx.amount, findTx.Currency.decimals),
+            fee: Utils.dividedByDecimal(findTx.fee, findTx.Currency.decimals),
+          });
+        }
+      }
+
+      const meta = {
+        hasNext: false,
+        nextIndex: 0,
+        count: txCount || 0,
+      };
+      if (items.length > Number(limit)) {
+        items.pop();
+        meta.hasNext = true;
+        meta.nextIndex = Number(index) + Number(limit);
+      }
+      return new ResponseFormat({ message: 'Explore Block Detail', items, meta });
     } catch (e) {
       this.logger.error('BlockDetail e:', e);
       if (e.code) return e;
