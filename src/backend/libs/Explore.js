@@ -23,8 +23,13 @@ class Explore extends Bot {
       this.accountAddressModel = this.database.db.AccountAddress;
       this.blockchainModel = this.database.db.Blockchain;
       this.blockScannedModel = this.database.db.BlockScanned;
+      this.addressTransactionModel = this.database.db.AddressTransaction;
       this.transactionModel = this.database.db.Transaction;
+      this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
+      this.tokenTransactionModel = this.database.db.TokenTransaction;
       this.currencyModel = this.database.db.Currency;
+
+      this.sequelize = this.database.db.sequelize;
       return this;
     });
   }
@@ -45,43 +50,90 @@ class Explore extends Bot {
     try {
       const { index = 0, limit = 20 } = query;
 
-      const findTransactionList = await this.transactionModel.findAll({
-        offset: Number(index),
-        limit: Number(limit) + 1,
-        order: [['transaction_id', 'DESC']],
-        attributes: ['transaction_id', 'currency_id', 'txid', 'timestamp', 'source_addresses', 'destination_addresses', 'amount', 'block', 'fee'],
-        include: [
-          {
-            model: this.currencyModel,
-            attributes: ['blockchain_id', 'name', 'icon', 'symbol', 'decimals'],
-          },
-        ],
-        raw: true,
-      });
+      const { QueryTypes } = this.sequelize;
+      const findTransactionList = await this.sequelize.query(
+        `SELECT
+            t1.*,
+            "Currency"."blockchain_id" AS "currency_blockchain_id",
+            "Currency"."name" AS "currency_name",
+            "Currency"."icon" AS "currency_icon",
+            "Currency"."symbol" AS "currency_symbol",
+            "Currency"."decimals" AS "currency_decimals"
+          FROM (
+            (SELECT
+              "transaction_id",
+              "currency_id",
+              "txid",
+              "timestamp",
+              "source_addresses",
+              "destination_addresses",
+              "amount",
+              "block",
+              "fee"
+            FROM
+              "Transaction"
+            ORDER BY
+              "transaction_id" DESC
+            LIMIT :limit OFFSET :index)
+            UNION
+            (SELECT
+              "transaction_id",
+              "currency_id",
+              "txid",
+              "timestamp",
+              "source_addresses",
+              "destination_addresses",
+              "amount",
+              NULL AS "block",
+              NULL AS "fee"
+            FROM
+              "TokenTransaction"
+            ORDER BY
+              "transaction_id" DESC
+            LIMIT :limit OFFSET :index)
+            ) AS t1
+            LEFT OUTER JOIN "Currency" AS "Currency" ON "t1"."currency_id" = "Currency"."currency_id"
+          ORDER BY
+            "transaction_id" DESC`,
+        {
 
-      const items = findTransactionList.map((item) => ({
-        blockchainId: item['Currency.blockchain_id'],
-        iconUrl: item['Currency.icon'],
-        txHash: item.txid,
-        symbol: item['Currency.symbol'],
-        block: item.block,
-        timestamp: item.timestamp,
-        from: item.source_addresses,
-        to: item.destination_addresses,
-        value: Utils.dividedByDecimal(item.amount, item['Currency.decimals']),
-        fee: Utils.dividedByDecimal(item.fee, item['Currency.decimals']),
-      }));
-      const findAllAmount = await this.transactionModel.count();
+          replacements: {
+            index: Number(index),
+            limit: Math.floor(Number(limit) + 1),
+          },
+          type: QueryTypes.SELECT,
+        },
+      );
+
+      const items = [];
+      const findAllAmount = await this.transactionModel.count() + await this.tokenTransactionModel.count();
       const meta = {
         hasNext: false,
         nextIndex: 0,
         count: findAllAmount || 0,
       };
-
-      if (items.length > Number(limit)) {
-        items.pop();
-        meta.hasNext = true;
-        meta.nextIndex = Number(index) + Number(limit);
+      let breakFlag = false;
+      for (let i = 0; i < findTransactionList.length && !breakFlag; i++) {
+        const txItem = findTransactionList[i];
+        if (i < limit) {
+          items.push({
+            blockchainId: txItem.currency_blockchain_id,
+            iconUrl: txItem.currency_icon,
+            txHash: txItem.txid,
+            symbol: txItem.currency_symbol,
+            block: txItem.block,
+            timestamp: txItem.timestamp,
+            from: txItem.source_addresses,
+            to: txItem.destination_addresses,
+            value: Utils.dividedByDecimal(txItem.amount, txItem.currency_decimals),
+            fee: Utils.dividedByDecimal(txItem.fee, txItem.currency_decimals),
+          });
+        } else {
+          console.log('breakFlag');
+          breakFlag = true;
+          meta.hasNext = true;
+          meta.nextIndex = Number(index) + Number(limit);
+        }
       }
 
       return new ResponseFormat({ message: 'Explore Transaction List', items, meta });
@@ -348,7 +400,41 @@ class Explore extends Bot {
     }
   }
 
-  async AddressTransactions() {}
+  async AddressTransactions({ params }) {
+    try {
+      const { address } = params;
+
+      const findAddress = await this.accountAddressModel.findAll({
+        where: { address },
+        attributes: ['account_id', 'address'],
+        include: [
+          {
+            model: this.addressTokenTransactionModel,
+            // attributes: ['blockchain_id'],
+          },
+        ],
+      });
+
+      // const findAllAmount = await this.blockchainModel.count();
+      // const meta = {
+      //   hasNext: false,
+      //   nextIndex: 0,
+      //   count: findAllAmount || 0,
+      // };
+
+      // if (items.length > Number(limit)) {
+      //   items.pop();
+      //   meta.hasNext = true;
+      //   meta.nextIndex = Number(index) + Number(limit);
+      // }
+
+      return new ResponseFormat({ message: 'Explore Address Transactions', payload: findAddress });
+    } catch (e) {
+      this.logger.error('NodeInfo e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
+  }
 
   async Search() {}
 }
