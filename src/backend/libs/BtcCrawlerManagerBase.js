@@ -102,6 +102,12 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     try {
       this.logger.debug(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
 
+      const txs = blockData.tx;
+      const txids = [];
+      for (const tx of txs) {
+        txids.push(tx.txid);
+      }
+
       const insertResult = await this.blockScannedModel.findOrCreate({
         where: { blockchain_id: this.bcid, block: blockData.height },
         defaults: {
@@ -109,7 +115,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           block: blockData.height,
           block_hash: blockData.hash,
           timestamp: blockData.time,
-          result: JSON.stringify(blockData),
+          result: JSON.stringify(txids),
         },
       });
       return insertResult;

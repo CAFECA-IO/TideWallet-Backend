@@ -129,20 +129,10 @@ class CrawlerManagerBase {
     }
   }
 
+  // eslint-disable-next-line no-unused-vars
   async insertBlock(blockData) {
-    this.logger.debug(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
-
-    const insertResult = await this.blockScannedModel.findOrCreate({
-      where: { blockchain_id: this.bcid, block: blockData.height },
-      defaults: {
-        blockchain_id: this.bcid,
-        block: blockData.height,
-        block_hash: blockData.hash,
-        timestamp: blockData.time,
-        result: JSON.stringify(blockData),
-      },
-    });
-    return insertResult;
+    // need override
+    return Promise.resolve();
   }
 
   async insertUnparsedTransaction() {

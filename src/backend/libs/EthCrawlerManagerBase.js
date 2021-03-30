@@ -114,6 +114,12 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
     this.logger.debug(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
 
     try {
+      const txs = blockData.transactions;
+      const txids = [];
+      for (const tx of txs) {
+        txids.push(tx.hash);
+      }
+
       const insertResult = await this.blockScannedModel.findOrCreate({
         where: { blockchain_id: this.bcid, block: parseInt(blockData.number, 16) },
         defaults: {
@@ -121,7 +127,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           block: parseInt(blockData.number, 16),
           block_hash: blockData.hash,
           timestamp: parseInt(blockData.timestamp, 16),
-          result: JSON.stringify(blockData),
+          result: JSON.stringify(txids),
         },
       });
       return insertResult;
