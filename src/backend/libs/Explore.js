@@ -30,6 +30,7 @@ class Explore extends Bot {
       this.currencyModel = this.database.db.Currency;
 
       this.sequelize = this.database.db.sequelize;
+      this.Sequelize = this.database.db.Sequelize;
       return this;
     });
   }
@@ -436,7 +437,72 @@ class Explore extends Bot {
     }
   }
 
-  async Search() {}
+  async Search({ params }) {
+    try {
+      const { search_string } = params;
+
+      const payload = {
+        block: [],
+        transaction: [],
+        address: [],
+      };
+
+      const findBlocks = await this.blockScannedModel.findAll({
+        limit: 10,
+        where: {
+          block_hash: { [this.Sequelize.Op.startsWith]: search_string },
+        },
+        attributes: ['block_hash', 'blockchain_id'],
+      });
+      if (findBlocks) {
+        payload.block = findBlocks.map((item) => ({
+          blockHash: item.block_hash, blockchainId: item.blockchain_id,
+        }));
+      }
+
+      const findTokenTxs = await this.tokenTransactionModel.findAll({
+        limit: 5,
+        where: {
+          txid: { [this.Sequelize.Op.startsWith]: search_string },
+        },
+        attributes: ['txid'],
+      });
+      if (findTokenTxs) payload.transaction = findTokenTxs.map((item) => ({ txid: item.txid }));
+      const txLen = findTokenTxs.length;
+
+      const findTxs = await this.transactionModel.findAll({
+        limit: 10 - txLen,
+        where: {
+          txid: { [this.Sequelize.Op.startsWith]: search_string },
+        },
+        attributes: ['txid'],
+      });
+      if (findTxs) {
+        findTxs.forEach((item) => {
+          if (payload.transaction.findIndex((x) => x.txid === item.txid) === -1)payload.transaction.push({ txid: item.txid });
+        });
+      }
+
+      const findAddresses = await this.accountAddressModel.findAll({
+        limit: 10,
+        where: {
+          address: { [this.Sequelize.Op.startsWith]: search_string },
+        },
+        attributes: ['address'],
+      });
+      if (findAddresses) {
+        findAddresses.forEach((item) => {
+          if (payload.address.findIndex((x) => x.txid === item.txid) === -1)payload.address.push({ address: item.address });
+        });
+      }
+
+      return new ResponseFormat({ message: 'Explore Address Transactions', payload });
+    } catch (e) {
+      this.logger.error('Search e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
+  }
 }
 
 module.exports = Explore;
