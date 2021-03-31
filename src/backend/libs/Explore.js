@@ -47,6 +47,59 @@ class Explore extends Bot {
     return findOne.name;
   }
 
+  async TransactionDetail({ params }) {
+    try {
+      const { txid } = params;
+      const payload = [];
+
+      // find transaction table
+      const findTx = await this.transactionModel.findOne({
+        where: { txid },
+      });
+      if (!findTx) return new ResponseFormat({ message: 'transaction not found', code: Codes.TX_NOT_FOUND });
+
+      payload.push({
+        blockchainId: findTx.currency_blockchain_id,
+        iconUrl: findTx.currency_icon,
+        txHash: findTx.txid,
+        symbol: findTx.currency_symbol,
+        block: findTx.block,
+        timestamp: findTx.timestamp,
+        from: findTx.source_addresses,
+        to: findTx.destination_addresses,
+        value: Utils.dividedByDecimal(findTx.amount, findTx.currency_decimals),
+        fee: Utils.dividedByDecimal(findTx.fee, findTx.currency_decimals),
+      });
+
+      // find token transaction table
+      const findTokenTx = await this.tokenTransactionModel.findAll({
+        where: { txid },
+      });
+      if (findTokenTx) {
+        findTokenTx.forEach((txItem) => {
+          payload.push({
+            blockchainId: txItem.currency_blockchain_id,
+            iconUrl: txItem.currency_icon,
+            txHash: txItem.txid,
+            symbol: txItem.currency_symbol,
+            block: txItem.block,
+            timestamp: txItem.timestamp,
+            from: txItem.source_addresses,
+            to: txItem.destination_addresses,
+            value: Utils.dividedByDecimal(txItem.amount, txItem.currency_decimals),
+            fee: Utils.dividedByDecimal(txItem.fee, txItem.currency_decimals),
+          });
+        });
+      }
+
+      return new ResponseFormat({ message: 'Explore Transaction Detail', payload });
+    } catch (e) {
+      this.logger.error('TransactionDetail e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
+  }
+
   async TransactionList({ query }) {
     try {
       const { index = 0, limit = 20 } = query;
