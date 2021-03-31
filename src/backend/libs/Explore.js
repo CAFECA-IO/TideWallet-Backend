@@ -249,7 +249,7 @@ class Explore extends Bot {
 
       const findBlockInfo = await this.blockScannedModel.findOne({
         where: { blockchain_id, block_hash: block_id },
-        attributes: ['block', 'timestamp', 'result'],
+        attributes: ['blockchain_id', 'block', 'timestamp', 'result'],
       });
       if (!findBlockInfo) return new ResponseFormat({ message: 'block not found', code: Codes.BLOCK_NOT_FOUND });
 
@@ -259,6 +259,7 @@ class Explore extends Bot {
       const txCount = (itemJSON.nTx !== undefined) ? itemJSON.nTx : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
 
       const payload = {
+        name: await this.blockchainIdToName(findBlockInfo.blockchain_id),
         blockHeight: findBlockInfo.block,
         timestamp: findBlockInfo.timestamp,
         txCount,
@@ -489,27 +490,9 @@ class Explore extends Bot {
       //   meta.hasNext = true;
       //   meta.nextIndex = Number(index) + Number(limit);
       // }
-      const items = [
-        {
-          blockchainId: '8000003C',
-          iconUrl: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png',
-          txHash: '0xfeec336202de22484a7f992ddd7020e1925cdf35ee3d6164375c519b57003628',
-          symbol: 'ETH',
-          block: '600010',
-          timestamp: 1615450230,
-          from: '0x5b43760f7760fb0304c0716609dc5c266d60db8f',
-          to: '0xa1d8d972560c2f8144af871db508f0b0b10a3fbf',
-          value: '1.209423506',
-          fee: '0.000000112 ',
-        },
-      ];
-      const meta = {
-        hasNext: false,
-        nextIndex: 0,
-        count: 1,
-      };
 
-      return new ResponseFormat({ message: 'Explore Address Transactions', items, meta });
+      return new ResponseFormat({ message: 'Explore Address Transactions', payload: findAddress });
+      // return new ResponseFormat({ message: 'Explore Address Transactions', items, meta });
     } catch (e) {
       this.logger.error('NodeInfo e:', e);
       if (e.code) return e;
