@@ -28,17 +28,17 @@ module.exports = {
   })),
   down: (queryInterface, Sequelize) => new Promise((resolve, reject) => {
     try {
-      queryInterface.removeColumn('PendingTransaction', 'blockAsked');
+      queryInterface.removeIndex(
+        'PendingTransaction',
+        ['blockchain_id', 'blockAsked'],
+      );
     } catch (e) {
       reject(e);
     }
     resolve();
   }).then(() => new Promise((resolve, reject) => {
     try {
-      queryInterface.removeIndex(
-        'PendingTransaction',
-        ['blockchain_id', 'blockAsked'],
-      );
+      queryInterface.removeColumn('PendingTransaction', 'blockAsked');
     } catch (e) {
       reject(e);
     }
