@@ -1,5 +1,3 @@
-const { v4: uuidv4 } = require('uuid');
-
 class CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
     this.bcid = blockchainId;
@@ -15,14 +13,15 @@ class CrawlerManagerBase {
     this.sequelize = this.database.db.sequelize;
     this.unparsedTxModel = this.database.db.UnparsedTransaction;
     this.pendingTransactionModel = this.database.db.PendingTransaction;
+    this.transactionModel = this.database.db.Transaction;
     this.feeSyncInterval = 3600000;
     this.pendingTxSyncInterval = 15000;
   }
 
   async init() {
     this.isSyncing = false;
-    this.startSyncPendingTx = false;
     this.blockInfo = await this.getBlockInfo();
+    this.currencyInfo = await this.getCurrencyInfo();
     if (this.blockInfo.start_block > this.blockInfo.block) {
       await this.updateBlockHeight(this.blockInfo.start_block);
     }
@@ -32,7 +31,6 @@ class CrawlerManagerBase {
     this.syncAvgFee();
 
     setInterval(() => {
-      if (!this.startSyncPendingTx) return;
       this.updatePendingTransaction();
     }, this.pendingTxSyncInterval);
     return this;
@@ -57,6 +55,20 @@ class CrawlerManagerBase {
       return result;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
+      return {};
+    }
+  }
+
+  async getCurrencyInfo() {
+    this.logger.debug(`[${this.constructor.name}] getCurrencyInfo`);
+    try {
+      const result = await this.currencyModel.findOne({
+        where: { blockchain_id: this.bcid, type: 1 },
+        attributes: ['currency_id', 'decimals'],
+      });
+      return result;
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] currencyModel error ${error}`);
       return {};
     }
   }
@@ -126,6 +138,19 @@ class CrawlerManagerBase {
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] checkBlockHash(${block}) error ${error}`);
       return false;
+    }
+  }
+
+  async getTransactionsResultNull() {
+    this.logger.debug(`[${this.constructor.name}] getTransactionsResultNull`);
+    try {
+      const pendingTxs = await this.transactionModel.findAll({
+        where: { currency_id: this.currencyInfo.currency_id, result: null },
+      });
+      return pendingTxs;
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] getTransactionsResultNull error: ${error}`);
+      return [];
     }
   }
 

@@ -1,5 +1,4 @@
 const dvalue = require('dvalue');
-const { v4: uuidv4 } = require('uuid');
 const BigNumber = require('bignumber.js');
 
 const CrawlerManagerBase = require('./CrawlerManagerBase');
@@ -182,7 +181,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       if (!await this.checkBlockNumberLess()) {
         this.logger.log(`[${this.constructor.name}] block height ${this.dbBlock} is top now.`);
         this.isSyncing = false;
-        if (!this.startSyncPendingTx) { this.startSyncPendingTx = true; }
         return Promise.resolve();
       }
 
@@ -194,9 +192,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
       await this.syncBlock(this.dbBlock);
 
-      if (!this.startSyncPendingTx && !await this.checkBlockNumberLess()) {
-        this.startSyncPendingTx = true;
-      }
       this.isSyncing = false;
       return Promise.resolve();
     } catch (error) {
@@ -353,13 +348,92 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   async updatePendingTransaction() {
     this.logger.debug(`[${this.constructor.name}] updatePendingTransaction`);
     try {
+      // 1. find all transaction where status is null(means pending transaction)
+      const transactions = await this.getTransactionsResultNull();
+
+      // 2. get pending transaction
       const pendingTxs = await this.pendingTransactionFromPeer();
-      const result = await this.pendingTransactionModel.create({
-        blockchain_id: this.bcid,
-        transactions: JSON.stringify(pendingTxs),
-        timestamp: Math.floor(Date.now() / 1000),
+      const blockHeightStr = await this.blockNumberFromPeer();
+      const blockHeight = parseInt(blockHeightStr, 16);
+
+      // 3. create transaction which is not in step 1 array
+      const newTxs = pendingTxs.filter((pendingTx) => transactions.every((transaction) => pendingTx.hash !== transaction.txid));
+      for (const tx of newTxs) {
+        try {
+          const bnAmount = new BigNumber(tx.value, 16);
+          const bnGasPrice = new BigNumber(tx.gasPrice, 16);
+          const bnGas = new BigNumber(tx.gas, 16);
+          const fee = bnGasPrice.multipliedBy(bnGas).toFixed();
+
+          let txResult = await this.transactionModel.findOne({
+            where: {
+              currency_id: this.currencyInfo.currency_id,
+              txid: tx.hash,
+            },
+          });
+          if (!txResult) {
+            this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash})`);
+            txResult = await this.transactionModel.create({
+              currency_id: this.currencyInfo.currency_id,
+              txid: tx.hash,
+              source_addresses: tx.from,
+              destination_addresses: tx.to ? tx.to : '',
+              amount: bnAmount.toFixed(),
+              note: tx.input,
+              block: parseInt(tx.blockNumber, 16),
+              nonce: parseInt(tx.nonce, 16),
+              fee,
+              gas_price: bnGasPrice.toFixed(),
+            });
+          } else {
+            const updateResult = await this.transactionModel.update(
+              {
+                source_addresses: tx.from,
+                destination_addresses: tx.to ? tx.to : '',
+                amount: bnAmount.toFixed(),
+                note: tx.input,
+                block: parseInt(tx.blockNumber, 16),
+                nonce: parseInt(tx.nonce, 16),
+                gas_price: bnGasPrice.toFixed(),
+              }, {
+                where: {
+                  currency_id: this.currencyInfo.currency_id,
+                  txid: tx.hash,
+                },
+                returning: true,
+              },
+            );
+            [, [txResult]] = updateResult;
+          }
+        } catch (error) {
+          this.logger.error(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash}) error: ${error}`);
+        }
+      }
+
+      const findPending = await this.pendingTransactionModel.findOne({
+        where: {
+          blockchain_id: this.bcid,
+          blockAsked: blockHeight,
+        },
       });
-      return result[0];
+      if (!findPending) {
+        await this.pendingTransactionModel.create({
+          blockchain_id: this.bcid,
+          blockAsked: blockHeight,
+          transactions: JSON.stringify(pendingTxs),
+          timestamp: Math.floor(Date.now() / 1000),
+        });
+      } else {
+        await this.pendingTransactionModel.update({
+          transactions: JSON.stringify(pendingTxs),
+          timestamp: Math.floor(Date.now() / 1000),
+        }, {
+          where: {
+            blockchain_id: this.bcid,
+            blockAsked: blockHeight,
+          },
+        });
+      }
     } catch (error) {
       this.logger.debug(`[${this.constructor.name}] updatePendingTransaction error: ${error}`);
       return Promise.reject(error);

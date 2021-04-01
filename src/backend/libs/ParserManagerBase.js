@@ -114,16 +114,14 @@ class ParserManagerBase {
   async getPendingTransactionFromDB() {
     this.logger.debug(`[${this.constructor.name}] getPendingTransactionFromDB`);
     try {
-      const latest = await this.pendingTransactionModel.findAll({
-        limit: 1,
-        where: { blockchain_id: this.bcid },
-        order: [['timestamp', 'DESC']],
+      const pending = await this.pendingTransactionModel.findOne({
+        where: { blockchain_id: this.bcid, blockAsked: this.block },
       });
 
-      if (latest.length > 0) {
-        return JSON.parse(latest[0].transactions);
+      if (pending) {
+        return JSON.parse(pending.transactions);
       }
-      return latest;
+      return [];
     } catch (error) {
       this.logger.debug(`[${this.constructor.name}] getPendingTransactionFromDB error: ${error}`);
       return [];
@@ -191,6 +189,18 @@ class ParserManagerBase {
       });
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] removeParsedTx(${tx.unparsedTransaction_id}) error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
+  async removePendingTransaction() {
+    this.logger.debug(`[${this.constructor.name}] removePendingTransaction`);
+    try {
+      const res = await this.pendingTransactionModel.destroy({
+        where: { blockchain_id: this.bcid, blockAsked: this.block },
+      });
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] removePendingTransaction error: ${error}`);
       return Promise.reject(error);
     }
   }

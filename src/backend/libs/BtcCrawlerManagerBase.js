@@ -2,6 +2,7 @@ const dvalue = require('dvalue');
 
 const CrawlerManagerBase = require('./CrawlerManagerBase');
 const Utils = require('./Utils');
+const BtcParserBase = require('./BtcParserBase');
 
 class BtcCrawlerManagerBase extends CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
@@ -13,6 +14,13 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
   async init() {
     await super.init();
     this.peerBlock = 0;
+
+    // used by BtcParserBase.parseTx.call
+    // ++ remove after extract to instance class
+    this.transactionModel = this.database.db.Transaction;
+    this.utxoModel = this.database.db.UTXO;
+    this.addressTransactionModel = this.database.db.AddressTransaction;
+
     try {
       this.oneCycle();
     } catch (error) {
@@ -98,6 +106,26 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     return Promise.reject();
   }
 
+  async getTransactionByTxidFromPeer(txid) {
+    this.logger.debug(`[${this.constructor.name}] getTransactionByTxidFromPeer(${txid})`);
+    const type = 'getTransaction';
+    const options = dvalue.clone(this.options);
+    options.data = this.constructor.cmd({ type, txid });
+    const checkId = options.data.id;
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
+        return Promise.reject();
+      }
+      if (data.result) {
+        return Promise.resolve(data.result);
+      }
+    }
+    this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
+    return Promise.reject(data.error);
+  }
+
   async insertBlock(blockData) {
     try {
       this.logger.debug(`[${this.constructor.name}] insertBlock(${blockData.hash})`);
@@ -169,7 +197,6 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       if (!await this.checkBlockNumberLess()) {
         this.logger.log(`[${this.constructor.name}] block height ${this.dbBlock} is top now.`);
         this.isSyncing = false;
-        if (!this.startSyncPendingTx) { this.startSyncPendingTx = true; }
         return Promise.resolve();
       }
 
@@ -181,9 +208,6 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
 
       await this.syncBlock(this.dbBlock);
 
-      if (!this.startSyncPendingTx && !await this.checkBlockNumberLess()) {
-        this.startSyncPendingTx = true;
-      }
       this.isSyncing = false;
       return Promise.resolve();
     } catch (error) {
@@ -321,21 +345,56 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
   async updatePendingTransaction() {
     this.logger.debug(`[${this.constructor.name}] updatePendingTransaction`);
     try {
-      const pendingTxs = await this.pendingTransactionFromPeer();
-      const result = await this.pendingTransactionModel.create({
-        blockchain_id: this.bcid,
-        transactions: JSON.stringify(pendingTxs),
-        timestamp: Math.floor(Date.now() / 1000),
+      // 1. find all transaction where status is null(means pending transaction)
+      const transactions = await this.getTransactionsResultNull();
+
+      // 2. get last pending transaction from pendingTransaction table
+      const pendingTxids = await this.pendingTransactionFromPeer();
+      const blockHeight = await this.blockNumberFromPeer();
+
+      // 3. create transaction which is not in step 1 array
+      const newTxids = pendingTxids.filter((pendingTxid) => transactions.every((transaction) => pendingTxid !== transaction.txid));
+      for (const txid of newTxids) {
+        try {
+          const tx = await this.getTransactionByTxidFromPeer(txid);
+          await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
+        } catch (error) {
+          this.logger.error(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
+        }
+      }
+
+      const findPending = await this.pendingTransactionModel.findOne({
+        where: {
+          blockchain_id: this.bcid,
+          blockAsked: blockHeight,
+        },
       });
-      return result[0];
+      if (!findPending) {
+        await this.pendingTransactionModel.create({
+          blockchain_id: this.bcid,
+          blockAsked: blockHeight,
+          transactions: JSON.stringify(pendingTxids),
+          timestamp: Math.floor(Date.now() / 1000),
+        });
+      } else {
+        await this.pendingTransactionModel.update({
+          transactions: JSON.stringify(pendingTxids),
+          timestamp: Math.floor(Date.now() / 1000),
+        }, {
+          where: {
+            blockchain_id: this.bcid,
+            blockAsked: blockHeight,
+          },
+        });
+      }
     } catch (error) {
-      this.logger.debug(`[${this.constructor.name}] updatePendingTransaction error: ${error}`);
+      this.logger.error(`[${this.constructor.name}] updatePendingTransaction error: ${error}`);
       return Promise.reject(error);
     }
   }
 
   static cmd({
-    type, block, blockHash,
+    type, block, blockHash, txid,
   }) {
     let result;
     switch (type) {
@@ -376,6 +435,14 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           jsonrpc: '1.0',
           method: 'getrawmempool',
           params: [false],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getTransaction':
+        result = {
+          jsonrpc: '1.0',
+          method: 'getrawtransaction',
+          params: [txid, true],
           id: dvalue.randomID(),
         };
         break;
