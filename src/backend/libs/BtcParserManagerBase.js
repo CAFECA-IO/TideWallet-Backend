@@ -70,6 +70,7 @@ class BtcParserManagerBase extends ParserManagerBase {
     if (this.jobDoneList.length === this.numberOfJobs) {
       // 3. update failed unparsed retry
       // 4. remove parsed transaction from UnparsedTransaction table
+      // 5. update pendingTransaction
       try {
         const successParsedTxs = this.jobDoneList.filter((tx) => tx.success === true);
         const failedList = this.jobDoneList.filter((tx) => tx.success === false);
@@ -83,6 +84,9 @@ class BtcParserManagerBase extends ParserManagerBase {
         for (const tx of successParsedTxs) {
           await this.removeParsedTx(tx);
         }
+
+        // 5. update pendingTransaction
+        await this.parsePendingTransaction();
 
         this.createJob();
       } catch (error) {
@@ -219,10 +223,8 @@ class BtcParserManagerBase extends ParserManagerBase {
   async updateBalance() {
     this.logger.debug(`[${this.constructor.name}] updateBalance`);
     // step:
-    // 1. update pending transaction
     // 2. update balance
     try {
-      await this.parsePendingTransaction();
       // update balance
       for (const accountID of Object.keys(this.updateBalanceAccounts)) {
         if (this.updateBalanceAccounts[accountID] && this.updateBalanceAccounts[accountID].retryCount < 3) {
@@ -280,8 +282,8 @@ class BtcParserManagerBase extends ParserManagerBase {
     // step:
     // 1. find all transaction where status is null(means pending transaction)
     // 2. get last pending transaction from pendingTransaction table
-    // 3. create transaction which is not in step 1 array
-    // 4. update result which is not in step 2 array
+    // 3. update result which is not in step 2 array
+    // 4. remove pending transaction
     try {
       // 1. find all transaction where status is null(means pending transaction)
       const transactions = await this.getTransactionsResultNull();
@@ -289,18 +291,7 @@ class BtcParserManagerBase extends ParserManagerBase {
       // 2. get last pending transaction from pendingTransaction table
       const pendingTxids = await this.getPendingTransactionFromDB();
 
-      // 3. create transaction which is not in step 1 array
-      const newTxids = pendingTxids.filter((pendingTxid) => transactions.every((transaction) => pendingTxid !== transaction.txid));
-      for (const txid of newTxids) {
-        try {
-          const tx = await this.getTransactionByTxidFromPeer(txid);
-          await BtcParserManagerBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
-        } catch (error) {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
-        }
-      }
-
-      // 4. update result which is not in step 2 array
+      // 3. update result which is not in step 2 array
       const missingTxs = transactions.filter((transaction) => (pendingTxids.every((pendingTxid) => pendingTxid !== transaction.txid) && this.block - transaction.block >= 6));
       for (const tx of missingTxs) {
         try {
@@ -365,6 +356,9 @@ class BtcParserManagerBase extends ParserManagerBase {
           this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
         }
       }
+
+      // 4. remove pending transaction
+      await this.removePendingTransaction();
     } catch (error) {
       this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
       return Promise.reject(error);

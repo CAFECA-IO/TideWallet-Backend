@@ -224,7 +224,7 @@ class EthParserBase extends ParserBase {
           const to = Utils.parse32BytesAddress(topics[2]);
           const tokenTransaction = await this.tokenTransactionModel.findOrCreate({
             where: {
-              transaction_id: transaction.transaction_id, currency_id: currency.currency_id,
+              currency_id: currency.currency_id, transaction_id: transaction.transaction_id,
             },
             defaults: {
               transaction_id: transaction.transaction_id,
@@ -368,8 +368,8 @@ class EthParserBase extends ParserBase {
 
       await this.receiptModel.findOrCreate({
         where: {
-          transaction_id: insertTx.transaction_id,
           currency_id: this.currencyInfo.currency_id,
+          transaction_id: insertTx.transaction_id,
         },
         defaults: {
           transaction_id: insertTx.transaction_id,
