@@ -466,62 +466,108 @@ class Explore extends Bot {
     }
   }
 
-  async AddressTransactions({ params }) {
+  async AddressTransactions({ params, query }) {
     try {
       const { address } = params;
+      const { index = 0, limit = 20 } = query;
 
       const findAddress = await this.accountAddressModel.findOne({
         where: { address },
         attributes: ['accountAddress_id', 'account_id', 'address'],
-        include: [
-          {
-            model: this.addressTokenTransactionModel,
-            // attributes: ['blockchain_id'],
-          },
-        ],
       });
 
+      // find transaction
+      const findTxs = await this.addressTransactionModel.findAll({
+        where: { accountAddress_id: findAddress.accountAddress_id },
+        offset: index,
+        limit,
+        include: [
+          {
+            model: this.transactionModel,
+          },
+          {
+            model: this.currencyModel,
+            attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
+          },
+        ],
+        order: [['addressTransaction_id', 'DESC']],
+      });
+
+      // find token transaction
+      const findTokenTxs = await this.addressTokenTransactionModel.findAll({
+        where: { accountAddress_id: findAddress.accountAddress_id },
+        offset: index,
+        limit,
+        include: [
+          {
+            model: this.tokenTransactionModel,
+            include: [
+              {
+                model: this.transactionModel,
+              },
+            ],
+          },
+          {
+            model: this.currencyModel,
+            attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
+          },
+        ],
+        order: [['addressTokenTransaction_id', 'DESC']],
+      });
+
+      const txs = [...findTxs, ...findTokenTxs];
+      txs.sort((a, b) => b.Transaction.timestamp - a.Transaction.timestamp);
+
+      const items = [];
+      for (let i = 0; i < Math.min(txs.length, Number(limit) + 1); i++) {
+        const txItem = txs[i];
+        let txHash = '';
+        let block = 0;
+        let timestamp = 0;
+        let from = '';
+        let to = '';
+        let _fee = '0';
+        if (txItem.TokenTransaction) {
+          ({
+            txid: txHash, block, timestamp, source_addresses: from, destination_addresses: to, fee: _fee,
+          } = txItem.TokenTransaction.Transaction);
+        } else {
+          ({
+            txid: txHash, block, timestamp, source_addresses: from, destination_addresses: to, fee: _fee,
+          } = txItem.Transaction);
+        }
+        items.push({
+          blockchainId: txItem.Currency.blockchain_id,
+          iconUrl: txItem.Currency.icon,
+          txHash,
+          symbol: txItem.Currency.symbol,
+          block,
+          timestamp,
+          from,
+          to,
+          value: Utils.dividedByDecimal(txItem.amount, txItem.Currency.decimals),
+          fee: Utils.dividedByDecimal(_fee, txItem.Currency.decimals),
+        });
+      }
+
       // count all amount
-      // let findAllAmount = await this.addressTransactionModel.count({
-      //   where: { accountAddress_id: findAddress.accountAddress_id },
-      // });
-      // for (const tokenTxItem of findAddress.AddressTokenTransactions) {
-      //   findAllAmount += await this.addressTokenTransactionModel.count({
-      //     where: { accountAddress_id: tokenTxItem.accountAddress_id },
-      //   });
-      // }
-      // const meta = {
-      //   hasNext: false,
-      //   nextIndex: 0,
-      //   count: findAllAmount || 0,
-      // };
+      const findAllAmount = await this.addressTransactionModel.count({
+        where: { accountAddress_id: findAddress.accountAddress_id },
+      }) + await this.addressTokenTransactionModel.count({
+        where: { accountAddress_id: findAddress.accountAddress_id },
+      });
 
-      // if (items.length > Number(limit)) {
-      //   items.pop();
-      //   meta.hasNext = true;
-      //   meta.nextIndex = Number(index) + Number(limit);
-      // }
-
-      // return new ResponseFormat({ message: 'Explore Address Transactions', payload: findAddress });
-      const items = [
-        {
-          blockchainId: '8000003C',
-          iconUrl: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png',
-          txHash: '0xfeec336202de22484a7f992ddd7020e1925cdf35ee3d6164375c519b57003628',
-          symbol: 'ETH',
-          block: '600010',
-          timestamp: 1615450230,
-          from: '0x5b43760f7760fb0304c0716609dc5c266d60db8f',
-          to: '0xa1d8d972560c2f8144af871db508f0b0b10a3fbf',
-          value: '1.209423506',
-          fee: '0.000000112 ',
-        },
-      ];
       const meta = {
         hasNext: false,
         nextIndex: 0,
-        count: 1,
+        count: findAllAmount || 0,
       };
+
+      if (items.length > Number(limit)) {
+        items.pop();
+        meta.hasNext = true;
+        meta.nextIndex = Number(index) + Number(limit);
+      }
 
       return new ResponseFormat({ message: 'Explore Address Transactions', items, meta });
     } catch (e) {
@@ -590,7 +636,7 @@ class Explore extends Bot {
         });
       }
 
-      return new ResponseFormat({ message: 'Explore Address Transactions', payload });
+      return new ResponseFormat({ message: 'Explore Search', payload });
     } catch (e) {
       this.logger.error('Search e:', e);
       if (e.code) return e;
