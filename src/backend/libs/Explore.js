@@ -426,7 +426,7 @@ class Explore extends Bot {
         ],
       });
 
-      if (!findAddress) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+      if (!findAddress || findAddress.length === 0) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const balance = [];
       for (let i = 0; i < findAddress.length; i++) {
@@ -475,6 +475,18 @@ class Explore extends Bot {
         where: { address },
         attributes: ['accountAddress_id', 'account_id', 'address'],
       });
+
+      if (!findAddress) {
+        return new ResponseFormat({
+          message: 'Explore Address Transactions',
+          items: [],
+          meta: {
+            hasNext: false,
+            nextIndex: 0,
+            count: 0,
+          },
+        });
+      }
 
       // find transaction
       const findTxs = await this.addressTransactionModel.findAll({
