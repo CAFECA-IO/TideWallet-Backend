@@ -13,6 +13,7 @@ class BtcParserManagerBase extends ParserManagerBase {
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
     this.accountCurrencyModel = this.database.db.AccountCurrency;
+    this.addressTransactionModel = this.database.db.addressTransaction;
     this.options = {};
     this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
     this.decimal = 8;
@@ -353,14 +354,14 @@ class BtcParserManagerBase extends ParserManagerBase {
             this.updateBalanceAccounts[findAddressTransaction.AccountAddress.account_id] = { retryCount: 0 };
           }
         } catch (error) {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
+          this.logger.error(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.txid}) error: ${error}`);
         }
       }
 
       // 4. remove pending transaction
       await this.removePendingTransaction();
     } catch (error) {
-      this.logger.debug(`[${this.constructor.name}] parsePendingTransaction`);
+      this.logger.error(`[${this.constructor.name}] parsePendingTransaction error: ${error}`);
       return Promise.reject(error);
     }
   }

@@ -118,7 +118,7 @@ class ParserManagerBase {
         where: { blockchain_id: this.bcid, blockAsked: this.block },
       });
 
-      if (pending) {
+      if (pending && pending.transactions) {
         return JSON.parse(pending.transactions);
       }
       return [];

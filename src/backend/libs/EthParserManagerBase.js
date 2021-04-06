@@ -155,7 +155,7 @@ class EthParserManagerBase extends ParserManagerBase {
             );
           }
         } catch (error) {
-          this.logger.debug(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
+          this.logger.error(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);
         }
       }
 
