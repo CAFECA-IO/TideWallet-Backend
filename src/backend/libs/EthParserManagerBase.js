@@ -53,37 +53,33 @@ class EthParserManagerBase extends ParserManagerBase {
     }
   }
 
-  async doCallback(job) {
-    this.isParsing = true;
-    // job = { ...UnparsedTransaction, success: bool }
-    this.jobDoneList.push(job);
-    if (this.jobDoneList.length === this.numberOfJobs) {
+  async doJobDone() {
+    this.logger.debug(`[${this.constructor.name}] doJobDone`);
+    // 3. update failed unparsed retry
+    // 4. remove parsed transaction from UnparsedTransaction table
+    // 5. update pendingTransaction
+    try {
+      const successParsedTxs = this.jobDoneList.filter((tx) => tx.success === true);
+      const failedList = this.jobDoneList.filter((tx) => tx.success === false);
+
       // 3. update failed unparsed retry
-      // 4. remove parsed transaction from UnparsedTransaction table
-      // 5. update pendingTransaction
-      try {
-        const successParsedTxs = this.jobDoneList.filter((tx) => tx.success === true);
-        const failedList = this.jobDoneList.filter((tx) => tx.success === false);
-
-        // 3. update failed unparsed retry
-        for (const failedTx of failedList) {
-          await this.updateRetry(failedTx);
-        }
-
-        // 4. remove parsed transaction from UnparsedTransaction table
-        for (const tx of successParsedTxs) {
-          await this.removeParsedTx(tx);
-        }
-
-        // 5. update pendingTransaction
-        await this.parsePendingTransaction();
-
-        this.createJob();
-      } catch (error) {
-        this.logger.error(`[${this.constructor.name}] doCallback error: ${error}`);
-        this.isParsing = false;
-        return Promise.resolve();
+      for (const failedTx of failedList) {
+        await this.updateRetry(failedTx);
       }
+
+      // 4. remove parsed transaction from UnparsedTransaction table
+      for (const tx of successParsedTxs) {
+        await this.removeParsedTx(tx);
+      }
+
+      // 5. update pendingTransaction
+      await this.parsePendingTransaction();
+
+      this.createJob();
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] doJobDone error: ${error}`);
+      this.isParsing = false;
+      return Promise.resolve();
     }
   }
 

@@ -18,6 +18,8 @@ class ParserManagerBase {
     this.pendingTransactionModel = this.database.db.PendingTransaction;
 
     this.amqpHost = this.config.rabbitmq.host;
+    this.jobTimeout = 10 * 60 * 1000; // 10 min
+    this.jobTimer = {};
   }
 
   async init() {
@@ -70,6 +72,15 @@ class ParserManagerBase {
 
   // eslint-disable-next-line no-unused-vars
   async doCallback(job) {
+    this.isParsing = true;
+    // job = { ...UnparsedTransaction, success: bool }
+    this.jobDoneList.push(job);
+    if (this.jobDoneList.length === this.numberOfJobs) {
+      await this.doJobDone();
+    }
+  }
+
+  async doJobDone() {
     // need override
     return Promise.resolve();
   }
@@ -203,6 +214,13 @@ class ParserManagerBase {
       this.logger.debug(`[${this.constructor.name}] removePendingTransaction error: ${error}`);
       return Promise.reject(error);
     }
+  }
+
+  setJobTimer() {
+    this.logger.debug(`[${this.constructor.name}] setJobTimer`);
+    return setTimeout(() => {
+
+    }, this.jobTimeout);
   }
 
   async updateBalance() {
