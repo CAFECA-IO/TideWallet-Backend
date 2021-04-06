@@ -13,7 +13,7 @@ class BtcParserManagerBase extends ParserManagerBase {
     this.tokenTransactionModel = this.database.db.TokenTransaction;
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
     this.accountCurrencyModel = this.database.db.AccountCurrency;
-    this.addressTransactionModel = this.database.db.addressTransaction;
+    this.addressTransactionModel = this.database.db.AddressTransaction;
     this.options = {};
     this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
     this.decimal = 8;
