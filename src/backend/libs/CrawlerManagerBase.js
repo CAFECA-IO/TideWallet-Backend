@@ -30,8 +30,8 @@ class CrawlerManagerBase {
     }, this.feeSyncInterval);
     this.syncAvgFee();
 
-    setInterval(() => {
-      this.updatePendingTransaction();
+    setInterval(async () => {
+      await this.updatePendingTransaction();
     }, this.pendingTxSyncInterval);
     return this;
   }
