@@ -20,6 +20,7 @@ class CrawlerManagerBase {
 
   async init() {
     this.isSyncing = false;
+    this.isUpdatePending = false;
     this.blockInfo = await this.getBlockInfo();
     this.currencyInfo = await this.getCurrencyInfo();
     if (this.blockInfo.start_block > this.blockInfo.block) {
@@ -30,9 +31,19 @@ class CrawlerManagerBase {
     }, this.feeSyncInterval);
     this.syncAvgFee();
 
-    setInterval(() => {
-      this.updatePendingTransaction();
-    }, this.pendingTxSyncInterval);
+    // ++ make crawler something wrong
+    // ++ temp not sync pending transaction on btc
+    // setInterval(() => {
+    //   if (!this.isUpdatePending) {
+    //     this.isUpdatePending = true;
+    //     try {
+    //       this.updatePendingTransaction();
+    //       this.isUpdatePending = false;
+    //     } catch (error) {
+    //       this.isUpdatePending = false;
+    //     }
+    //   }
+    // }, this.pendingTxSyncInterval);
     return this;
   }
 
