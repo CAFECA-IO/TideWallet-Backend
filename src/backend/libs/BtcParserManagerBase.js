@@ -55,6 +55,9 @@ class BtcParserManagerBase extends ParserManagerBase {
         for (const tx of txs) {
           await this.setJob(tx);
         }
+        if (!this.jobTimer) {
+          this.jobTimer = this.createJobTimer();
+        }
       }
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] createJob error: ${error}`);

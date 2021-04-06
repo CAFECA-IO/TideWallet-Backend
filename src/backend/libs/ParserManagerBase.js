@@ -19,7 +19,7 @@ class ParserManagerBase {
 
     this.amqpHost = this.config.rabbitmq.host;
     this.jobTimeout = 10 * 60 * 1000; // 10 min
-    this.jobTimer = {};
+    this.jobTimer = null;
   }
 
   async init() {
@@ -70,13 +70,30 @@ class ParserManagerBase {
     }
   }
 
+  createJobTimer() {
+    if (!this.jobTimer) {
+      return setTimeout(async () => {
+        await this.queueChannel.purgeQueue(this.jobQueue);
+        await this.queueChannel.purgeQueue(this.jobCallback);
+        await this.doJobDone();
+        this.jobTimer = null;
+      }, this.jobTimeout);
+    }
+  }
+
   // eslint-disable-next-line no-unused-vars
   async doCallback(job) {
     this.isParsing = true;
+    if (this.jobTimer) {
+      clearTimeout(this.jobTimer);
+      this.jobTimer = null;
+    }
     // job = { ...UnparsedTransaction, success: bool }
     this.jobDoneList.push(job);
     if (this.jobDoneList.length === this.numberOfJobs) {
       await this.doJobDone();
+    } else if (!this.jobTimer) {
+      this.jobTimer = this.createJobTimer();
     }
   }
 

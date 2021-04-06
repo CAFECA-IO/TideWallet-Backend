@@ -31,6 +31,8 @@ class CrawlerManagerBase {
     }, this.feeSyncInterval);
     this.syncAvgFee();
 
+    // ++ make crawler something wrong
+    // ++ temp not sync pending transaction on btc
     // setInterval(() => {
     //   if (!this.isUpdatePending) {
     //     this.isUpdatePending = true;
