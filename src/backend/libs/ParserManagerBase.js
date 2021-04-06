@@ -233,13 +233,6 @@ class ParserManagerBase {
     }
   }
 
-  setJobTimer() {
-    this.logger.debug(`[${this.constructor.name}] setJobTimer`);
-    return setTimeout(() => {
-
-    }, this.jobTimeout);
-  }
-
   async updateBalance() {
     // need override
     return Promise.resolve();
