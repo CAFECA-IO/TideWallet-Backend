@@ -31,17 +31,17 @@ class CrawlerManagerBase {
     }, this.feeSyncInterval);
     this.syncAvgFee();
 
-    setInterval(() => {
-      if (!this.isUpdatePending) {
-        this.isUpdatePending = true;
-        try {
-          this.updatePendingTransaction();
-          this.isUpdatePending = false;
-        } catch (error) {
-          this.isUpdatePending = false;
-        }
-      }
-    }, this.pendingTxSyncInterval);
+    // setInterval(() => {
+    //   if (!this.isUpdatePending) {
+    //     this.isUpdatePending = true;
+    //     try {
+    //       this.updatePendingTransaction();
+    //       this.isUpdatePending = false;
+    //     } catch (error) {
+    //       this.isUpdatePending = false;
+    //     }
+    //   }
+    // }, this.pendingTxSyncInterval);
     return this;
   }
 
