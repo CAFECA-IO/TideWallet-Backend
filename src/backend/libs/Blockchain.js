@@ -119,7 +119,12 @@ class Blockchain extends Bot {
   async BlockchainDetail({ params }) {
     const { blockchain_id } = params;
     try {
-      const payload = await this.blockchainModel.findOne({
+      const findChainNetworkIndex = Object.values(blockchainNetworks).findIndex((item) => item.blockchain_id === blockchain_id);
+      if (findChainNetworkIndex === -1) return new ResponseFormat({ message: 'blockchain_id Not Found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+      const tableName = Object.keys(blockchainNetworks)[findChainNetworkIndex];
+      console.log('tableName:', tableName);
+
+      const payload = await this.database.db[tableName].Blockchain.findOne({
         where: { blockchain_id },
       });
 
