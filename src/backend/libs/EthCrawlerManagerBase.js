@@ -162,7 +162,10 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
   async oneCycle() {
     try {
-      if (this.isSyncing) return Promise.resolve('EthCrawlerManagerBase is sycning');
+      if (this.isSyncing) {
+        this.logger.log(`[${this.constructor.name}] is sycning`);
+        return Promise.resolve();
+      }
       this.isSyncing = true;
       // step
       // 1. blockNumberFromDB
