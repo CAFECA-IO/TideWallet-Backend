@@ -68,20 +68,80 @@ fee = 3600000
 pending = 15000
 
 [database]
-protocol = "postgres"
-host = "postgres"
-port = ""
-user = ""
-password = ""
-dbName = ""
-logging = false
-autoReconnect = true
-ormEnable = true
-  [database.dialectOptions]
-  connectTimeout = 3000
-
-  [database.pool]
-  max = 10
+  [database.bitcoin_mainnet]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.bitcoin_mainnet.dialectOptions]
+    connectTimeout = 3000
+    [database.bitcoin_mainnet.pool]
+    max = 10
+    
+  [database.bitcoin_testnet]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.bitcoin_testnet.dialectOptions]
+    connectTimeout = 3000
+    [database.bitcoin_testnet.pool]
+    max = 10
+    
+  [database.ethereum_mainnet]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.ethereum_mainnet.dialectOptions]
+    connectTimeout = 3000
+    [database.ethereum_mainnet.pool]
+    max = 10
+    
+  [database.ethereum_ropsten]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.ethereum_ropsten.dialectOptions]
+    connectTimeout = 3000
+    [database.ethereum_ropsten.pool]
+    max = 10
+    
+  [database.cafeca]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.cafeca.dialectOptions]
+    connectTimeout = 3000
+    [database.cafeca.pool]
+    max = 10
 
 [jwt]
 secret = ""

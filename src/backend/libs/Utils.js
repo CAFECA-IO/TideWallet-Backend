@@ -532,6 +532,13 @@ class Utils {
     this.config = config;
     this.database = database;
     this.logger = logger;
+    this.databaseInstanceName = [];
+
+    Object.keys(database.db).forEach((item) => {
+      this.databaseInstanceName.push(item);
+    });
+
+    this.defaultDBInstanceName = this.databaseInstanceName.findIndex((element) => element === 'cafeca') !== -1 ? 'cafeca' : this.databaseInstanceName[0];
     return this.scanFolder({ folder: __dirname })
       .then((list) => list.filter((v) => (path.parse(v).name !== path.parse(interfaceFN).name) && v.indexOf('.js') !== -1))
       // eslint-disable-next-line import/no-dynamic-require, global-require

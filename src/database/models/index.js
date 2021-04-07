@@ -5,122 +5,125 @@ const { Sequelize, DataTypes } = require('sequelize');
 const basename = path.basename(__filename);
 const db = {};
 
-let dbInstance;
+const dbInstance = {};
 
-function initialORM({ database, logger = console }) {
+const initialORM = async ({ database, logger = console }) => {
   if (!logger) logger = console;
   try {
-    if (typeof dbInstance === 'object') {
+    if (typeof dbInstance === 'object' && Object.keys(dbInstance).length > 0) {
       return dbInstance;
     }
 
-    database.dialect = database.protocol;
-    database.username = database.user;
-    database.database = database.dbName;
+    for (const dbConfig of Object.values(database)) {
+      dbConfig.dialect = dbConfig.protocol;
+      dbConfig.username = dbConfig.user;
+      dbConfig.database = dbConfig.dbName;
 
-    // init env.js for migration
-    fs.writeFileSync('env.js', `
+      // init env.js for migration
+      fs.writeFileSync(`env.${dbConfig.dbName}.js`, `
 const env = {
-  development: ${JSON.stringify(database)},
+  development: ${JSON.stringify(dbConfig)},
 };
 
 module.exports = env;
 `);
 
-    const sequelize = new Sequelize(database.dbName, database.user, database.password, database);
-    fs.readdirSync(__dirname)
-      .filter((file) => (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.js'))
-      .forEach((file) => {
-        const modelPath = path.resolve(__dirname, file);
-        // eslint-disable-next-line global-require, import/no-dynamic-require
-        const myModel = require(modelPath)(sequelize, DataTypes);
-        db[file.replace(/\.js/g, '')] = myModel;
-      });
+      const sequelize = new Sequelize(dbConfig.dbName, dbConfig.user, dbConfig.password, dbConfig);
+      fs.readdirSync(__dirname)
+        .filter((file) => (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.js'))
+        .forEach((file) => {
+          const modelPath = path.resolve(__dirname, file);
+          // eslint-disable-next-line global-require, import/no-dynamic-require
+          const myModel = require(modelPath)(sequelize, DataTypes);
+          if (!db[dbConfig.dbName])db[dbConfig.dbName] = {};
+          db[dbConfig.dbName][file.replace(/\.js/g, '')] = myModel;
+        });
 
-    // Account
-    db.Account.belongsTo(db.User, { foreignKey: 'user_id' });
-    db.User.hasMany(db.Account, { foreignKey: 'user_id' });
-    db.Account.belongsTo(db.Blockchain, { foreignKey: 'blockchain_id' });
-    db.Blockchain.hasOne(db.Account, { foreignKey: 'blockchain_id' });
+      // Account
+      db[dbConfig.dbName].Account.belongsTo(db[dbConfig.dbName].User, { foreignKey: 'user_id' });
+      db[dbConfig.dbName].User.hasMany(db[dbConfig.dbName].Account, { foreignKey: 'user_id' });
+      db[dbConfig.dbName].Account.belongsTo(db[dbConfig.dbName].Blockchain, { foreignKey: 'blockchain_id' });
+      db[dbConfig.dbName].Blockchain.hasOne(db[dbConfig.dbName].Account, { foreignKey: 'blockchain_id' });
 
-    // AccountCurrency
-    db.AccountCurrency.belongsTo(db.Account, { foreignKey: 'account_id' });
-    db.Account.hasMany(db.AccountCurrency, { foreignKey: 'account_id' });
-    db.AccountCurrency.belongsTo(db.Currency, { foreignKey: 'currency_id' });
-    db.Currency.hasOne(db.AccountCurrency, { foreignKey: 'currency_id' });
+      // AccountCurrency
+      db[dbConfig.dbName].AccountCurrency.belongsTo(db[dbConfig.dbName].Account, { foreignKey: 'account_id' });
+      db[dbConfig.dbName].Account.hasMany(db[dbConfig.dbName].AccountCurrency, { foreignKey: 'account_id' });
+      db[dbConfig.dbName].AccountCurrency.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].Currency.hasOne(db[dbConfig.dbName].AccountCurrency, { foreignKey: 'currency_id' });
 
-    // AccountAddress
-    db.AccountAddress.belongsTo(db.Account, { foreignKey: 'account_id' });
-    db.Account.hasMany(db.AccountAddress, { foreignKey: 'account_id' });
+      // AccountAddress
+      db[dbConfig.dbName].AccountAddress.belongsTo(db[dbConfig.dbName].Account, { foreignKey: 'account_id' });
+      db[dbConfig.dbName].Account.hasMany(db[dbConfig.dbName].AccountAddress, { foreignKey: 'account_id' });
 
-    // BlockScanned
-    db.BlockScanned.belongsTo(db.Blockchain, { foreignKey: 'blockchain_id' });
-    db.Blockchain.hasMany(db.BlockScanned, { foreignKey: 'blockchain_id' });
+      // BlockScanned
+      db[dbConfig.dbName].BlockScanned.belongsTo(db[dbConfig.dbName].Blockchain, { foreignKey: 'blockchain_id' });
+      db[dbConfig.dbName].Blockchain.hasMany(db[dbConfig.dbName].BlockScanned, { foreignKey: 'blockchain_id' });
 
-    // Currency
-    db.Currency.belongsTo(db.Blockchain, { foreignKey: 'blockchain_id' });
-    db.Blockchain.hasOne(db.Currency, { foreignKey: 'blockchain_id' });
+      // Currency
+      db[dbConfig.dbName].Currency.belongsTo(db[dbConfig.dbName].Blockchain, { foreignKey: 'blockchain_id' });
+      db[dbConfig.dbName].Blockchain.hasOne(db[dbConfig.dbName].Currency, { foreignKey: 'blockchain_id' });
 
-    // Device
-    db.Device.belongsTo(db.User, { foreignKey: 'user_id' });
-    db.User.hasMany(db.Device, { foreignKey: 'user_id' });
+      // Device
+      db[dbConfig.dbName].Device.belongsTo(db[dbConfig.dbName].User, { foreignKey: 'user_id' });
+      db[dbConfig.dbName].User.hasMany(db[dbConfig.dbName].Device, { foreignKey: 'user_id' });
 
-    // ThirdPartyLink
-    db.ThirdPartyLink.belongsTo(db.User, { foreignKey: 'user_id' });
-    db.User.hasMany(db.ThirdPartyLink, { foreignKey: 'user_id' });
+      // ThirdPartyLink
+      db[dbConfig.dbName].ThirdPartyLink.belongsTo(db[dbConfig.dbName].User, { foreignKey: 'user_id' });
+      db[dbConfig.dbName].User.hasMany(db[dbConfig.dbName].ThirdPartyLink, { foreignKey: 'user_id' });
 
-    // Transaction
-    db.Transaction.belongsTo(db.Currency, { foreignKey: 'currency_id' });
-    db.Currency.hasMany(db.Transaction, { foreignKey: 'currency_id' });
+      // Transaction
+      db[dbConfig.dbName].Transaction.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].Currency.hasMany(db[dbConfig.dbName].Transaction, { foreignKey: 'currency_id' });
 
-    // AddressTransaction
-    db.AddressTransaction.belongsTo(db.Currency, { foreignKey: 'currency_id' });
-    db.Currency.hasMany(db.AddressTransaction, { foreignKey: 'currency_id' });
-    db.AddressTransaction.belongsTo(db.AccountAddress, { foreignKey: 'accountAddress_id' });
-    db.AccountAddress.hasMany(db.AddressTransaction, { foreignKey: 'accountAddress_id' });
-    db.AddressTransaction.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
-    db.Transaction.hasMany(db.AddressTransaction, { foreignKey: 'transaction_id' });
+      // AddressTransaction
+      db[dbConfig.dbName].AddressTransaction.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].Currency.hasMany(db[dbConfig.dbName].AddressTransaction, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].AddressTransaction.belongsTo(db[dbConfig.dbName].AccountAddress, { foreignKey: 'accountAddress_id' });
+      db[dbConfig.dbName].AccountAddress.hasMany(db[dbConfig.dbName].AddressTransaction, { foreignKey: 'accountAddress_id' });
+      db[dbConfig.dbName].AddressTransaction.belongsTo(db[dbConfig.dbName].Transaction, { foreignKey: 'transaction_id' });
+      db[dbConfig.dbName].Transaction.hasMany(db[dbConfig.dbName].AddressTransaction, { foreignKey: 'transaction_id' });
 
-    // TokenTransaction
-    db.TokenTransaction.belongsTo(db.Currency, { foreignKey: 'currency_id' });
-    db.Currency.hasMany(db.TokenTransaction, { foreignKey: 'currency_id' });
-    db.TokenTransaction.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
-    db.Transaction.hasMany(db.TokenTransaction, { foreignKey: 'transaction_id' });
+      // TokenTransaction
+      db[dbConfig.dbName].TokenTransaction.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].Currency.hasMany(db[dbConfig.dbName].TokenTransaction, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].TokenTransaction.belongsTo(db[dbConfig.dbName].Transaction, { foreignKey: 'transaction_id' });
+      db[dbConfig.dbName].Transaction.hasMany(db[dbConfig.dbName].TokenTransaction, { foreignKey: 'transaction_id' });
 
-    // AddressTokenTransaction
-    db.AddressTokenTransaction.belongsTo(db.Currency, { foreignKey: 'currency_id' });
-    db.Currency.hasMany(db.AddressTokenTransaction, { foreignKey: 'currency_id' });
-    db.AddressTokenTransaction.belongsTo(db.AccountAddress, { foreignKey: 'accountAddress_id' });
-    db.AccountAddress.hasMany(db.AddressTokenTransaction, { foreignKey: 'accountAddress_id' });
-    db.AddressTokenTransaction.belongsTo(db.TokenTransaction, { foreignKey: 'tokenTransaction_id' });
-    db.TokenTransaction.hasMany(db.AddressTokenTransaction, { foreignKey: 'tokenTransaction_id' });
+      // AddressTokenTransaction
+      db[dbConfig.dbName].AddressTokenTransaction.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].Currency.hasMany(db[dbConfig.dbName].AddressTokenTransaction, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].AddressTokenTransaction.belongsTo(db[dbConfig.dbName].AccountAddress, { foreignKey: 'accountAddress_id' });
+      db[dbConfig.dbName].AccountAddress.hasMany(db[dbConfig.dbName].AddressTokenTransaction, { foreignKey: 'accountAddress_id' });
+      db[dbConfig.dbName].AddressTokenTransaction.belongsTo(db[dbConfig.dbName].TokenTransaction, { foreignKey: 'tokenTransaction_id' });
+      db[dbConfig.dbName].TokenTransaction.hasMany(db[dbConfig.dbName].AddressTokenTransaction, { foreignKey: 'tokenTransaction_id' });
 
-    // UTXO
-    db.UTXO.belongsTo(db.Currency, { foreignKey: 'currency_id' });
-    db.Currency.hasMany(db.UTXO, { foreignKey: 'currency_id' });
-    db.UTXO.belongsTo(db.AccountAddress, { foreignKey: 'accountAddress_id' });
-    db.AccountAddress.hasMany(db.UTXO, { foreignKey: 'accountAddress_id' });
-    db.UTXO.belongsTo(db.Transaction, { foreignKey: 'transaction_id' });
-    db.Transaction.hasMany(db.UTXO, { foreignKey: 'transaction_id' });
-    db.UTXO.belongsTo(db.Transaction, { foreignKey: 'to_tx' });
-    db.Transaction.hasMany(db.UTXO, { foreignKey: 'to_tx' });
+      // UTXO
+      db[dbConfig.dbName].UTXO.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].Currency.hasMany(db[dbConfig.dbName].UTXO, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].UTXO.belongsTo(db[dbConfig.dbName].AccountAddress, { foreignKey: 'accountAddress_id' });
+      db[dbConfig.dbName].AccountAddress.hasMany(db[dbConfig.dbName].UTXO, { foreignKey: 'accountAddress_id' });
+      db[dbConfig.dbName].UTXO.belongsTo(db[dbConfig.dbName].Transaction, { foreignKey: 'transaction_id' });
+      db[dbConfig.dbName].Transaction.hasMany(db[dbConfig.dbName].UTXO, { foreignKey: 'transaction_id' });
+      db[dbConfig.dbName].UTXO.belongsTo(db[dbConfig.dbName].Transaction, { foreignKey: 'to_tx' });
+      db[dbConfig.dbName].Transaction.hasMany(db[dbConfig.dbName].UTXO, { foreignKey: 'to_tx' });
 
-    // TokenSecret
-    db.TokenSecret.belongsTo(db.User, { foreignKey: 'user_id' });
-    db.User.hasMany(db.TokenSecret, { foreignKey: 'user_id' });
+      // TokenSecret
+      db[dbConfig.dbName].TokenSecret.belongsTo(db[dbConfig.dbName].User, { foreignKey: 'user_id' });
+      db[dbConfig.dbName].User.hasMany(db[dbConfig.dbName].TokenSecret, { foreignKey: 'user_id' });
 
-    // FiatCurrencyRate
-    db.FiatCurrencyRate.belongsTo(db.Currency, { foreignKey: 'currency_id' });
-    db.Currency.hasMany(db.FiatCurrencyRate, { foreignKey: 'currency_id' });
+      // FiatCurrencyRate
+      db[dbConfig.dbName].FiatCurrencyRate.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].Currency.hasMany(db[dbConfig.dbName].FiatCurrencyRate, { foreignKey: 'currency_id' });
 
-    db.sequelize = sequelize;
-    db.Sequelize = Sequelize;
+      db[dbConfig.dbName].sequelize = sequelize;
+      db[dbConfig.dbName].Sequelize = Sequelize;
 
-    dbInstance = sequelize.sync({ logging: false }).then(() => {
+      dbInstance[dbConfig.dbName] = await sequelize.sync({ logging: false }).then(() => {
       // eslint-disable-next-line no-console
-      logger.log('\x1b[1m\x1b[32mDB   \x1b[0m\x1b[21m connect success');
-      return db;
-    });
+        logger.log(`\x1b[1m\x1b[32mDB   \x1b[0m\x1b[21m ${dbConfig.dbName} connect success`);
+        return db[dbConfig.dbName];
+      });
+    }
 
     return dbInstance;
   } catch (e) {
@@ -128,6 +131,6 @@ module.exports = env;
     logger.error('\x1b[1m\x1b[31mDB   \x1b[0m\x1b[21m \x1b[1m\x1b[31mconnect fails\x1b[0m\x1b[21m');
     throw e;
   }
-}
+};
 
 module.exports = initialORM;

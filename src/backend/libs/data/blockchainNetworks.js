@@ -1,5 +1,5 @@
 module.exports = {
-  BITCOIN: {
+  bitcoin_mainnet: {
     blockchain_id: '80000000',
     name: 'Bitcoin',
     coin_type: 0,
@@ -17,7 +17,7 @@ module.exports = {
     start_block: 671687,
     avg_fee: '0',
   },
-  BITCOIN_TESTNET: {
+  bitcoin_testnet: {
     blockchain_id: '80000001',
     name: 'Bitcoin Testnet',
     coin_type: 1,
@@ -35,7 +35,7 @@ module.exports = {
     start_block: 1937267,
     avg_fee: '0',
   },
-  ETH: {
+  ethereum_mainnet: {
     blockchain_id: '8000003C',
     name: 'Ethereum',
     coin_type: 60,
@@ -53,7 +53,7 @@ module.exports = {
     start_block: 11906119,
     avg_fee: '0',
   },
-  ROPSTEN: {
+  ethereum_ropsten: {
     blockchain_id: '8000025B',
     name: 'Ropsten',
     coin_type: 603,
@@ -71,7 +71,7 @@ module.exports = {
     start_block: 9722974,
     avg_fee: '0',
   },
-  CAFECA: {
+  cafeca: {
     blockchain_id: '80000CFC',
     name: 'Cafeca',
     coin_type: 3324,

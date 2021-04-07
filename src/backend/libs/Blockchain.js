@@ -1,15 +1,18 @@
 /* eslint-disable no-case-declarations */
 const BigNumber = require('bignumber.js');
-const dvalue = require('dvalue'); const { v4: uuidv4 } = require('uuid');
+const dvalue = require('dvalue');
+const { v4: uuidv4 } = require('uuid');
 const ecrequest = require('ecrequest');
 // ++ remove after extract to instance class
 const BtcParserBase = require('./BtcParserBase');
-const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
+const ResponseFormat = require('./ResponseFormat');
+const Bot = require('./Bot.js');
 const Codes = require('./Codes');
 const Utils = require('./Utils');
 const blockchainNetworks = require('./data/blockchainNetworks');
 const fiatCurrencyRate = require('./data/fiatCurrencyRate');
 const currency = require('./data/currency');
+const DBOperator = require('./DBOperator');
 
 class Blockchain extends Bot {
   constructor() {
@@ -26,6 +29,8 @@ class Blockchain extends Bot {
     return super.init({
       config, database, logger, i18n,
     }).then(() => {
+      this.DBOperator = new DBOperator(this.config, this.database, this.logger);
+
       this.accountModel = this.database.db.Account;
       this.blockchainModel = this.database.db.Blockchain;
       this.currencyModel = this.database.db.Currency;
@@ -53,13 +58,13 @@ class Blockchain extends Bot {
   }
 
   async initBlockchainNetworks() {
-    const networks = Object.values(blockchainNetworks);
-    for (let i = 0; i < networks.length; i++) {
-      const network = { ...networks[i] };
+    const networks = Object.keys(blockchainNetworks);
+    for (const networkName of networks) {
+      const network = { ...blockchainNetworks[networkName] };
       network.bip32_public = network.bip32.public;
       network.bip32_private = network.bip32.private;
       delete network.bip32;
-      await this.blockchainModel.findOrCreate({
+      await this.database.db[networkName].Blockchain.findOrCreate({
         where: { blockchain_id: network.blockchain_id },
         defaults: network,
       });
@@ -67,13 +72,16 @@ class Blockchain extends Bot {
   }
 
   async initCurrency() {
-    for (let i = 0; i < currency.length; i++) {
-      const currencyItem = currency[i];
+    const networks = Object.keys(currency);
+    for (const networkName of networks) {
+      for (let i = 0; i < currency[networkName].length; i++) {
+        const currencyItem = currency[networkName][i];
 
-      await this.currencyModel.findOrCreate({
-        where: { currency_id: currencyItem.currency_id },
-        defaults: currencyItem,
-      });
+        await this.database.db[networkName].Currency.findOrCreate({
+          where: { currency_id: currencyItem.currency_id },
+          defaults: currencyItem,
+        });
+      }
     }
   }
 
@@ -81,7 +89,7 @@ class Blockchain extends Bot {
     for (let i = 0; i < fiatCurrencyRate.length; i++) {
       const fiatCurrencyRateItem = fiatCurrencyRate[i];
 
-      await this.fiatCurrencyRateModel.findOrCreate({
+      await this.database.db[Utils.defaultDBInstanceName].FiatCurrencyRate.findOrCreate({
         where: { currency_id: fiatCurrencyRateItem.currency_id },
         defaults: fiatCurrencyRateItem,
       });
@@ -90,7 +98,7 @@ class Blockchain extends Bot {
 
   async BlockchainList() {
     try {
-      let payload = await this.blockchainModel.findAll();
+      let payload = await this.DBOperator.findAll({ tableName: 'Blockchain' });
       if (payload) {
         payload = payload.map((item) => ({
           blockchain_id: item.blockchain_id,

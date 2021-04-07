@@ -2,6 +2,7 @@ const ecrequest = require('ecrequest');
 const { v4: uuidv4 } = require('uuid');
 const { default: BigNumber } = require('bignumber.js');
 const Bot = require('./Bot');
+const Utils = require('./Utils');
 
 // crawler
 const BtcCrawlerManager = require('./BtcCrawlerManager');
@@ -74,22 +75,23 @@ class Manager extends Bot {
       const parseObject = rs.data.toString().split('\n').map((item) => item.split(/[ ]+/));
 
       for (const item of parseObject) {
-        const findCurrency = await this.currencyModel.findOne({
+        const findCurrency = await this.database.db[Utils.defaultDBInstanceName].Currency.findOne({
           where: { symbol: item[0], type: 0 },
         });
         if (findCurrency) {
-          const findRate = await this.fiatCurrencyRateModel.findOne({
+          const findRate = await this.database.db[Utils.defaultDBInstanceName].FiatCurrencyRate.findOne({
             where: { currency_id: findCurrency.currency_id },
           });
+
           if (findRate) {
             // if found, update it
-            await this.fiatCurrencyRateModel.update(
-              { balance: new BigNumber(item[3]).toFixed() },
+            await this.database.db[Utils.defaultDBInstanceName].FiatCurrencyRate.update(
+              { rate: new BigNumber(item[3]).toFixed() },
               { where: { fiatCurrencyRate_id: findRate.fiatCurrencyRate_id, currency_id: findCurrency.currency_id } },
             );
           } else {
             // if not found, create
-            await this.fiatCurrencyRateModel.create({
+            await this.database.db[Utils.defaultDBInstanceName].FiatCurrencyRate.create({
               fiatCurrencyRate_id: uuidv4(),
               currency_id: findCurrency.currency_id,
               rate: new BigNumber(item[3]).toFixed(),
@@ -121,7 +123,7 @@ class Manager extends Bot {
       ecrequest.get(opt)
         .then(async (rs) => {
           const { payload } = JSON.parse(rs.data.toString());
-          await this.currencyModel.update(
+          await this.database.db[Utils.defaultDBInstanceName].Currency.update(
             { exchange_rate: payload.amount },
             { where: { symbol: crypto.symbol } },
           );

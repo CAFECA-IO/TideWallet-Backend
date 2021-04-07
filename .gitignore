@@ -104,6 +104,7 @@ dist
 .tern-port
 
 env.js
+env.*.js
 .vscode
 private
 PIDs
