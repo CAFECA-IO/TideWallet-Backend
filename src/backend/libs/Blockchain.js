@@ -30,6 +30,7 @@ class Blockchain extends Bot {
       config, database, logger, i18n,
     }).then(() => {
       this.DBOperator = new DBOperator(this.config, this.database, this.logger);
+      this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
 
       this.accountModel = this.database.db.Account;
       this.blockchainModel = this.database.db.Blockchain;
@@ -46,8 +47,8 @@ class Blockchain extends Bot {
       this.addressTransactionModel = this.database.db.AddressTransaction;
       this.accountCurrencyModel = this.database.db.AccountCurrency;
 
-      this.sequelize = this.database.db.sequelize;
-      this.Sequelize = this.database.db.Sequelize;
+      this.sequelize = this.defaultDBInstance.sequelize;
+      this.Sequelize = this.defaultDBInstance.Sequelize;
       return this;
     }).then(async () => {
       await this.initBlockchainNetworks();
@@ -89,7 +90,7 @@ class Blockchain extends Bot {
     for (let i = 0; i < fiatCurrencyRate.length; i++) {
       const fiatCurrencyRateItem = fiatCurrencyRate[i];
 
-      await this.database.db[Utils.defaultDBInstanceName].FiatCurrencyRate.findOrCreate({
+      await this.defaultDBInstance.FiatCurrencyRate.findOrCreate({
         where: { currency_id: fiatCurrencyRateItem.currency_id },
         defaults: fiatCurrencyRateItem,
       });
@@ -138,7 +139,7 @@ class Blockchain extends Bot {
   }
 
   async _findFiatCurrencyRate(currency_id) {
-    return this.fiatCurrencyRateModel.findOne({
+    return this.defaultDBInstance.FiatCurrencyRate.findOne({
       where: { currency_id },
       attributes: ['rate'],
     });
@@ -146,9 +147,12 @@ class Blockchain extends Bot {
 
   async CurrencyList() {
     try {
-      const findCurrency = await this.currencyModel.findAll({
-        where: {
-          [this.Sequelize.Op.or]: [{ type: 0 }, { type: 1 }],
+      const findCurrency = await this.DBOperator.findAll({
+        tableName: 'Currency',
+        options: {
+          where: {
+            [this.Sequelize.Op.or]: [{ type: 0 }, { type: 1 }],
+          },
         },
       });
       const payload = [];
