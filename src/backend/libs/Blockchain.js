@@ -240,9 +240,12 @@ class Blockchain extends Bot {
   async TokenDetail({ params }) {
     const { blockchain_id, token_id } = params;
     try {
-      const payload = await this.currencyModel.findOne({
-        where: {
-          currency_id: token_id, type: 2,
+      const payload = await this.DBOperator.findOne({
+        tableName: 'Currency',
+        options: {
+          where: {
+            currency_id: token_id, type: 2,
+          },
         },
       });
 
