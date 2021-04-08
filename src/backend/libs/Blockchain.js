@@ -208,8 +208,11 @@ class Blockchain extends Bot {
   async TokenList({ params }) {
     const { blockchain_id } = params;
     try {
-      let payload = await this.currencyModel.findAll({
-        where: { blockchain_id, type: 2 },
+      let payload = await this.DBOperator.findAll({
+        tableName: 'Currency',
+        options: {
+          where: { blockchain_id, type: 2 },
+        },
       });
       if (payload) {
         payload = payload.map((item) => ({
