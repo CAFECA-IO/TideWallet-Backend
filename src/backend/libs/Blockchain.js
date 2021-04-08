@@ -186,10 +186,13 @@ class Blockchain extends Bot {
   async CurrencyDetail({ params }) {
     const { currency_id } = params;
     try {
-      const payload = await this.currencyModel.findOne({
-        where: {
-          currency_id,
-          [this.Sequelize.Op.or]: [{ type: 0 }, { type: 1 }],
+      const payload = await this.DBOperator.findOne({
+        tableName: 'Currency',
+        options: {
+          where: {
+            currency_id,
+            [this.Sequelize.Op.or]: [{ type: 0 }, { type: 1 }],
+          },
         },
       });
 
