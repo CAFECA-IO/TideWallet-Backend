@@ -42,14 +42,14 @@ module.exports = env;
       // Account
       db[dbConfig.dbName].Account.belongsTo(db[dbConfig.dbName].User, { foreignKey: 'user_id' });
       db[dbConfig.dbName].User.hasMany(db[dbConfig.dbName].Account, { foreignKey: 'user_id' });
-      db[dbConfig.dbName].Account.belongsTo(db[dbConfig.dbName].Blockchain, { foreignKey: 'blockchain_id' });
-      db[dbConfig.dbName].Blockchain.hasOne(db[dbConfig.dbName].Account, { foreignKey: 'blockchain_id' });
+      // db[dbConfig.dbName].Account.belongsTo(db[dbConfig.dbName].Blockchain, { foreignKey: 'blockchain_id' });
+      // db[dbConfig.dbName].Blockchain.hasOne(db[dbConfig.dbName].Account, { foreignKey: 'blockchain_id' });
 
       // AccountCurrency
       db[dbConfig.dbName].AccountCurrency.belongsTo(db[dbConfig.dbName].Account, { foreignKey: 'account_id' });
       db[dbConfig.dbName].Account.hasMany(db[dbConfig.dbName].AccountCurrency, { foreignKey: 'account_id' });
-      db[dbConfig.dbName].AccountCurrency.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
-      db[dbConfig.dbName].Currency.hasOne(db[dbConfig.dbName].AccountCurrency, { foreignKey: 'currency_id' });
+      // db[dbConfig.dbName].AccountCurrency.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
+      // db[dbConfig.dbName].Currency.hasOne(db[dbConfig.dbName].AccountCurrency, { foreignKey: 'currency_id' });
 
       // AccountAddress
       db[dbConfig.dbName].AccountAddress.belongsTo(db[dbConfig.dbName].Account, { foreignKey: 'account_id' });

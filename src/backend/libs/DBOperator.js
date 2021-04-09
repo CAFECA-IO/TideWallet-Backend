@@ -9,6 +9,17 @@ class DBOperator {
     this.logger = logger;
   }
 
+  updateDBInstance(dbInstance, options) {
+    if (options.include && options.include.length > 0) {
+      options.include.forEach((item, i) => {
+        const _include = { ...item };
+        _include.model = dbInstance[_include._model];
+        options.include[i] = _include;
+      });
+    }
+    return options;
+  }
+
   async findAll(myOptions) {
     try {
       const { tableName, options = {} } = myOptions;
@@ -16,7 +27,8 @@ class DBOperator {
       if (!tableName) return new ResponseFormat({ message: 'db error(query need table name)', code: Codes.DB_ERROR });
       const queries = [];
       Utils.databaseInstanceName.forEach((dbName) => {
-        queries.push(this.database.db[dbName][tableName].findAll(options));
+        const _options = this.updateDBInstance(this.database.db[dbName], options);
+        queries.push(this.database.db[dbName][tableName].findAll(_options));
       });
       const findItems = await Promise.all(queries).catch((error) => new ResponseFormat({ message: `db error(${error})`, code: Codes.DB_ERROR }));
       if (findItems.code === Codes.DB_ERROR) throw findItems;

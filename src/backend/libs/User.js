@@ -4,6 +4,8 @@ const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Utils = require('./Utils');
 const Codes = require('./Codes');
+const DBOperator = require('./DBOperator');
+const blockchainNetworks = require('./data/blockchainNetworks');
 
 class User extends Bot {
   constructor() {
@@ -18,6 +20,9 @@ class User extends Bot {
     return super.init({
       config, database, logger, i18n,
     }).then(() => {
+      this.DBOperator = new DBOperator(this.config, this.database, this.logger);
+      this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
+
       this.userModel = this.database.db.User;
       this.blockchainModel = this.database.db.Blockchain;
       this.tokenSecretModel = this.database.db.TokenSecret;
@@ -26,10 +31,19 @@ class User extends Bot {
       this.accountCurrencyModel = this.database.db.AccountCurrency;
       this.accountAddressModel = this.database.db.AccountAddress;
       this.deviceModel = this.database.db.Device;
-      this.sequelize = this.database.db.sequelize;
-      this.Sequelize = this.database.db.Sequelize;
+      this.sequelize = this.defaultDBInstance.sequelize;
+      this.Sequelize = this.defaultDBInstance.Sequelize;
       return this;
     });
+  }
+
+  blockchainIDToDBName(blockchainID) {
+    console.log('blockchainID:', blockchainID);
+    const networks = Object.values(blockchainNetworks);
+    const findIndex = networks.findIndex((item) => item.blockchain_id === blockchainID);
+    console.log('findIndex:', findIndex);
+    if (findIndex === -1) throw new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    return networks[findIndex].db_name;
   }
 
   async UserRegist({ body }) {
@@ -45,12 +59,12 @@ class User extends Bot {
     }
 
     try {
-      const findUser = await this.accountModel.findOne({ where: { extend_public_key } });
+      const findUser = await this.defaultDBInstance.Account.findOne({ where: { extend_public_key } });
 
       // recover
       if (findUser) {
         // if new app_id, add it
-        await this.deviceModel.findOrCreate({
+        await this.defaultDBInstance.Device.findOrCreate({
           where: {
             install_id, app_uuid,
           },
@@ -70,7 +84,7 @@ class User extends Bot {
 
       // new user
       const userID = await this.sequelize.transaction(async (transaction) => {
-        const insertUser = await this.userModel.create({
+        const insertUser = await this.defaultDBInstance.User.create({
           user_id: uuidv4(),
           wallet_name,
           last_login_timestamp: Math.floor(Date.now() / 1000),
@@ -78,17 +92,24 @@ class User extends Bot {
 
         const hdWallet = new HDWallet({ extendPublicKey: extend_public_key });
 
-        const accounts = await this.currencyModel.findAll({
-          where: { type: 1 },
-          include: [
-            {
-              model: this.blockchainModel,
-              attributes: ['blockchain_id', 'block', 'coin_type'],
-            },
-          ],
+        const accounts = await this.DBOperator.findAll({
+          tableName: 'Currency',
+          options: {
+            where: { type: 1 },
+            include: [
+              {
+                _model: 'Blockchain',
+                attributes: ['blockchain_id', 'block', 'coin_type'],
+              },
+            ],
+          },
         });
+
         for (let i = 0; i < accounts.length; i++) {
-          const insertAccount = await this.accountModel.create({
+          const DBName = this.blockchainIDToDBName(accounts[i].blockchain_id);
+          const _db = this.database.db[DBName];
+
+          const insertAccount = await _db.Account.create({
             account_id: uuidv4(),
             user_id: insertUser.user_id,
             blockchain_id: accounts[i].blockchain_id,
@@ -98,7 +119,7 @@ class User extends Bot {
             regist_block_num: accounts[i].Blockchain.block,
           }, { transaction });
 
-          await this.accountCurrencyModel.create({
+          await _db.AccountCurrency.create({
             accountCurrency_id: uuidv4(),
             account_id: insertAccount.account_id,
             currency_id: accounts[i].currency_id,
@@ -110,7 +131,7 @@ class User extends Bot {
           const coinType = accounts[i].Blockchain.coin_type;
           const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id });
 
-          await this.accountAddressModel.create({
+          await _db.AccountAddress.create({
             accountAddress_id: uuidv4(),
             account_id: insertAccount.account_id,
             chain_index: 0,
@@ -121,7 +142,7 @@ class User extends Bot {
 
           if (accounts[i].blockchain_id === '80000000' || accounts[i].blockchain_id === '80000001') {
             const changeWallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id, change: 1 });
-            await this.accountAddressModel.create({
+            await _db.AccountAddress.create({
               accountAddress_id: uuidv4(),
               account_id: insertAccount.account_id,
               chain_index: 1,
@@ -131,7 +152,7 @@ class User extends Bot {
             }, { transaction });
           }
         }
-        await this.deviceModel.create({
+        await this.defaultDBInstance.Device.create({
           device_id: uuidv4(),
           user_id: insertUser.user_id,
           install_id,
@@ -146,6 +167,7 @@ class User extends Bot {
       const payload = await Utils.generateToken({ userID });
       return new ResponseFormat({ message: 'User Regist', payload });
     } catch (e) {
+      console.log(e);
       this.logger.error('UserRegist e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });

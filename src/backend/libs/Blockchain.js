@@ -65,6 +65,7 @@ class Blockchain extends Bot {
       network.bip32_public = network.bip32.public;
       network.bip32_private = network.bip32.private;
       delete network.bip32;
+      delete network.db_name;
       await this.database.db[networkName].Blockchain.findOrCreate({
         where: { blockchain_id: network.blockchain_id },
         defaults: network,

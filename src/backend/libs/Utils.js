@@ -653,7 +653,7 @@ class Utils {
     const tokenSecret = randToken.uid(256);
     const expireTime = new Date(new Date().getTime() + (Number(this.config.base.token_secret_expire_time) * 1000));
 
-    const findOne = await this.database.db.TokenSecret.findOrCreate({
+    const findOne = await this.database.db[this.defaultDBInstanceName].TokenSecret.findOrCreate({
       where: { user_id: userID },
       defaults: {
         tokenSecret, user_id: userID, expire_time: expireTime,
@@ -662,7 +662,7 @@ class Utils {
 
     if (!findOne[1]) {
       // update
-      await this.database.db.TokenSecret.update({
+      await this.database.db[this.defaultDBInstanceName].TokenSecret.update({
         tokenSecret, user_id: userID, expire_time: expireTime,
       },
       {
