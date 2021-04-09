@@ -32,5 +32,8 @@ module.exports = (sequelize, DataTypes) => sequelize.define('BlockScanned', {
   tableName: 'BlockScanned',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
-  indexes: [{ fields: ['blockchain_id'] }],
+  indexes: [
+    { fields: ['blockchain_id'] },
+    { unique: true, fields: ['blockchain_id', 'block'] },
+  ],
 });

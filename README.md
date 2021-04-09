@@ -3,7 +3,7 @@ Backend API Service and Blockchain Crawler for TideWallet
 
 ## API doc
 
-[postmain](https://github.com/BOLT-Protocol/TideWallet-Backend/blob/master/doc)
+[postman](https://github.com/BOLT-Protocol/TideWallet-Backend/blob/master/doc)
 
 
 ## Install RabbitMQ
@@ -20,6 +20,9 @@ docker run -d \
   -e RABBITMQ_DEFAULT_PASS=password \
   rabbitmq:3-management
 ```
+
+## Install TideWallet Backend Parser
+[TideWallet-Backend-Parser](https://github.com/BOLT-Protocol/TideWallet-Backend-Parser.git)
 
 ## Initial TideWallet Backend
 
@@ -79,3 +82,9 @@ vim ./tool/sh.yml
 ```
 ansible-playbook tool/playbook.yml
 ```
+
+## notice
+
+* sometimes crawler would be blocked for unknown reasons. It always happened after running several days.
+
+* according [PostgreSQL Out Of Memory](https://italux.medium.com/postgresql-out-of-memory-3fc1105446d), postgres grow 9.6G memory usage in 60 mins during 20 Parsers before catch up blocks. can use crontab and pm2 restart to release connection.
