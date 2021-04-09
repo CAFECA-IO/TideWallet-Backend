@@ -201,7 +201,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       }
 
       if (!await this.checkBlockHash(this.dbBlock)) {
-        this.logger.log(`[${this.constructor.name}] block ${this.dbBlock} in db not the same as peer.`);
+        this.logger.error(`[${this.constructor.name}] block ${this.dbBlock} in db not the same as peer.`);
         // TODO
         // dbBlock = await this.rollbackBlock();
       }

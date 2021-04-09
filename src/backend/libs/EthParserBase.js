@@ -27,6 +27,7 @@ class EthParserBase extends ParserBase {
 
   async doJob(job) {
     try {
+      this.block = job.currentBlock;
       const unParsedTx = job;
       const transaction = JSON.parse(unParsedTx.transaction);
       const receipt = await this.receiptFromPeer(transaction.hash);
@@ -319,7 +320,7 @@ class EthParserBase extends ParserBase {
       const bnGasPrice = new BigNumber(tx.gasPrice, 16);
       const bnGasUsed = new BigNumber(receipt.gasUsed, 16);
       const fee = bnGasPrice.multipliedBy(bnGasUsed).toFixed();
-      const currentBlock = await this.blockNumberFromDB();
+      const currentBlock = this.block ? this.block : await this.blockNumberFromDB();
       let txStatus = null;
       if (receipt.status !== '0x1') {
         txStatus = false;
