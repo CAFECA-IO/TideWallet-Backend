@@ -196,7 +196,7 @@ class User extends Bot {
     }
     try {
       const data = await Utils.verifyToken(token, true);
-      const findTokenSecret = await this.tokenSecretModel.findOne({
+      const findTokenSecret = await this.defaultDBInstance.TokenSecret.findOne({
         where: {
           tokenSecret, user_id: data.userID,
         },
@@ -209,7 +209,7 @@ class User extends Bot {
         const tokenObj = await Utils.generateToken({ userID: data.userID });
 
         // if generateToken success, delete old tokenSecret
-        await this.tokenSecretModel.destroy({
+        await this.defaultDBInstance.TokenSecret.destroy({
           where: {
             tokenSecret: findTokenSecret.tokenSecret, user_id: findTokenSecret.user_id,
           },
