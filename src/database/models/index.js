@@ -40,8 +40,8 @@ module.exports = env;
         });
 
       // Account
-      db[dbConfig.dbName].Account.belongsTo(db[dbConfig.dbName].User, { foreignKey: 'user_id' });
-      db[dbConfig.dbName].User.hasMany(db[dbConfig.dbName].Account, { foreignKey: 'user_id' });
+      // db[dbConfig.dbName].Account.belongsTo(db[dbConfig.dbName].User, { foreignKey: 'user_id' });
+      // db[dbConfig.dbName].User.hasMany(db[dbConfig.dbName].Account, { foreignKey: 'user_id' });
       // db[dbConfig.dbName].Account.belongsTo(db[dbConfig.dbName].Blockchain, { foreignKey: 'blockchain_id' });
       // db[dbConfig.dbName].Blockchain.hasOne(db[dbConfig.dbName].Account, { foreignKey: 'blockchain_id' });
 

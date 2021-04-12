@@ -38,10 +38,8 @@ class User extends Bot {
   }
 
   blockchainIDToDBName(blockchainID) {
-    console.log('blockchainID:', blockchainID);
     const networks = Object.values(blockchainNetworks);
     const findIndex = networks.findIndex((item) => item.blockchain_id === blockchainID);
-    console.log('findIndex:', findIndex);
     if (findIndex === -1) throw new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
     return networks[findIndex].db_name;
   }
@@ -83,88 +81,84 @@ class User extends Bot {
       }
 
       // new user
-      const userID = await this.sequelize.transaction(async (transaction) => {
-        const insertUser = await this.defaultDBInstance.User.create({
-          user_id: uuidv4(),
-          wallet_name,
-          last_login_timestamp: Math.floor(Date.now() / 1000),
-        }, { transaction });
+      const insertUser = await this.defaultDBInstance.User.create({
+        user_id: uuidv4(),
+        wallet_name,
+        last_login_timestamp: Math.floor(Date.now() / 1000),
+      });
 
-        const hdWallet = new HDWallet({ extendPublicKey: extend_public_key });
+      const hdWallet = new HDWallet({ extendPublicKey: extend_public_key });
 
-        const accounts = await this.DBOperator.findAll({
-          tableName: 'Currency',
-          options: {
-            where: { type: 1 },
-            include: [
-              {
-                _model: 'Blockchain',
-                attributes: ['blockchain_id', 'block', 'coin_type'],
-              },
-            ],
-          },
+      const accounts = await this.DBOperator.findAll({
+        tableName: 'Currency',
+        options: {
+          where: { type: 1 },
+          include: [
+            {
+              _model: 'Blockchain',
+              attributes: ['blockchain_id', 'block', 'coin_type'],
+            },
+          ],
+        },
+      });
+
+      for (let i = 0; i < accounts.length; i++) {
+        const DBName = this.blockchainIDToDBName(accounts[i].blockchain_id);
+        const _db = this.database.db[DBName];
+
+        const insertAccount = await _db.Account.create({
+          account_id: uuidv4(),
+          user_id: insertUser.user_id,
+          blockchain_id: accounts[i].blockchain_id,
+          purpose: 3324,
+          curve_type: 0,
+          extend_public_key,
+          regist_block_num: accounts[i].Blockchain.block,
         });
 
-        for (let i = 0; i < accounts.length; i++) {
-          const DBName = this.blockchainIDToDBName(accounts[i].blockchain_id);
-          const _db = this.database.db[DBName];
+        await _db.AccountCurrency.create({
+          accountCurrency_id: uuidv4(),
+          account_id: insertAccount.account_id,
+          currency_id: accounts[i].currency_id,
+          balance: '0',
+          number_of_external_key: '0',
+          number_of_internal_key: '0',
+        });
 
-          const insertAccount = await _db.Account.create({
-            account_id: uuidv4(),
-            user_id: insertUser.user_id,
-            blockchain_id: accounts[i].blockchain_id,
-            purpose: 3324,
-            curve_type: 0,
-            extend_public_key,
-            regist_block_num: accounts[i].Blockchain.block,
-          }, { transaction });
+        const coinType = accounts[i].Blockchain.coin_type;
+        const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id });
 
-          await _db.AccountCurrency.create({
-            accountCurrency_id: uuidv4(),
-            account_id: insertAccount.account_id,
-            currency_id: accounts[i].currency_id,
-            balance: '0',
-            number_of_external_key: '0',
-            number_of_internal_key: '0',
-          }, { transaction });
+        await _db.AccountAddress.create({
+          accountAddress_id: uuidv4(),
+          account_id: insertAccount.account_id,
+          chain_index: 0,
+          key_index: 0,
+          public_key: wallet.publicKey,
+          address: wallet.address,
+        });
 
-          const coinType = accounts[i].Blockchain.coin_type;
-          const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id });
-
+        if (accounts[i].blockchain_id === '80000000' || accounts[i].blockchain_id === '80000001') {
+          const changeWallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id, change: 1 });
           await _db.AccountAddress.create({
             accountAddress_id: uuidv4(),
             account_id: insertAccount.account_id,
-            chain_index: 0,
+            chain_index: 1,
             key_index: 0,
-            public_key: wallet.publicKey,
-            address: wallet.address,
-          }, { transaction });
-
-          if (accounts[i].blockchain_id === '80000000' || accounts[i].blockchain_id === '80000001') {
-            const changeWallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id, change: 1 });
-            await _db.AccountAddress.create({
-              accountAddress_id: uuidv4(),
-              account_id: insertAccount.account_id,
-              chain_index: 1,
-              key_index: 0,
-              public_key: changeWallet.publicKey,
-              address: changeWallet.address,
-            }, { transaction });
-          }
+            public_key: changeWallet.publicKey,
+            address: changeWallet.address,
+          });
         }
-        await this.defaultDBInstance.Device.create({
-          device_id: uuidv4(),
-          user_id: insertUser.user_id,
-          install_id,
-          timestamp: Math.floor(Date.now() / 1000),
-          name: '',
-          app_uuid,
-        }, { transaction });
-
-        return insertUser.user_id;
+      }
+      await this.defaultDBInstance.Device.create({
+        device_id: uuidv4(),
+        user_id: insertUser.user_id,
+        install_id,
+        timestamp: Math.floor(Date.now() / 1000),
+        name: '',
+        app_uuid,
       });
 
-      const payload = await Utils.generateToken({ userID });
+      const payload = await Utils.generateToken({ userID: insertUser.user_id });
       return new ResponseFormat({ message: 'User Regist', payload });
     } catch (e) {
       console.log(e);

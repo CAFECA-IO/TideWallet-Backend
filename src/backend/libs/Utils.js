@@ -690,7 +690,7 @@ class Utils {
       const data = JWT.verify(token, this.config.jwt.secret, option);
 
       const { userID } = data;
-      const findUser = await this.database.db.User.findOne({
+      const findUser = await this.database.db[this.defaultDBInstanceName].User.findOne({
         where: { user_id: userID },
       });
 
