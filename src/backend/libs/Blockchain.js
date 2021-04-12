@@ -607,7 +607,7 @@ class Blockchain extends Bot {
           options = this.config.blockchain.ethereum_mainnet;
           break;
         case '8000025B':
-          options = this.config.blockchain.ethereum_testnet;
+          options = this.config.blockchain.ethereum_ropsten;
           break;
         case '80000CFC':
           options = this.config.blockchain.cafeca;

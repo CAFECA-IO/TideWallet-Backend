@@ -4,6 +4,7 @@ const ecrequest = require('ecrequest');
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Utils = require('./Utils');
+const DBOperator = require('./DBOperator');
 const Codes = require('./Codes');
 const HDWallet = require('./HDWallet');
 
@@ -20,6 +21,9 @@ class Account extends Bot {
     return super.init({
       config, database, logger, i18n,
     }).then(() => {
+      this.DBOperator = new DBOperator(this.config, this.database, this.logger);
+      this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
+
       this.userModel = this.database.db.User;
       this.blockchainModel = this.database.db.Blockchain;
       this.tokenSecretModel = this.database.db.TokenSecret;
@@ -34,8 +38,8 @@ class Account extends Bot {
       this.deviceModel = this.database.db.Device;
       this.utxoModel = this.database.db.UTXO;
 
-      this.sequelize = this.database.db.sequelize;
-      this.Sequelize = this.database.db.Sequelize;
+      this.sequelize = this.defaultDBInstance.sequelize;
+      this.Sequelize = this.defaultDBInstance.Sequelize;
       return this;
     });
   }
@@ -51,18 +55,31 @@ class Account extends Bot {
       const tokenInfo = await Utils.verifyToken(token);
 
       // find Token is exist
-      let findTokenItem = await this.currencyModel.findOne({
-        where: { type: 2, contract },
+      let findTokenItem = await this.DBOperator.findOne({
+        tableName: 'Currency',
+        options: {
+          where: {
+            type: 2, contract,
+          },
+        },
       });
+      const DBName = Utils.blockchainIDToDBName(blockchain_id);
+      const _db = this.database.db[DBName];
 
       if (!findTokenItem) {
+        // TODO: has same logic
         // use contract check Token is exist
-        findTokenItem = await this.currencyModel.findOne({
-          where: { type: 2, contract },
+        findTokenItem = await this.DBOperator.findOne({
+          tableName: 'Currency',
+          options: {
+            where: {
+              type: 2, contract,
+            },
+          },
         });
         if (findTokenItem) {
           // check account token is exist
-          const findUserAccountData = await this.accountModel.findOne({
+          const findUserAccountData = await _db.Account.findOne({
             where: {
               user_id: tokenInfo.userID, blockchain_id,
             },
@@ -70,7 +87,7 @@ class Account extends Bot {
 
           if (!findUserAccountData) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
           // check account currency
-          const findUserAccountToken = await this.accountCurrencyModel.findOne({
+          const findUserAccountToken = await _db.AccountCurrency.findOne({
             where: {
               account_id: findUserAccountData.account_id, currency_id: findTokenItem.currency_id,
             },
@@ -85,7 +102,7 @@ class Account extends Bot {
               options = this.config.blockchain.ethereum_mainnet;
               break;
             case '8000025B':
-              options = this.config.blockchain.ethereum_testnet;
+              options = this.config.blockchain.ethereum_ropsten;
               break;
             case '80000CFC':
               options = this.config.blockchain.cafeca;
@@ -127,7 +144,7 @@ class Account extends Bot {
 
           const newCurrencyID = uuidv4();
           if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
-          findTokenItem = await this.currencyModel.create({
+          findTokenItem = await _db.Currency.create({
             currency_id: newCurrencyID,
             blockchain_id,
             name: tokenInfoFromPeer[0],
@@ -142,7 +159,7 @@ class Account extends Bot {
         }
       }
       // check account token is exist
-      const findUserAccountData = await this.accountModel.findOne({
+      const findUserAccountData = await _db.Account.findOne({
         where: {
           user_id: tokenInfo.userID, blockchain_id,
         },
@@ -150,7 +167,7 @@ class Account extends Bot {
       if (!findUserAccountData) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const { currency_id } = findTokenItem;
-      const findUserAccountToken = await this.accountCurrencyModel.findOne({
+      const findUserAccountToken = await _db.AccountCurrency.findOne({
         where: {
           account_id: findUserAccountData.account_id, currency_id,
         },
@@ -159,7 +176,7 @@ class Account extends Bot {
       // create token data to db
       try {
         const token_account_id = uuidv4();
-        await this.accountCurrencyModel.create({
+        await _db.AccountCurrency.create({
           accountCurrency_id: token_account_id,
           account_id: findUserAccountData.account_id,
           currency_id: findTokenItem.currency_id,
@@ -880,10 +897,6 @@ class Account extends Bot {
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
-  }
-
-  async DROP_ALL_TABLE() {
-    await this.sequelize.drop();
   }
 }
 

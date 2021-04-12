@@ -9,6 +9,8 @@ const bitcoin = require('bitcoinjs-lib');
 const BigNumber = require('bignumber.js');
 const log4js = require('log4js');
 
+const Web3 = require('web3');
+
 const { BN } = EthUtils;
 const toml = require('toml');
 const randToken = require('rand-token');
@@ -533,6 +535,7 @@ class Utils {
     this.database = database;
     this.logger = logger;
     this.databaseInstanceName = [];
+    this.web3 = new Web3();
 
     Object.keys(database.db).forEach((item) => {
       this.databaseInstanceName.push(item);
@@ -943,6 +946,7 @@ class Utils {
       this.logger.error(`getTokenNameFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
       return null;
     } catch (error) {
+      console.log(error);
       this.logger.error(`getTokenNameFromPeer(${address}) error: ${error}`);
       return null;
     }
@@ -1109,6 +1113,13 @@ class Utils {
     }, { len: 0 });
     const tps = transactionCount.len / timeTaken;
     return tps.toFixed(2);
+  }
+
+  static blockchainIDToDBName(blockchainID) {
+    const networks = Object.values(blockchainNetworks);
+    const findIndex = networks.findIndex((item) => item.blockchain_id === blockchainID);
+    if (findIndex === -1) throw new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    return networks[findIndex].db_name;
   }
 }
 

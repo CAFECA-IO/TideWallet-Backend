@@ -37,13 +37,6 @@ class User extends Bot {
     });
   }
 
-  blockchainIDToDBName(blockchainID) {
-    const networks = Object.values(blockchainNetworks);
-    const findIndex = networks.findIndex((item) => item.blockchain_id === blockchainID);
-    if (findIndex === -1) throw new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
-    return networks[findIndex].db_name;
-  }
-
   async UserRegist({ body }) {
     const {
       wallet_name, extend_public_key, install_id, app_uuid,
@@ -103,7 +96,7 @@ class User extends Bot {
       });
 
       for (let i = 0; i < accounts.length; i++) {
-        const DBName = this.blockchainIDToDBName(accounts[i].blockchain_id);
+        const DBName = Utils.blockchainIDToDBName(accounts[i].blockchain_id);
         const _db = this.database.db[DBName];
 
         const insertAccount = await _db.Account.create({
