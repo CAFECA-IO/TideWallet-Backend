@@ -124,39 +124,39 @@ class Explore extends Bot {
             "Currency"."icon" AS "currency_icon",
             "Currency"."symbol" AS "currency_symbol",
             "Currency"."decimals" AS "currency_decimals"
-          FROM (
-            (SELECT
-              "transaction_id",
-              "currency_id",
-              "txid",
-              "timestamp",
-              "source_addresses",
-              "destination_addresses",
-              "amount",
-              "block",
-              "fee"
-            FROM
-              "Transaction"
-            ORDER BY
-              "transaction_id" DESC
-            LIMIT :limit OFFSET :index)
-            UNION
-            (SELECT
-              "transaction_id",
-              "currency_id",
-              "txid",
-              "timestamp",
-              "source_addresses",
-              "destination_addresses",
-              "amount",
-              NULL AS "block",
-              NULL AS "fee"
+          FROM ((
+              SELECT
+                "transaction_id",
+                "currency_id",
+                "txid",
+                "timestamp",
+                "source_addresses",
+                "destination_addresses",
+                "amount",
+                "block",
+                "fee"
+              FROM
+                "Transaction"
+              ORDER BY
+                "transaction_id" DESC
+              LIMIT :limit OFFSET :index)
+          UNION (
+            SELECT
+              "TokenTransaction"."transaction_id",
+              "TokenTransaction"."currency_id",
+              "TokenTransaction"."txid",
+              "TokenTransaction"."timestamp",
+              "TokenTransaction"."source_addresses",
+              "TokenTransaction"."destination_addresses",
+              "TokenTransaction"."amount",
+              "Transaction"."block",
+              "Transaction"."fee"
             FROM
               "TokenTransaction"
-            ORDER BY
-              "transaction_id" DESC
-            LIMIT :limit OFFSET :index)
-            ) AS t1
+            LEFT OUTER JOIN "Transaction" AS "Transaction" ON "Transaction"."transaction_id" = "TokenTransaction"."transaction_id"
+          ORDER BY
+            "transaction_id" DESC
+          LIMIT :limit OFFSET :index)) AS t1
             LEFT OUTER JOIN "Currency" AS "Currency" ON "t1"."currency_id" = "Currency"."currency_id"
           ORDER BY
             "transaction_id" DESC`,
