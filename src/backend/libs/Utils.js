@@ -652,6 +652,13 @@ class Utils {
     return !(!str || typeof str !== 'string' || str.length <= 0);
   }
 
+  static validateNumber(num) {
+    if (!(/^(([\d]{1,18}(\.\d*)*)|(10{18}))$/.test(num)) || num < 0) {
+      return false;
+    }
+    return true;
+  }
+
   static async generateToken({ userID, data = {} }) {
     const tokenSecret = randToken.uid(256);
     const expireTime = new Date(new Date().getTime() + (Number(this.config.base.token_secret_expire_time) * 1000));
@@ -1116,10 +1123,25 @@ class Utils {
   }
 
   static blockchainIDToDBName(blockchainID) {
+    const { db_name } = Utils.blockchainIDToBlockInfo(blockchainID);
+    return db_name;
+  }
+
+  static blockchainIDToNetworkID(blockchainID) {
+    const { network_id } = Utils.blockchainIDToBlockInfo(blockchainID);
+    return network_id;
+  }
+
+  static blockchainIDToBlockInfo(blockchainID) {
     const networks = Object.values(blockchainNetworks);
     const findIndex = networks.findIndex((item) => item.blockchain_id === blockchainID);
     if (findIndex === -1) throw new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
-    return networks[findIndex].db_name;
+    return networks[findIndex];
+  }
+
+  static formatIconUrl(iconUrl) {
+    const host = this.config.base.domain ? this.config.base.domain : '';
+    return iconUrl.replace('/undefined//i', host);
   }
 }
 

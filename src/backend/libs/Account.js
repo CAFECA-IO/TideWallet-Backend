@@ -202,73 +202,79 @@ class Account extends Bot {
     const payload = [];
 
     try {
-      const findAccounts = await this.accountModel.findAll({
-        where: {
-          user_id: tokenInfo.userID,
-        },
-        include: [
-          {
-            model: this.blockchainModel,
-            attributes: ['network_id'],
+      const findAccounts = await this.DBOperator.findAll({
+        tableName: 'Account',
+        options: {
+          where: {
+            user_id: tokenInfo.userID,
           },
-        ],
+        },
       });
 
       for (let i = 0; i < findAccounts.length; i++) {
+        const DBName = Utils.blockchainIDToDBName(findAccounts[i].blockchain_id);
+        const _db = this.database.db[DBName];
         const account = findAccounts[i];
-        const findAccountCurrencies = await this.accountCurrencyModel.findAll({
+        const findAccountCurrencies = await _db.AccountCurrency.findAll({
           where: {
             account_id: account.account_id,
           },
-          include: [
-            {
-              model: this.currencyModel,
-              attributes: ['type', 'publish', 'decimals'],
-              where: {
-                type: 1,
-              },
-            },
-          ],
         });
         for (let j = 0; j < findAccountCurrencies.length; j++) {
           const accountCurrency = findAccountCurrencies[j];
           let { balance } = accountCurrency;
-          const { Currency, currency_id, accountCurrency_id } = accountCurrency;
+          const { currency_id, accountCurrency_id } = accountCurrency;
+          // find network_id
+          const network_id = Utils.blockchainIDToNetworkID(account.blockchain_id);
 
-          if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C' || account.blockchain_id === '80000CFC') {
-            // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
-            const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: account.blockchain_id } });
-            if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
-              const findAddress = await this.accountAddressModel.findOne({
-                where: { account_id: account.account_id },
-                attributes: ['address'],
-              });
-              if (findAddress) {
-                balance = await Utils.ethGetBalanceByAddress(account.blockchain_id, findAddress.address, Currency.decimals);
-
-                await this.accountCurrencyModel.update(
-                  { balance, balance_sync_block: findBlockHeight.block },
-                  { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
-                );
-              }
-            } else {
-              balance = accountCurrency.balance;
-            }
-          }
-
-          payload.push({
-            account_id: accountCurrency_id,
-            blockchain_id: account.blockchain_id,
-            network_id: account.Blockchain.network_id,
-            currency_id,
-            balance,
-            publish: Currency.publish,
-            account_index: '0',
+          // find Currency publish
+          const findCurrency = await this.DBOperator.findOne({
+            tableName: 'Currency',
+            options: {
+              where: {
+                type: 1, currency_id: accountCurrency.currency_id,
+              },
+            },
           });
+          if (findCurrency) {
+            const { publish = false, decimals } = findCurrency;
+            if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C' || account.blockchain_id === '80000CFC') {
+            // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
+              const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: account.blockchain_id } });
+              if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
+                const findAddress = await _db.AccountAddress.findOne({
+                  where: { account_id: account.account_id },
+                  attributes: ['address'],
+                });
+                if (findAddress) {
+                  balance = await Utils.ethGetBalanceByAddress(account.blockchain_id, findAddress.address, decimals);
+
+                  await _db.AccountCurrency.update(
+                    { balance, balance_sync_block: findBlockHeight.block },
+                    { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
+                  );
+                }
+              } else {
+                balance = accountCurrency.balance;
+              }
+            }
+
+            payload.push({
+              account_id: accountCurrency_id,
+              blockchain_id: account.blockchain_id,
+              network_id,
+              currency_id,
+              balance,
+              publish,
+              account_index: '0',
+            });
+          }
         }
       }
+
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
+      console.log('e:', e);
       this.logger.error('AccountList e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
