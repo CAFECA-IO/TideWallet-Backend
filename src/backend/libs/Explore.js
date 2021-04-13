@@ -65,7 +65,7 @@ class Explore extends Bot {
 
       payload.push({
         blockchainId: findTx.Currency.blockchain_id,
-        iconUrl: findTx.Currency.icon,
+        iconUrl: Utils.formatIconUrl(findTx.Currency.icon),
         txHash: findTx.txid,
         symbol: findTx.Currency.symbol,
         block: findTx.block,
@@ -90,7 +90,7 @@ class Explore extends Bot {
         findTokenTx.forEach((txItem) => {
           payload.push({
             blockchainId: txItem.Currency.blockchain_id,
-            iconUrl: txItem.Currency.icon,
+            iconUrl: Utils.formatIconUrl(txItem.Currency.icon),
             txHash: txItem.txid,
             symbol: txItem.Currency.symbol,
             block: txItem.block,
@@ -183,7 +183,7 @@ class Explore extends Bot {
         if (i < limit) {
           items.push({
             blockchainId: txItem.currency_blockchain_id,
-            iconUrl: txItem.currency_icon,
+            iconUrl: Utils.formatIconUrl(txItem.currency_icon),
             txHash: txItem.txid,
             symbol: txItem.currency_symbol,
             block: txItem.block,
@@ -320,7 +320,7 @@ class Explore extends Bot {
         if (findTx) {
           items.push({
             blockchainId: findTx.Currency.blockchain_id,
-            iconUrl: findTx.Currency.icon,
+            iconUrl: Utils.formatIconUrl(findTx.Currency.icon),
             txHash: findTx.txid,
             symbol: findTx.Currency.symbol,
             block: findTx.block,
@@ -550,7 +550,7 @@ class Explore extends Bot {
         }
         items.push({
           blockchainId: txItem.Currency.blockchain_id,
-          iconUrl: txItem.Currency.icon,
+          iconUrl: Utils.formatIconUrl(txItem.Currency.icon),
           txHash,
           symbol: txItem.Currency.symbol,
           block,

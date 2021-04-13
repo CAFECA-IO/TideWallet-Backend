@@ -1103,6 +1103,11 @@ class Utils {
     const tps = transactionCount.len / timeTaken;
     return tps.toFixed(2);
   }
+
+  static formatIconUrl(iconUrl) {
+    const host = this.config.base.domain ? this.config.base.domain : '';
+    return iconUrl.replace('/undefined//i', host);
+  }
 }
 
 module.exports = Utils;
