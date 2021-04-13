@@ -159,6 +159,7 @@ pathname = [
   "get | /api/v1/blockchain/:blockchain_id/token | Bot.Blockchain.TokenList",
   "get | /api/v1/blockchain/:blockchain_id/token/:token_id | Bot.Blockchain.TokenDetail",
   "post | /api/v1/user | Bot.User.UserRegist",
+  "post | /api/v1/user/id | Bot.User.UserAppID",
   "get | /api/v1/token/verify | Bot.User.AccessTokenVerify",
   "post | /api/v1/token/renew | Bot.User.AccessTokenRenew",
   "post | /api/v1/wallet/blockchain/:blockchain_id/contract/:contract | Bot.Account.TokenRegist",

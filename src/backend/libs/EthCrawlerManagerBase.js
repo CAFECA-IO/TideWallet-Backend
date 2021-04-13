@@ -162,7 +162,10 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
   async oneCycle() {
     try {
-      if (this.isSyncing) return Promise.resolve('EthCrawlerManagerBase is sycning');
+      if (this.isSyncing) {
+        this.logger.log(`[${this.constructor.name}] is sycning`);
+        return Promise.resolve();
+      }
       this.isSyncing = true;
       // step
       // 1. blockNumberFromDB
@@ -185,7 +188,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
       }
 
       if (!await this.checkBlockHash(this.dbBlock)) {
-        this.logger.log(`[${this.constructor.name}] block ${this.dbBlock} in db not the same as peer.`);
+        this.logger.error(`[${this.constructor.name}] block ${this.dbBlock} in db not the same as peer.`);
         // TODO
         // dbBlock = await this.rollbackBlock();
       }

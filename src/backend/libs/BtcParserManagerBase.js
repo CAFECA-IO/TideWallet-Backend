@@ -67,7 +67,7 @@ class BtcParserManagerBase extends ParserManagerBase {
   }
 
   async doJobDone() {
-    this.logger.error(`[${this.constructor.name}] doJobDone`);
+    this.logger.debug(`[${this.constructor.name}] doJobDone`);
     // 3. update failed unparsed retry
     // 4. remove parsed transaction from UnparsedTransaction table
     // 5. update pendingTransaction

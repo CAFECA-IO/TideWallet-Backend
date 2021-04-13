@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const HDWallet = require('./HDWallet');
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
@@ -31,9 +32,50 @@ class User extends Bot {
       this.accountCurrencyModel = this.database.db.AccountCurrency;
       this.accountAddressModel = this.database.db.AccountAddress;
       this.deviceModel = this.database.db.Device;
+      this.userAppModel = this.database.db.UserApp;
       this.sequelize = this.defaultDBInstance.sequelize;
       this.Sequelize = this.defaultDBInstance.Sequelize;
       return this;
+    });
+  }
+
+  async UserAppID({ body, retry = 3 }) {
+    const { id } = body;
+
+    const findUserApp = await this.userAppModel.findOne({
+      app_id: id,
+    });
+    if (findUserApp) {
+      return new ResponseFormat({
+        message: 'User App ID',
+        payload: {
+          user_id: findUserApp.app_user_id,
+          user_secret: findUserApp.app_user_secret,
+        },
+      });
+    }
+
+    const app_user_id = crypto.randomBytes(12).toString('hex');
+    const app_user_secret = crypto.randomBytes(12).toString('hex');
+    try {
+      await this.userAppModel.create({
+        app_id: id,
+        app_user_id,
+        app_user_secret,
+      });
+    } catch (e) {
+      if (retry <= 0) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+      setTimeout(() => {
+        this.UserAppID({ body, retry: retry -= 1 });
+      }, 300);
+    }
+
+    return new ResponseFormat({
+      message: 'User App ID',
+      payload: {
+        user_id: app_user_id,
+        user_secret: app_user_secret,
+      },
     });
   }
 

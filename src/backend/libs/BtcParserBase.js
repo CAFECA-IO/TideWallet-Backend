@@ -28,6 +28,7 @@ class BtcParserBase extends ParserBase {
 
   async doJob(job) {
     try {
+      this.block = job.currentBlock;
       const unParsedTx = job;
       const transaction = JSON.parse(unParsedTx.transaction);
       // await this.parseTx(transaction, unParsedTx.timestamp);

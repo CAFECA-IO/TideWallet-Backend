@@ -197,6 +197,7 @@ class ParserManagerBase {
   async setJob(job) {
     this.logger.debug(`[${this.constructor.name}] setJob()`);
     try {
+      job.dataValues.currentBlock = this.block; // cause job is sequelize object, JSON.stringify only contain dataValues.
       const strJob = JSON.stringify(job);
       const bufJob = Buffer.from(strJob);
 
