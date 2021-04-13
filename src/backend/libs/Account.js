@@ -451,7 +451,9 @@ class Account extends Bot {
           blockchainID: findAccountCurrency.Account.blockchain_id,
         });
 
-        await this.accountAddressModel.create({
+        const DBName = Utils.blockchainIDToDBName(findAccountCurrency.Account.blockchain_id);
+        const _db = this.database.db[DBName];
+        await _db.AccountAddress.create({
           accountAddress_id: uuidv4(),
           account_id: findAccountCurrency.Account.account_id,
           chain_index: 0,
@@ -486,29 +488,31 @@ class Account extends Bot {
     const tokenInfo = await Utils.verifyToken(token);
 
     try {
-      const findAccountCurrency = await this.accountCurrencyModel.findOne({
-        where: { accountCurrency_id: account_id },
-        include: [
-          {
-            model: this.accountModel,
-            attributes: ['account_id', 'user_id', 'extend_public_key'],
-            where: {
-              user_id: tokenInfo.userID,
-            },
-            include: [
-              {
-                model: this.blockchainModel,
-                attributes: ['blockchain_id', 'block', 'coin_type'],
-              },
-            ],
+      const findAccountCurrency = await this.DBOperator.findOne({
+        tableName: 'AccountCurrency',
+        options: {
+          where: {
+            accountCurrency_id: account_id,
           },
-        ],
+          include: [
+            {
+              _model: 'Account',
+              attributes: ['account_id', 'user_id', 'extend_public_key', 'blockchain_id'],
+              where: {
+                user_id: tokenInfo.userID,
+              },
+            },
+          ],
+        },
       });
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
+      const findBlockInfo = Utils.blockchainIDToBlockInfo(findAccountCurrency.Account.blockchain_id);
+      if (!findBlockInfo) return new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
       let chain_index = 0;
       // only BTC has change address
-      switch (findAccountCurrency.Account.Blockchain.blockchain_id) {
+      switch (findAccountCurrency.Account.blockchain_id) {
         case '80000000':
         case '80000001':
           chain_index = 1;
@@ -517,11 +521,14 @@ class Account extends Bot {
           break;
       }
 
-      const findChangeAddress = await this.accountAddressModel.findOne({
-        where: {
-          account_id: findAccountCurrency.Account.account_id,
-          chain_index,
-          key_index: findAccountCurrency.number_of_internal_key,
+      const findChangeAddress = await this.DBOperator.findOne({
+        tableName: 'AccountAddress',
+        options: {
+          where: {
+            account_id: findAccountCurrency.Account.account_id,
+            chain_index,
+            key_index: findAccountCurrency.number_of_internal_key,
+          },
         },
       });
 
@@ -529,7 +536,7 @@ class Account extends Bot {
       // if index address not found
       let { address } = findChangeAddress || {};
       if (!findChangeAddress) {
-        const coinType = findAccountCurrency.Account.Blockchain.coin_type;
+        const { coin_type: coinType } = findBlockInfo;
         const wallet = hdWallet.getWalletInfo({
           change: chain_index,
           index: findAccountCurrency.number_of_internal_key,
@@ -537,7 +544,9 @@ class Account extends Bot {
           blockchainID: findAccountCurrency.Account.Blockchain.blockchain_id,
         });
 
-        await this.accountAddressModel.create({
+        const DBName = Utils.blockchainIDToDBName(findAccountCurrency.Account.blockchain_id);
+        const _db = this.database.db[DBName];
+        await _db.AccountAddress.create({
           accountAddress_id: uuidv4(),
           account_id: findAccountCurrency.Account.account_id,
           chain_index: 1,
@@ -557,6 +566,7 @@ class Account extends Bot {
         },
       });
     } catch (e) {
+      console.log(e);
       this.logger.error('AccountChange e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
