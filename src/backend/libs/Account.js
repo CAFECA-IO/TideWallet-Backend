@@ -274,7 +274,6 @@ class Account extends Bot {
 
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
-      console.log('e:', e);
       this.logger.error('AccountList e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -293,56 +292,91 @@ class Account extends Bot {
 
     try {
       // check user has this account currency & accountCurrency_id exist
-      const findAccountCurrency = await this.accountCurrencyModel.findOne({
-        where: {
-          accountCurrency_id: account_id,
-        },
-        include: [
-          {
-            model: this.accountModel,
-            where: {
-              user_id: tokenInfo.userID,
-            },
+      const findAccountCurrency = await this.DBOperator.findOne({
+        tableName: 'AccountCurrency',
+        options: {
+          where: {
+            accountCurrency_id: account_id,
           },
-        ],
+          include: [
+            {
+              _model: 'Account',
+              where: {
+                user_id: tokenInfo.userID,
+              },
+            },
+          ],
+        },
       });
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const findAccount = findAccountCurrency.Account;
 
       // find account currencies info
-      const findAccountCurrencies = await this.accountCurrencyModel.findAll({
-        where: {
-          account_id: findAccount.account_id,
+      // const findAccountCurrencies = await this.accountCurrencyModel.findAll({
+      //   where: {
+      //     account_id: findAccount.account_id,
+      //   },
+      //   include: [
+      //     {
+      //       model: this.currencyModel,
+      //       attributes: ['currency_id', 'name', 'symbol', 'type', 'publish', 'decimals', 'total_supply', 'contract', 'icon'],
+      //       where: {
+      //         [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
+      //       },
+      //     },
+      //   ],
+      // });
+
+      const findAccountCurrencies = await this.DBOperator.findAll({
+        tableName: 'AccountCurrency',
+        options: {
+          where: {
+            account_id: findAccount.account_id,
+          },
+          // include: [
+          //   {
+          //     _model: 'Currency',
+          //     attributes: ['currency_id', 'name', 'symbol', 'type', 'publish', 'decimals', 'total_supply', 'contract', 'icon'],
+          //     where: {
+          //       [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
+          //     },
+          //   },
+          // ],
         },
-        include: [
-          {
-            model: this.currencyModel,
-            attributes: ['currency_id', 'name', 'symbol', 'type', 'publish', 'decimals', 'total_supply', 'contract', 'icon'],
+      });
+
+      for (let j = 0; j < findAccountCurrencies.length; j++) {
+        const accountCurrency = findAccountCurrencies[j];
+        const findCurrency = await this.DBOperator.findOne({
+          tableName: 'Currency',
+          options: {
             where: {
+              currency_id: accountCurrency.currency_id,
               [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
             },
           },
-        ],
-      });
-      for (let j = 0; j < findAccountCurrencies.length; j++) {
-        const accountCurrency = findAccountCurrencies[j];
+        });
+
         let { balance = '0' } = accountCurrency;
         if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC') {
           // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
-          const findBlockHeight = await this.blockchainModel.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
+          const DBName = Utils.blockchainIDToDBName(findAccount.blockchain_id);
+          const _db = this.database.db[DBName];
+          const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
           if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
-            const findAddress = await this.accountAddressModel.findOne({
+            const findAddress = await _db.AccountAddress.findOne({
               where: { account_id: findAccount.account_id },
               attributes: ['address'],
             });
             if (findAddress) {
-              if (accountCurrency.Currency.contract) {
-                balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, accountCurrency.Currency.contract, accountCurrency.Currency.decimals);
+              console.log('findCurrency.contract:', findCurrency.contract);
+              if (findCurrency.contract) {
+                balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
               } else {
-                balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, accountCurrency.Currency.decimals);
+                balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, findCurrency.decimals);
               }
-              await this.accountCurrencyModel.update(
+              await _db.AccountCurrency.update(
                 { balance, balance_sync_block: findBlockHeight.block },
                 { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
               );
@@ -352,7 +386,7 @@ class Account extends Bot {
           }
         }
 
-        if (accountCurrency.Currency && accountCurrency.Currency.type === 1) {
+        if (findCurrency && findCurrency.type === 1) {
           payload.blockchain_id = findAccount.blockchain_id;
           payload.currency_id = accountCurrency.currency_id;
           payload.account_id = accountCurrency.accountCurrency_id;
@@ -362,20 +396,20 @@ class Account extends Bot {
           payload.number_of_external_key = findAccount.number_of_external_key;
           payload.number_of_internal_key = findAccount.number_of_internal_key;
           payload.balance = balance;
-          payload.symbol = accountCurrency.Currency.symbol;
-          payload.icon = accountCurrency.Currency.icon;
-        } else if (accountCurrency.Currency && accountCurrency.Currency.type === 2) {
+          payload.symbol = findCurrency.symbol;
+          payload.icon = findCurrency.icon;
+        } else if (findCurrency && findCurrency.type === 2) {
           tokens.push({
             account_token_id: accountCurrency.accountCurrency_id,
-            token_id: accountCurrency.Currency.currency_id,
+            token_id: findCurrency.currency_id,
             blockchain_id: findAccount.blockchain_id,
-            name: accountCurrency.Currency.name,
-            symbol: accountCurrency.Currency.symbol,
-            type: accountCurrency.Currency.type,
-            publish: accountCurrency.Currency.publish,
-            decimals: accountCurrency.Currency.decimals,
-            total_supply: accountCurrency.Currency.total_supply,
-            contract: accountCurrency.Currency.contract,
+            name: findCurrency.name,
+            symbol: findCurrency.symbol,
+            type: findCurrency.type,
+            publish: findCurrency.publish,
+            decimals: findCurrency.decimals,
+            total_supply: findCurrency.total_supply,
+            contract: findCurrency.contract,
             balance,
           });
         }
@@ -383,6 +417,7 @@ class Account extends Bot {
       payload.tokens = tokens;
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
+      console.log('e', e);
       this.logger.error('AccountDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });

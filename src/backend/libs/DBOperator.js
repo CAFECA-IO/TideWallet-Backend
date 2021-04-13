@@ -47,7 +47,8 @@ class DBOperator {
       if (!tableName) return new ResponseFormat({ message: 'db error(query need table name)', code: Codes.DB_ERROR });
       const queries = [];
       Utils.databaseInstanceName.forEach((dbName) => {
-        queries.push(this.database.db[dbName][tableName].findOne(options));
+        const _options = this.updateDBInstance(this.database.db[dbName], options);
+        queries.push(this.database.db[dbName][tableName].findOne(_options));
       });
       const findItems = await Promise.all(queries).catch((error) => new ResponseFormat({ message: `db error(${error})`, code: Codes.DB_ERROR }));
       if (findItems.code === Codes.DB_ERROR) throw findItems;
