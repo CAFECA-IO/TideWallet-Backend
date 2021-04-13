@@ -189,8 +189,9 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
 
       if (!await this.checkBlockHash(this.dbBlock)) {
         this.logger.error(`[${this.constructor.name}] block ${this.dbBlock} in db not the same as peer.`);
-        // TODO
-        // dbBlock = await this.rollbackBlock();
+        this.stopParser();
+        this.dbBlock = await this.rollbackBlock(this.dbBlock);
+        this.startParser();
       }
 
       await this.syncBlock(this.dbBlock);
