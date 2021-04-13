@@ -311,38 +311,12 @@ class Account extends Bot {
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const findAccount = findAccountCurrency.Account;
-
-      // find account currencies info
-      // const findAccountCurrencies = await this.accountCurrencyModel.findAll({
-      //   where: {
-      //     account_id: findAccount.account_id,
-      //   },
-      //   include: [
-      //     {
-      //       model: this.currencyModel,
-      //       attributes: ['currency_id', 'name', 'symbol', 'type', 'publish', 'decimals', 'total_supply', 'contract', 'icon'],
-      //       where: {
-      //         [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
-      //       },
-      //     },
-      //   ],
-      // });
-
       const findAccountCurrencies = await this.DBOperator.findAll({
         tableName: 'AccountCurrency',
         options: {
           where: {
             account_id: findAccount.account_id,
           },
-          // include: [
-          //   {
-          //     _model: 'Currency',
-          //     attributes: ['currency_id', 'name', 'symbol', 'type', 'publish', 'decimals', 'total_supply', 'contract', 'icon'],
-          //     where: {
-          //       [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
-          //     },
-          //   },
-          // ],
         },
       });
 
@@ -417,7 +391,6 @@ class Account extends Bot {
       payload.tokens = tokens;
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
-      console.log('e', e);
       this.logger.error('AccountDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -433,44 +406,49 @@ class Account extends Bot {
     const tokenInfo = await Utils.verifyToken(token);
 
     try {
-      const findAccountCurrency = await this.accountCurrencyModel.findOne({
-        where: { accountCurrency_id: account_id },
-        include: [
-          {
-            model: this.accountModel,
-            attributes: ['account_id', 'user_id', 'extend_public_key'],
-            where: {
-              user_id: tokenInfo.userID,
-            },
-            include: [
-              {
-                model: this.blockchainModel,
-                attributes: ['blockchain_id', 'block', 'coin_type'],
-              },
-            ],
+      const findAccountCurrency = await this.DBOperator.findOne({
+        tableName: 'AccountCurrency',
+        options: {
+          where: {
+            accountCurrency_id: account_id,
           },
-        ],
+          include: [
+            {
+              _model: 'Account',
+              attributes: ['account_id', 'user_id', 'extend_public_key', 'blockchain_id'],
+              where: {
+                user_id: tokenInfo.userID,
+              },
+            },
+          ],
+        },
       });
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
-      const findReceiveAddress = await this.accountAddressModel.findOne({
-        where: {
-          account_id: findAccountCurrency.Account.account_id,
-          chain_index: 0,
-          key_index: findAccountCurrency.number_of_external_key,
+      const findReceiveAddress = await this.DBOperator.findOne({
+        tableName: 'AccountAddress',
+        options: {
+          where: {
+            account_id: findAccountCurrency.Account.account_id,
+            chain_index: 0,
+            key_index: findAccountCurrency.number_of_external_key,
+          },
         },
       });
+
+      const findBlockInfo = Utils.blockchainIDToBlockInfo(findAccountCurrency.Account.blockchain_id);
+      if (!findBlockInfo) return new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
       const hdWallet = new HDWallet({ extendPublicKey: findAccountCurrency.Account.extend_public_key });
       // if index address not found
       let { address } = findReceiveAddress || {};
       if (!findReceiveAddress) {
-        const coinType = findAccountCurrency.Account.Blockchain.coin_type;
+        const { coin_type: coinType } = findBlockInfo;
         const wallet = hdWallet.getWalletInfo({
           change: 0,
           index: findAccountCurrency.number_of_external_key,
           coinType,
-          blockchainID: findAccountCurrency.Account.Blockchain.blockchain_id,
+          blockchainID: findAccountCurrency.Account.blockchain_id,
         });
 
         await this.accountAddressModel.create({
