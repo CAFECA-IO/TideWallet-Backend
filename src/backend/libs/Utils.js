@@ -1106,7 +1106,7 @@ class Utils {
 
   static formatIconUrl(iconUrl) {
     const host = this.config.base.domain ? this.config.base.domain : '';
-    return iconUrl.replace('undefined/', host);
+    return iconUrl.replace('undefined', host);
   }
 }
 
