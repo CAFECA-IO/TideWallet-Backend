@@ -308,7 +308,13 @@ class Blockchain extends Bot {
     || !Utils.validateString(signatureData)) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
 
     try {
-      const findBlockchainInfo = await this.blockchainModel.findOne({ where: { blockchain_id }, attributes: ['avg_fee'] });
+      const findBlockchainInfo = await this.DBOperator.findOne({
+        tableName: 'Blockchain',
+        options: {
+          where: { blockchain_id },
+          attributes: ['avg_fee'],
+        },
+      });
       if (!findBlockchainInfo) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
       const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
