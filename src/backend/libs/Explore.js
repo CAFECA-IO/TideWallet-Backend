@@ -224,7 +224,11 @@ class Explore extends Bot {
         const itemJSON = JSON.parse(item.result);
 
         // eslint-disable-next-line no-nested-ternary
-        const txCount = (itemJSON.nTx !== undefined) ? itemJSON.nTx : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
+        const txCount = (itemJSON.nTx !== undefined)
+          ? itemJSON.nTx
+          : (itemJSON.transactions)
+            ? itemJSON.transactions.length
+            : itemJSON.length || 0;
         items.push({
           blockchainId: item.blockchain_id,
           name: await this.blockchainIdToName(item.blockchain_id),
