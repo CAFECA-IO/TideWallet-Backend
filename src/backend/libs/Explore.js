@@ -624,21 +624,21 @@ class Explore extends Bot {
         this.blockScannedModel.findAll({
           limit: 10,
           where: {
-            block_hash: { [this.Sequelize.Op.startsWith]: search_string },
+            block_hash: search_string,
           },
           attributes: ['block_hash', 'blockchain_id'],
         }),
         this.tokenTransactionModel.findAll({
           limit: 5,
           where: {
-            txid: { [this.Sequelize.Op.startsWith]: search_string },
+            txid: search_string,
           },
           attributes: ['txid'],
         }),
         this.accountAddressModel.findAll({
           limit: 10,
           where: {
-            address: { [this.Sequelize.Op.startsWith]: search_string },
+            address: search_string,
           },
           attributes: ['address'],
         }),
@@ -658,7 +658,7 @@ class Explore extends Bot {
         const findTxs = await this.transactionModel.findAll({
           limit: 10 - txLen,
           where: {
-            txid: { [this.Sequelize.Op.startsWith]: search_string },
+            txid: search_string,
           },
           attributes: ['txid'],
         });
