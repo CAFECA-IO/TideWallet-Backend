@@ -264,7 +264,13 @@ class Blockchain extends Bot {
     try {
       const { blockchain_id } = params;
 
-      const findBlockchainInfo = await this.blockchainModel.findOne({ where: { blockchain_id }, attributes: ['avg_fee'] });
+      const findBlockchainInfo = await this.DBOperator.findOne({
+        tableName: 'Blockchain',
+        options: {
+          where: { blockchain_id },
+          attributes: ['avg_fee'],
+        },
+      });
       if (!findBlockchainInfo) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
       const { avg_fee = '0' } = findBlockchainInfo;
@@ -275,9 +281,13 @@ class Blockchain extends Bot {
       const fastForMat = new BigNumber(avg_fee).multipliedBy(1.5).toFixed(0);
 
       let decimals = 8;
-      const findBlockchainCurrencyDecimals = await this.currencyModel.findOne({
-        where: { blockchain_id, type: 1 },
-        attributes: ['decimals'],
+
+      const findBlockchainCurrencyDecimals = await this.DBOperator.findOne({
+        tableName: 'Currency',
+        options: {
+          where: { blockchain_id, type: 1 },
+          attributes: ['decimals'],
+        },
       });
       if (findBlockchainCurrencyDecimals) decimals = findBlockchainCurrencyDecimals.decimals;
 
