@@ -360,15 +360,18 @@ class Blockchain extends Bot {
 
     try {
       // find user, address mapping
-      const findUserAddress = await this.accountAddressModel.findOne({
-        where: { address },
-        include: [
-          {
-            model: this.accountModel,
-            where: { blockchain_id, user_id: tokenInfo.userID },
-            attributes: ['account_id'],
-          },
-        ],
+      const findUserAddress = await this.DBOperator.findOne({
+        tableName: 'AccountAddress',
+        options: {
+          where: { address },
+          include: [
+            {
+              _model: 'Account',
+              where: { blockchain_id, user_id: tokenInfo.userID },
+              attributes: ['account_id'],
+            },
+          ],
+        },
       });
 
       if (!findUserAddress) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
@@ -546,7 +549,6 @@ class Blockchain extends Bot {
       });
       return new ResponseFormat({ message: 'List Fiat Currency Rate', payload });
     } catch (e) {
-      console.log('e', e);
       if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
