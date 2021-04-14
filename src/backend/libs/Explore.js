@@ -271,7 +271,11 @@ class Explore extends Bot {
       const itemJSON = JSON.parse(findBlockInfo.result);
 
       // eslint-disable-next-line no-nested-ternary
-      const txCount = (itemJSON.nTx !== undefined) ? itemJSON.nTx : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
+      const txCount = (itemJSON.nTx !== undefined)
+        ? itemJSON.nTx
+        : (itemJSON.transactions)
+          ? itemJSON.transactions.length
+          : itemJSON.length || 0;
 
       const payload = {
         name: await this.blockchainIdToName(findBlockInfo.blockchain_id),
@@ -301,16 +305,29 @@ class Explore extends Bot {
       const itemJSON = JSON.parse(findBlockInfo.result);
 
       // eslint-disable-next-line no-nested-ternary
-      const txCount = (itemJSON.nTx !== undefined) ? itemJSON.nTx : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
+      const txCount = (itemJSON.nTx !== undefined)
+        ? itemJSON.nTx
+        : (itemJSON.transactions)
+          ? itemJSON.transactions.length
+          : itemJSON.length || 0;
       // eslint-disable-next-line no-nested-ternary
-      const txs = (itemJSON.tx !== undefined) ? itemJSON.tx : (itemJSON.transactions) ? itemJSON.transactions : [];
+      const txs = (itemJSON.tx !== undefined)
+        ? itemJSON.tx
+        : (itemJSON.transactions)
+          ? itemJSON.transactions
+          : itemJSON || [];
 
       const items = [];
       const endIndex = Number(index) + Number(limit) + 1;
       const loopEndIndex = Math.min(txs.length, endIndex);
       for (let i = index; i < loopEndIndex; i++) {
         const txItem = txs[i];
-        const txid = (txItem.txid) ? txItem.txid : txItem.hash;
+        // eslint-disable-next-line no-nested-ternary
+        const txid = (txItem.txid)
+          ? txItem.txid
+          : (txItem.hash)
+            ? txItem.hash
+            : txItem;
         const findTx = await this.transactionModel.findOne({
           where: { txid },
           attributes: ['transaction_id', 'currency_id', 'txid', 'timestamp', 'source_addresses', 'destination_addresses', 'amount', 'block', 'fee'],
