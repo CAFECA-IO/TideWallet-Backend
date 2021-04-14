@@ -528,10 +528,10 @@ class Blockchain extends Bot {
 
   async FiatsRate() {
     try {
-      const findRates = await this.fiatCurrencyRateModel.findAll({
+      const findRates = await this.defaultDBInstance.FiatCurrencyRate.findAll({
         include: [
           {
-            model: this.currencyModel,
+            model: this.defaultDBInstance.Currency,
             attributes: ['currency_id', 'symbol'],
           },
         ],
@@ -546,7 +546,7 @@ class Blockchain extends Bot {
       });
       return new ResponseFormat({ message: 'List Fiat Currency Rate', payload });
     } catch (e) {
-      this.logger.error('FiatsRate e:', e);
+      console.log('e', e);
       if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
     }
