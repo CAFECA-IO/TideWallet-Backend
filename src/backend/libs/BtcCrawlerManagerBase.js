@@ -144,6 +144,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           block_hash: blockData.hash,
           timestamp: blockData.time,
           result: JSON.stringify(txids),
+          transaction_count: txids.length,
         },
       });
       return insertResult;

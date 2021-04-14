@@ -27,6 +27,9 @@ module.exports = (sequelize, DataTypes) => sequelize.define('BlockScanned', {
     type: DataTypes.TEXT,
     allowNull: false,
   },
+  transaction_count: {
+    type: DataTypes.INTEGER,
+  },
 }, {
   timestamps: false,
   tableName: 'BlockScanned',
@@ -35,5 +38,6 @@ module.exports = (sequelize, DataTypes) => sequelize.define('BlockScanned', {
   indexes: [
     { fields: ['blockchain_id'] },
     { unique: true, fields: ['blockchain_id', 'block'] },
+    { fields: ['blockchain_id', 'timestamp'] },
   ],
 });
