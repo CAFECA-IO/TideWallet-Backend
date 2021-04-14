@@ -65,7 +65,7 @@ class Explore extends Bot {
 
       payload.push({
         blockchainId: findTx.Currency.blockchain_id,
-        iconUrl: findTx.Currency.icon,
+        iconUrl: Utils.formatIconUrl(findTx.Currency.icon),
         txHash: findTx.txid,
         symbol: findTx.Currency.symbol,
         block: findTx.block,
@@ -90,7 +90,7 @@ class Explore extends Bot {
         findTokenTx.forEach((txItem) => {
           payload.push({
             blockchainId: txItem.Currency.blockchain_id,
-            iconUrl: txItem.Currency.icon,
+            iconUrl: Utils.formatIconUrl(txItem.Currency.icon),
             txHash: txItem.txid,
             symbol: txItem.Currency.symbol,
             block: txItem.block,
@@ -124,39 +124,39 @@ class Explore extends Bot {
             "Currency"."icon" AS "currency_icon",
             "Currency"."symbol" AS "currency_symbol",
             "Currency"."decimals" AS "currency_decimals"
-          FROM (
-            (SELECT
-              "transaction_id",
-              "currency_id",
-              "txid",
-              "timestamp",
-              "source_addresses",
-              "destination_addresses",
-              "amount",
-              "block",
-              "fee"
-            FROM
-              "Transaction"
-            ORDER BY
-              "transaction_id" DESC
-            LIMIT :limit OFFSET :index)
-            UNION
-            (SELECT
-              "transaction_id",
-              "currency_id",
-              "txid",
-              "timestamp",
-              "source_addresses",
-              "destination_addresses",
-              "amount",
-              NULL AS "block",
-              NULL AS "fee"
+          FROM ((
+              SELECT
+                "transaction_id",
+                "currency_id",
+                "txid",
+                "timestamp",
+                "source_addresses",
+                "destination_addresses",
+                "amount",
+                "block",
+                "fee"
+              FROM
+                "Transaction"
+              ORDER BY
+                "transaction_id" DESC
+              LIMIT :limit OFFSET :index)
+          UNION (
+            SELECT
+              "TokenTransaction"."transaction_id",
+              "TokenTransaction"."currency_id",
+              "TokenTransaction"."txid",
+              "TokenTransaction"."timestamp",
+              "TokenTransaction"."source_addresses",
+              "TokenTransaction"."destination_addresses",
+              "TokenTransaction"."amount",
+              "Transaction"."block",
+              "Transaction"."fee"
             FROM
               "TokenTransaction"
-            ORDER BY
-              "transaction_id" DESC
-            LIMIT :limit OFFSET :index)
-            ) AS t1
+            LEFT OUTER JOIN "Transaction" AS "Transaction" ON "Transaction"."transaction_id" = "TokenTransaction"."transaction_id"
+          ORDER BY
+            "transaction_id" DESC
+          LIMIT :limit OFFSET :index)) AS t1
             LEFT OUTER JOIN "Currency" AS "Currency" ON "t1"."currency_id" = "Currency"."currency_id"
           ORDER BY
             "transaction_id" DESC`,
@@ -183,7 +183,7 @@ class Explore extends Bot {
         if (i < limit) {
           items.push({
             blockchainId: txItem.currency_blockchain_id,
-            iconUrl: txItem.currency_icon,
+            iconUrl: Utils.formatIconUrl(txItem.currency_icon),
             txHash: txItem.txid,
             symbol: txItem.currency_symbol,
             block: txItem.block,
@@ -320,7 +320,7 @@ class Explore extends Bot {
         if (findTx) {
           items.push({
             blockchainId: findTx.Currency.blockchain_id,
-            iconUrl: findTx.Currency.icon,
+            iconUrl: Utils.formatIconUrl(findTx.Currency.icon),
             txHash: findTx.txid,
             symbol: findTx.Currency.symbol,
             block: findTx.block,
@@ -550,7 +550,7 @@ class Explore extends Bot {
         }
         items.push({
           blockchainId: txItem.Currency.blockchain_id,
-          iconUrl: txItem.Currency.icon,
+          iconUrl: Utils.formatIconUrl(txItem.Currency.icon),
           txHash,
           symbol: txItem.Currency.symbol,
           block,
