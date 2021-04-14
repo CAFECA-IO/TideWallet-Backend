@@ -1,3 +1,5 @@
+const { eventBus } = require('./Events');
+
 class CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
     this.bcid = blockchainId;
@@ -16,6 +18,8 @@ class CrawlerManagerBase {
     this.transactionModel = this.database.db.Transaction;
     this.feeSyncInterval = 3600000;
     this.pendingTxSyncInterval = 15000;
+
+    this.eventSender = eventBus;
   }
 
   async init() {
@@ -152,6 +156,19 @@ class CrawlerManagerBase {
     }
   }
 
+  async getBlockScanned(block) {
+    try {
+      this.logger.debug(`[${this.constructor.name}] getBlockScanned(${block})`);
+      const result = await this.blockScannedModel.findOne({
+        where: { blockchain_id: this.bcid, block },
+      });
+      return result;
+    } catch (error) {
+      this.logger.debug(`[${this.constructor.name}] getBlockScanned(${block}) error: ${error}`);
+      throw error;
+    }
+  }
+
   async getTransactionsResultNull() {
     this.logger.debug(`[${this.constructor.name}] getTransactionsResultNull`);
     try {
@@ -186,10 +203,72 @@ class CrawlerManagerBase {
     return Promise.resolve();
   }
 
-  async rollbackBlock() {
-    // TODO
-    this.logger.debug('rollbackBlock()');
-    return Promise.resolve();
+  async removeBlockScanned(blockScanned_id) {
+    this.logger.debug(`[${this.constructor.name}] removeBlockScanned()`);
+    try {
+      await this.blockScannedModel.destroy({
+        where: { blockScanned_id },
+      });
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] removeBlockScanned() error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
+  async removeUnparsedTx(timestamp) {
+    this.logger.debug(`[${this.constructor.name}] removeUnparsedTx`);
+    try {
+      await this.unparsedTxModel.destroy({
+        where: { blockchain_id: this.bcid, timestamp },
+      });
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] removeUnparsedTx error: ${error}`);
+      return Promise.reject(error);
+    }
+  }
+
+  async rollbackBlock(block) {
+    if (this.blockInfo.start_block >= block) {
+      this.logger.error(`[${this.constructor.name}] rollbackBlock to start block ${block}`);
+      return block;
+    }
+
+    this.logger.debug(`[${this.constructor.name}] rollbackBlock(${block})`);
+    // step
+    // 1. get blockscaned data
+    // 2. remove UnparsedTransaction by timestamp
+    // 3. remove blockScanned data
+    // 4. update db block
+    // 5. checkBlockHash
+    // 5-1. if fail recursivly rollback
+    try {
+      const blockScannedData = await this.getBlockScanned(block);
+      if (!blockScannedData.timestamp) throw new Error('roll back failed, blockScanned not found');
+
+      const prevBlockHeight = block - 1;
+
+      await this.removeUnparsedTx(blockScannedData.timestamp);
+
+      await this.removeBlockScanned(blockScannedData.blockScanned_id);
+
+      await this.updateBlockHeight(prevBlockHeight);
+
+      if (!await this.checkBlockHash(prevBlockHeight)) {
+        return await this.rollbackBlock(prevBlockHeight);
+      }
+      return prevBlockHeight;
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] rollbackBlock(${block}) error: ${error}`);
+      throw error;
+    }
+  }
+
+  startParser() {
+    this.eventSender.emit('StartParser');
+  }
+
+  stopParser() {
+    this.eventSender.emit('StopParser');
   }
 
   // eslint-disable-next-line no-unused-vars

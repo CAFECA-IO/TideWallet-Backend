@@ -34,6 +34,7 @@ class BtcParserManagerBase extends ParserManagerBase {
 
   async createJob() {
     this.logger.log(`[${this.constructor.name}] createJob`);
+    if (!this.startParse) return;
     // 1. load unparsed transactions per block from UnparsedTransaction
     // 2. check has unparsed transaction
     // 2-1. if no parse update balance
@@ -68,6 +69,7 @@ class BtcParserManagerBase extends ParserManagerBase {
 
   async doJobDone() {
     this.logger.debug(`[${this.constructor.name}] doJobDone`);
+    if (!this.startParse) return;
     // 3. update failed unparsed retry
     // 4. remove parsed transaction from UnparsedTransaction table
     // 5. update pendingTransaction
@@ -97,6 +99,10 @@ class BtcParserManagerBase extends ParserManagerBase {
   }
 
   async doParse() {
+    if (!this.startParse) {
+      this.logger.log(`[${this.constructor.name}] doParse is stop`);
+      return;
+    }
     if (this.isParsing) {
       this.logger.log(`[${this.constructor.name}] doParse is parsing`);
       return;
