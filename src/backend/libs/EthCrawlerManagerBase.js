@@ -127,6 +127,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           block_hash: blockData.hash,
           timestamp: parseInt(blockData.timestamp, 16),
           result: JSON.stringify(txids),
+          transaction_count: txids.length,
         },
       });
       return insertResult;
