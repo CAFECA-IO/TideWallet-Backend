@@ -635,6 +635,13 @@ class Explore extends Bot {
           },
           attributes: ['txid'],
         }),
+        this.tokenTransactionModel.findAll({
+          limit: 5,
+          where: {
+            [this.Sequelize.Op.or]: [{ source_addresses: search_string }, { destination_addresses: search_string }],
+          },
+          attributes: ['txid'],
+        }),
         this.accountAddressModel.findAll({
           limit: 10,
           where: {
@@ -658,6 +665,22 @@ class Explore extends Bot {
         const findTxs = await this.transactionModel.findAll({
           limit: 10 - txLen,
           where: {
+            [this.Sequelize.Op.or]: [{ source_addresses: search_string }, { destination_addresses: search_string }],
+          },
+          attributes: ['txid'],
+        });
+        if (findTxs) {
+          findTxs.forEach((item) => {
+            if (payload.transaction.findIndex((x) => x.txid === item.txid) === -1)payload.transaction.push({ txid: item.txid });
+          });
+        }
+      }
+
+      const txLen2 = searchItems[2].length;
+      if ((10 - txLen2) > 0) {
+        const findTxs = await this.transactionModel.findAll({
+          limit: 10 - txLen2,
+          where: {
             txid: search_string,
           },
           attributes: ['txid'],
@@ -669,8 +692,8 @@ class Explore extends Bot {
         }
       }
 
-      if (searchItems[2]) {
-        searchItems[2].forEach((item) => {
+      if (searchItems[3]) {
+        searchItems[3].forEach((item) => {
           if (payload.address.findIndex((x) => x.txid === item.txid) === -1)payload.address.push({ address: item.address });
         });
       }
