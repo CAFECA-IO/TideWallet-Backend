@@ -554,11 +554,14 @@ class Blockchain extends Bot {
 
   async CryptoRate() {
     try {
-      const findRates = await this.currencyModel.findAll({
-        attributes: ['currency_id', 'exchange_rate', 'symbol'],
-        where: {
-          [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
-          exchange_rate: { [this.Sequelize.Op.not]: null },
+      const findRates = await this.DBOperator.findAll({
+        tableName: 'Currency',
+        options: {
+          attributes: ['currency_id', 'exchange_rate', 'symbol'],
+          where: {
+            [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
+            exchange_rate: { [this.Sequelize.Op.not]: null },
+          },
         },
       });
       const payload = [];
