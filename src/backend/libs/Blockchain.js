@@ -48,8 +48,27 @@ class Blockchain extends Bot {
       await this.initBlockchainNetworks();
       await this.initCurrency();
       await this.initFiatCurrencyRate();
+      await this.initBackendHDWallet();
       return this;
     });
+  }
+
+  async initBackendHDWallet() {
+    if (!this.config.base.extendPublicKey) return Promise.reject(new Error('base.extendPublicKey config not set'));
+    try {
+      const botUser = await this.getBot('User');
+      await botUser.UserRegist({
+        body: {
+          wallet_name: 'TideWallet-Backend',
+          extend_public_key: this.config.base.extendPublicKey,
+          install_id: 'TideWallet-Backend',
+          app_uuid: 'TideWallet-Backend',
+        },
+      });
+    } catch (e) {
+      console.log(e);
+      return Promise.reject(new Error(`Create HDWallet Error: ${e}`));
+    }
   }
 
   async initBlockchainNetworks() {
@@ -816,6 +835,64 @@ CFC_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.CFC.blockScanned_blockHeight}
 CFC_UNCRAWLERBLOCK ${data.payload.CFC.unCrawlerBlock}
 CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
 `;
+  }
+
+  async ServerWallets() {
+    try {
+      const findAccount = await this.accountModel.findAll({
+        where: { extend_public_key: this.config.base.extendPublicKey },
+        attributes: ['account_id', 'blockchain_id'],
+      });
+
+      if (!findAccount || findAccount.length === 0) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+
+      const payload = [];
+      for (let i = 0; i < findAccount.length; i++) {
+        const accountItem = findAccount[i];
+        const findAddress = await this.accountAddressModel.findAll({
+          where: { account_id: accountItem.account_id },
+          attributes: ['address'],
+        });
+        if (findAddress || findAddress.length > 0) {
+          for (let j = 0; j < findAddress.length; j++) {
+            const addressItem = findAddress[j];
+
+            let _balance = '0';
+            switch (accountItem.blockchain_id) {
+              case '8000003C':
+              case '8000025B':
+              case '80000CFC':
+                _balance = await Utils.ethGetBalanceByAddress(accountItem.blockchain_id, addressItem.address, 18);
+                break;
+              case '80000000':
+              case '80000001':
+                // eslint-disable-next-line no-case-declarations
+                const findAccountCurrency = await this.accountCurrencyModel.findOne({
+                  where: { account_id: accountItem.account_id },
+                });
+                if (findAccountCurrency && findAccountCurrency.balance) _balance = findAccountCurrency.balance;
+                break;
+              default:
+                break;
+            }
+            const blockchainInfo = Object.values(blockchainNetworks).find((item) => item.blockchain_id === accountItem.blockchain_id);
+            payload.push({
+              blockchainId: accountItem.blockchain_id,
+              name: blockchainInfo.name,
+              address: addressItem.address,
+              balance: _balance,
+            });
+          }
+        }
+      }
+
+      return new ResponseFormat({ message: 'Explore Address Detail', payload });
+    } catch (e) {
+      console.log(e);
+      this.logger.error('NodeInfo e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+    }
   }
 }
 
