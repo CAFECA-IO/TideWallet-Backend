@@ -846,7 +846,7 @@ CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
 
       if (!findAccount || findAccount.length === 0) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
-      const balance = [];
+      const payload = [];
       for (let i = 0; i < findAccount.length; i++) {
         const accountItem = findAccount[i];
         const findAddress = await this.accountAddressModel.findAll({
@@ -858,7 +858,7 @@ CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
             const addressItem = findAddress[j];
 
             let _balance = '0';
-            switch (addressItem.blockchain_id) {
+            switch (accountItem.blockchain_id) {
               case '8000003C':
               case '8000025B':
               case '80000CFC':
@@ -868,16 +868,17 @@ CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
               case '80000001':
                 // eslint-disable-next-line no-case-declarations
                 const findAccountCurrency = await this.accountCurrencyModel.findOne({
-                  where: { account_id: addressItem.account_id },
+                  where: { account_id: accountItem.account_id },
                 });
                 if (findAccountCurrency && findAccountCurrency.balance) _balance = findAccountCurrency.balance;
                 break;
               default:
                 break;
             }
-            balance.push({
-              blockchainId: addressItem.blockchain_id,
-              name: await this.blockchainIdToName(addressItem.blockchain_id),
+            const blockchainInfo = Object.values(blockchainNetworks).find((item) => item.blockchain_id === accountItem.blockchain_id);
+            payload.push({
+              blockchainId: accountItem.blockchain_id,
+              name: blockchainInfo.name,
               address: addressItem.address,
               balance: _balance,
             });
@@ -885,7 +886,7 @@ CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
         }
       }
 
-      return new ResponseFormat({ message: 'Explore Address Detail', payload: { balance } });
+      return new ResponseFormat({ message: 'Explore Address Detail', payload });
     } catch (e) {
       console.log(e);
       this.logger.error('NodeInfo e:', e);
