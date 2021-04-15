@@ -167,7 +167,7 @@ module.exports = [
     currency_id: '9d67d076-b6cc-41f7-9698-5c27fc59dccd',
     blockchain_id: '80000CFC',
     name: 'TITAN',
-    symbol: 'TIN',
+    symbol: 'TTN',
     type: 1,
     description: 'TITAN description',
     publish: false,
