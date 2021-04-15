@@ -166,10 +166,10 @@ module.exports = [
   {
     currency_id: '9d67d076-b6cc-41f7-9698-5c27fc59dccd',
     blockchain_id: '80000CFC',
-    name: 'Cafeca',
-    symbol: 'CFC',
+    name: 'TITAN',
+    symbol: 'TIN',
     type: 1,
-    description: 'Cafeca description',
+    description: 'TITAN description',
     publish: false,
     decimals: 18,
     icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png',
