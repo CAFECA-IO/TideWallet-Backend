@@ -8,6 +8,7 @@ folder = "TideWallet-Backend"
 static = "./public/"
 token_secret_expire_time = 31536000 # 365 * 24 * 60 * 60 (expires in 365 day)
 logLevel = 'info'
+user_id = 'ec6d68b5-fcee-4d36-810a-7a257554896e'
 extendPublicKey = ''
 
 [cryptoapis]
@@ -121,7 +122,6 @@ pathname = [
   "get | /api/v1/blockchains/height | Bot.Blockchain.BlockHeight",
   "get | /api/v1/blockchains/height/metrics | Bot.Blockchain.BlockHeightMetrics",
 
-
   # explore
   "get | /api/v1/explore/info | Bot.Explore.NodeInfo",
   "get | /api/v1/explore/address/:address | Bot.Explore.AddressDetail",
@@ -131,5 +131,8 @@ pathname = [
   "get | /api/v1/explore/Blocks | Bot.Explore.BlockList",
   "get | /api/v1/explore/blockchain/:blockchain_id/block/:block_id | Bot.Explore.BlockDetail",
   "get | /api/v1/explore/blockchain/:blockchain_id/block/:block_id/transactions | Bot.Explore.BlockTransactions",
-  "post | /api/v1/explore/search/:search_string | Bot.Explore.Search"
+  "post | /api/v1/explore/search/:search_string | Bot.Explore.Search",
+
+  # system
+  "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets"
 ]
