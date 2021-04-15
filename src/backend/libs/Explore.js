@@ -224,7 +224,11 @@ class Explore extends Bot {
         const itemJSON = JSON.parse(item.result);
 
         // eslint-disable-next-line no-nested-ternary
-        const txCount = (itemJSON.nTx !== undefined) ? itemJSON.nTx : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
+        const txCount = (itemJSON.nTx !== undefined)
+          ? itemJSON.nTx
+          : (itemJSON.transactions)
+            ? itemJSON.transactions.length
+            : itemJSON.length || 0;
         items.push({
           blockchainId: item.blockchain_id,
           name: await this.blockchainIdToName(item.blockchain_id),
@@ -267,7 +271,11 @@ class Explore extends Bot {
       const itemJSON = JSON.parse(findBlockInfo.result);
 
       // eslint-disable-next-line no-nested-ternary
-      const txCount = (itemJSON.nTx !== undefined) ? itemJSON.nTx : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
+      const txCount = (itemJSON.nTx !== undefined)
+        ? itemJSON.nTx
+        : (itemJSON.transactions)
+          ? itemJSON.transactions.length
+          : itemJSON.length || 0;
 
       const payload = {
         name: await this.blockchainIdToName(findBlockInfo.blockchain_id),
@@ -297,16 +305,29 @@ class Explore extends Bot {
       const itemJSON = JSON.parse(findBlockInfo.result);
 
       // eslint-disable-next-line no-nested-ternary
-      const txCount = (itemJSON.nTx !== undefined) ? itemJSON.nTx : (itemJSON.transactions) ? itemJSON.transactions.length : 0;
+      const txCount = (itemJSON.nTx !== undefined)
+        ? itemJSON.nTx
+        : (itemJSON.transactions)
+          ? itemJSON.transactions.length
+          : itemJSON.length || 0;
       // eslint-disable-next-line no-nested-ternary
-      const txs = (itemJSON.tx !== undefined) ? itemJSON.tx : (itemJSON.transactions) ? itemJSON.transactions : [];
+      const txs = (itemJSON.tx !== undefined)
+        ? itemJSON.tx
+        : (itemJSON.transactions)
+          ? itemJSON.transactions
+          : itemJSON || [];
 
       const items = [];
       const endIndex = Number(index) + Number(limit) + 1;
       const loopEndIndex = Math.min(txs.length, endIndex);
       for (let i = index; i < loopEndIndex; i++) {
         const txItem = txs[i];
-        const txid = (txItem.txid) ? txItem.txid : txItem.hash;
+        // eslint-disable-next-line no-nested-ternary
+        const txid = (txItem.txid)
+          ? txItem.txid
+          : (txItem.hash)
+            ? txItem.hash
+            : txItem;
         const findTx = await this.transactionModel.findOne({
           where: { txid },
           attributes: ['transaction_id', 'currency_id', 'txid', 'timestamp', 'source_addresses', 'destination_addresses', 'amount', 'block', 'fee'],
@@ -426,33 +447,82 @@ class Explore extends Bot {
         ],
       });
 
-      if (!findAddress || findAddress.length === 0) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+      if (findAddress && findAddress.length > 0) {
+        const balance = [];
+        for (let i = 0; i < findAddress.length; i++) {
+          const addressItem = findAddress[i];
+
+          let _balance = '0';
+          switch (addressItem.Account.blockchain_id) {
+            case '8000003C':
+            case '8000025B':
+            case '80000CFC':
+              _balance = await Utils.ethGetBalanceByAddress(addressItem.Account.blockchain_id, address, 18);
+              break;
+            case '80000000':
+            case '80000001':
+            // eslint-disable-next-line no-case-declarations
+              const findAccountCurrency = await this.accountCurrencyModel.findOne({
+                where: { account_id: addressItem.account_id },
+              });
+              if (findAccountCurrency && findAccountCurrency.balance) _balance = findAccountCurrency.balance;
+              break;
+            default:
+              break;
+          }
+          balance.push({
+            blockchainId: addressItem.Account.blockchain_id,
+            name: await this.blockchainIdToName(addressItem.Account.blockchain_id),
+            address,
+            balance: _balance,
+          });
+        }
+
+        return new ResponseFormat({ message: 'Explore Address Detail', payload: { balance } });
+      }
+
+      // TODO: refactor it, logic same as (findAddress)
+      // not in account address, find transaction table
+      const findBlockID = {};
+      const findAddressTxs = await this.transactionModel.findAll({
+        where: {
+          [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
+        },
+        attributes: ['txid'],
+        include: [
+          {
+            model: this.currencyModel,
+            attributes: ['blockchain_id'],
+          },
+        ],
+      });
+      findAddressTxs.forEach((item) => {
+        if (item.Currency) findBlockID[item.Currency.blockchain_id] = true;
+      });
+
+      const blockchainList = Object.keys(findBlockID);
+
+      if (blockchainList.length === 0) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const balance = [];
-      for (let i = 0; i < findAddress.length; i++) {
-        const addressItem = findAddress[i];
-
+      for (const addressItemBlockchainID of blockchainList) {
         let _balance = '0';
-        switch (addressItem.Account.blockchain_id) {
+        switch (addressItemBlockchainID) {
           case '8000003C':
           case '8000025B':
           case '80000CFC':
-            _balance = await Utils.ethGetBalanceByAddress(addressItem.Account.blockchain_id, address, 18);
+            _balance = await Utils.ethGetBalanceByAddress(addressItemBlockchainID, address, 18);
             break;
           case '80000000':
           case '80000001':
-            // eslint-disable-next-line no-case-declarations
-            const findAccountCurrency = await this.accountCurrencyModel.findOne({
-              where: { account_id: addressItem.account_id },
-            });
-            if (findAccountCurrency && findAccountCurrency.balance) _balance = findAccountCurrency.balance;
+            // TODO: not support btc now
             break;
           default:
             break;
         }
         balance.push({
-          blockchainId: addressItem.Account.blockchain_id,
-          name: await this.blockchainIdToName(addressItem.Account.blockchain_id),
+          blockchainId: addressItemBlockchainID,
+          name: await this.blockchainIdToName(addressItemBlockchainID),
           address,
           balance: _balance,
         });
@@ -471,21 +541,139 @@ class Explore extends Bot {
       const { address } = params;
       const { index = 0, limit = 20 } = query;
 
-      const findAddress = await this.accountAddressModel.findOne({
+      let isServerAccount = true;
+      // STEP 1. find accountAddressModel first
+      let findAddress = await this.accountAddressModel.findOne({
         where: { address },
         attributes: ['accountAddress_id', 'account_id', 'address'],
       });
 
       if (!findAddress) {
-        return new ResponseFormat({
-          message: 'Explore Address Transactions',
-          items: [],
-          meta: {
-            hasNext: false,
-            nextIndex: 0,
-            count: 0,
+        isServerAccount = false;
+        // STEP 2. find transactionModel if accountAddressModel not found
+        findAddress = await this.transactionModel.findOne({
+          where: {
+            [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
           },
+          attributes: ['txid'],
         });
+
+        if (!findAddress) {
+          // STEP 3. find tokenTransactionModel if transactionModel not found
+          findAddress = await this.tokenTransactionModel.findOne({
+            where: {
+              [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
+            },
+            attributes: ['txid'],
+          });
+
+          if (!findAddress) {
+            return new ResponseFormat({
+              message: 'Explore Address Transactions',
+              items: [],
+              meta: {
+                hasNext: false,
+                nextIndex: 0,
+                count: 0,
+              },
+            });
+          }
+        }
+      }
+
+      // TODO: refactor it, logic same as isServerAccount
+      if (!isServerAccount) {
+        // not account address, find by source_addresses || destination_addresses
+
+        // find transactionModel
+        const findTxs = await this.transactionModel.findAll({
+          where: {
+            [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
+          },
+          offset: index,
+          limit,
+          include: [
+            {
+              model: this.currencyModel,
+              attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
+            },
+          ],
+          order: [['transaction_id', 'DESC']],
+        });
+
+        const findTokenTxs = await this.tokenTransactionModel.findAll({
+          where: {
+            [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
+          },
+          offset: index,
+          limit,
+          include: [
+            {
+              model: this.transactionModel,
+            },
+            {
+              model: this.currencyModel,
+              attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
+            },
+          ],
+          order: [['tokenTransaction_id', 'DESC']],
+        });
+
+        const txs = [...findTxs, ...findTokenTxs];
+        txs.sort((a, b) => b.timestamp - a.timestamp);
+
+        const items = [];
+        for (let i = 0; i < Math.min(txs.length, Number(limit) + 1); i++) {
+          const txItem = txs[i];
+          let txHash = '';
+          let block = 0;
+          let timestamp = 0;
+          let from = '';
+          let to = '';
+          let _fee = '0';
+          if (txItem.Transaction) {
+            ({
+              txid: txHash, block, timestamp, source_addresses: from, destination_addresses: to, fee: _fee,
+            } = txItem.Transaction);
+          } else {
+            ({
+              txid: txHash, block, timestamp, source_addresses: from, destination_addresses: to, fee: _fee,
+            } = txItem);
+          }
+          items.push({
+            blockchainId: txItem.Currency.blockchain_id,
+            iconUrl: Utils.formatIconUrl(txItem.Currency.icon),
+            txHash,
+            symbol: txItem.Currency.symbol,
+            block,
+            timestamp,
+            from,
+            to,
+            value: Utils.dividedByDecimal(txItem.amount, txItem.Currency.decimals),
+            fee: Utils.dividedByDecimal(_fee, txItem.Currency.decimals),
+          });
+        }
+
+        // count all amount
+        const findAllAmount = await this.transactionModel.count({
+          where: { [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }] },
+        }) + await this.tokenTransactionModel.count({
+          where: { [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }] },
+        });
+
+        const meta = {
+          hasNext: false,
+          nextIndex: 0,
+          count: findAllAmount || 0,
+        };
+
+        if (items.length > Number(limit)) {
+          items.pop();
+          meta.hasNext = true;
+          meta.nextIndex = Number(index) + Number(limit);
+        }
+
+        return new ResponseFormat({ message: 'Explore Address Transactions', items, meta });
       }
 
       // find transaction
@@ -583,6 +771,7 @@ class Explore extends Bot {
 
       return new ResponseFormat({ message: 'Explore Address Transactions', items, meta });
     } catch (e) {
+      console.log('e:', e);
       this.logger.error('NodeInfo e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -599,51 +788,80 @@ class Explore extends Bot {
         address: [],
       };
 
-      const findBlocks = await this.blockScannedModel.findAll({
-        limit: 10,
-        where: {
-          block_hash: { [this.Sequelize.Op.startsWith]: search_string },
-        },
-        attributes: ['block_hash', 'blockchain_id'],
-      });
-      if (findBlocks) {
-        payload.block = findBlocks.map((item) => ({
+      const searchItems = await Promise.all([
+        this.blockScannedModel.findAll({
+          limit: 10,
+          where: {
+            block_hash: search_string,
+          },
+          attributes: ['block_hash', 'blockchain_id'],
+        }),
+        this.tokenTransactionModel.findAll({
+          limit: 5,
+          where: {
+            txid: search_string,
+          },
+          attributes: ['txid'],
+        }),
+        this.tokenTransactionModel.findAll({
+          limit: 5,
+          where: {
+            [this.Sequelize.Op.or]: [{ source_addresses: search_string }, { destination_addresses: search_string }],
+          },
+          attributes: ['txid'],
+        }),
+        this.accountAddressModel.findAll({
+          limit: 10,
+          where: {
+            address: search_string,
+          },
+          attributes: ['address'],
+        }),
+      ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+      if (searchItems.code === Codes.RPC_ERROR) return searchItems;
+
+      if (searchItems[0]) {
+        payload.block = searchItems[0].map((item) => ({
           blockHash: item.block_hash, blockchainId: item.blockchain_id,
         }));
       }
 
-      const findTokenTxs = await this.tokenTransactionModel.findAll({
-        limit: 5,
-        where: {
-          txid: { [this.Sequelize.Op.startsWith]: search_string },
-        },
-        attributes: ['txid'],
-      });
-      if (findTokenTxs) payload.transaction = findTokenTxs.map((item) => ({ txid: item.txid }));
-      const txLen = findTokenTxs.length;
+      if (searchItems[1]) payload.transaction = searchItems[1].map((item) => ({ txid: item.txid }));
+      const txLen = searchItems[1].length;
 
-      const findTxs = await this.transactionModel.findAll({
-        limit: 10 - txLen,
-        where: {
-          txid: { [this.Sequelize.Op.startsWith]: search_string },
-        },
-        attributes: ['txid'],
-      });
-      if (findTxs) {
-        findTxs.forEach((item) => {
-          if (payload.transaction.findIndex((x) => x.txid === item.txid) === -1)payload.transaction.push({ txid: item.txid });
+      if ((10 - txLen) > 0) {
+        const findTxs = await this.transactionModel.findAll({
+          limit: 10 - txLen,
+          where: {
+            [this.Sequelize.Op.or]: [{ source_addresses: search_string }, { destination_addresses: search_string }],
+          },
+          attributes: ['txid'],
         });
+        if (findTxs) {
+          findTxs.forEach((item) => {
+            if (payload.transaction.findIndex((x) => x.txid === item.txid) === -1)payload.transaction.push({ txid: item.txid });
+          });
+        }
       }
 
-      const findAddresses = await this.accountAddressModel.findAll({
-        limit: 10,
-        where: {
-          address: { [this.Sequelize.Op.startsWith]: search_string },
-        },
-        attributes: ['address'],
-      });
-      if (findAddresses) {
-        findAddresses.forEach((item) => {
+      const txLen2 = searchItems[2].length;
+      if ((10 - txLen2) > 0) {
+        const findTxs = await this.transactionModel.findAll({
+          limit: 10 - txLen2,
+          where: {
+            txid: search_string,
+          },
+          attributes: ['txid'],
+        });
+        if (findTxs) {
+          findTxs.forEach((item) => {
+            if (payload.transaction.findIndex((x) => x.txid === item.txid) === -1)payload.transaction.push({ txid: item.txid });
+          });
+        }
+      }
+
+      if (searchItems[3]) {
+        searchItems[3].forEach((item) => {
           if (payload.address.findIndex((x) => x.txid === item.txid) === -1)payload.address.push({ address: item.address });
         });
       }
