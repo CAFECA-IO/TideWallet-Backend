@@ -569,7 +569,7 @@ class Account extends Bot {
               status: (isToken) ? (txInfo.TokenTransaction.result ? 'success' : 'failed') : 'success',
               amount,
               symbol: findAccountCurrency.Currency.symbol, // "unit"
-              direction: txInfo.TokenTransaction.direction === 0 ? 'send' : 'receive',
+              direction: txInfo.direction === 0 ? 'send' : 'receive',
               confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.TokenTransaction.Transaction.block,
               timestamp: txInfo.TokenTransaction.timestamp,
               source_addresses: Utils.formatAddressArray(txInfo.TokenTransaction.source_addresses),
