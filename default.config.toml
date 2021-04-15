@@ -8,6 +8,7 @@ folder = "TideWallet-Backend"
 static = "./public/"
 token_secret_expire_time = 31536000 # 365 * 24 * 60 * 60 (expires in 365 day)
 logLevel = 'info'
+extendPublicKey = ''
 
 [cryptoapis]
 key = ""

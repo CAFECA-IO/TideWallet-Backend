@@ -48,8 +48,27 @@ class Blockchain extends Bot {
       await this.initBlockchainNetworks();
       await this.initCurrency();
       await this.initFiatCurrencyRate();
+      await this.initBackendHDWallet();
       return this;
     });
+  }
+
+  async initBackendHDWallet() {
+    if (!this.config.base.extendPublicKey) return Promise.reject(new Error('base.extendPublicKey config not set'));
+    try {
+      const botUser = await this.getBot('User');
+      await botUser.UserRegist({
+        body: {
+          wallet_name: 'TideWallet-Backend',
+          extend_public_key: this.config.base.extendPublicKey,
+          install_id: 'TideWallet-Backend',
+          app_uuid: 'TideWallet-Backend',
+        },
+      });
+    } catch (e) {
+      console.log(e);
+      return Promise.reject(new Error(`Create HDWallet Error: ${e}`));
+    }
   }
 
   async initBlockchainNetworks() {
