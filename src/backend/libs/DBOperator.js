@@ -11,11 +11,20 @@ class DBOperator {
 
   updateDBInstance(dbInstance, options) {
     if (options.include && options.include.length > 0) {
-      options.include.forEach((item, i) => {
-        const _include = { ...item };
+      for (let i = 0; i < options.include.length; i++) {
+        const _include = { ...options.include[i] };
         _include.model = dbInstance[_include._model];
         options.include[i] = _include;
-      });
+
+        // TODO: refactor it
+        if (_include.include && _include.include.length > 0) {
+          for (let j = 0; j < _include.include.length; j++) {
+            const _include2 = { ..._include.include[i] };
+            _include2.model = dbInstance[_include2._model];
+            options.include[i].include[j] = _include2;
+          }
+        }
+      }
     }
     return options;
   }
@@ -55,7 +64,7 @@ class DBOperator {
 
       return findItems.find((item) => item !== null);
     } catch (e) {
-      this.logger.error(`findAll options: (${JSON.stringify(myOptions)}) error:`, e);
+      this.logger.error(`findOne options: (${JSON.stringify(myOptions)}) error:`, e);
       throw e;
     }
   }

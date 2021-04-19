@@ -778,21 +778,25 @@ class Account extends Bot {
 
     try {
       // find Transaction table
-      const findTX = await this.transactionModel.findOne({
-        where: { txid },
-        include: [
-          {
-            model: this.currencyModel,
-            attributes: ['currency_id', 'symbol', 'decimals'],
-            include: [
-              {
-                model: this.blockchainModel,
-                attributes: ['blockchain_id', 'block'],
-              },
-            ],
-          },
-        ],
+      const findTX = await this.DBOperator.findOne({
+        tableName: 'Transaction',
+        options: {
+          where: { txid },
+          include: [
+            {
+              _model: 'Currency',
+              attributes: ['currency_id', 'symbol', 'decimals'],
+              include: [
+                {
+                  _model: 'Blockchain',
+                  attributes: ['blockchain_id', 'block'],
+                },
+              ],
+            },
+          ],
+        },
       });
+
       if (findTX) {
         const amount = Utils.dividedByDecimal(findTX.amount, findTX.Currency.decimals);
         const gas_price = findTX.gas_price
@@ -819,6 +823,7 @@ class Account extends Bot {
       }
       return new ResponseFormat({ message: 'txid not found', code: Codes.TX_NOT_FOUND });
     } catch (e) {
+      console.log(e);
       this.logger.error('TransactionDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
