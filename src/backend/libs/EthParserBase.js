@@ -11,9 +11,9 @@ class EthParserBase extends ParserBase {
   constructor(blockchainId, config, database, logger) {
     super(blockchainId, config, database, logger);
 
-    this.receiptModel = this.database.db.Receipt;
-    this.tokenTransactionModel = this.database.db.TokenTransaction;
-    this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
+    this.receiptModel = this.database.Receipt;
+    this.tokenTransactionModel = this.database.TokenTransaction;
+    this.addressTokenTransactionModel = this.database.AddressTokenTransaction;
     this.options = {};
   }
 

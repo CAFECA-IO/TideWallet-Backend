@@ -152,24 +152,24 @@ class Manager extends Bot {
       this.logger.log(blockchianName);
       switch (blockchianName) {
         case 'bitcoin_mainnet':
-          result.push(new BtcCrawlerManager(this.config, this.database, this.logger));
-          result.push(new BtcParserManager(this.config, this.database, this.logger));
+          result.push(new BtcCrawlerManager(this.config, this.database.db.bitcoin_mainnet, this.logger));
+          result.push(new BtcParserManager(this.config, this.database.db.bitcoin_mainnet, this.logger));
           break;
         case 'bitcoin_testnet':
-          result.push(new BtcTestnetCrawlerManager(this.config, this.database, this.logger));
-          result.push(new BtcTestnetParserManager(this.config, this.database, this.logger));
+          result.push(new BtcTestnetCrawlerManager(this.config, this.database.db.bitcoin_testnet, this.logger));
+          result.push(new BtcTestnetParserManager(this.config, this.database.db.bitcoin_testnet, this.logger));
           break;
         case 'ethereum_mainnet':
-          result.push(new EthCrawlerManager(this.config, this.database, this.logger));
-          result.push(new EthParserManager(this.config, this.database, this.logger));
+          result.push(new EthCrawlerManager(this.config, this.database.db.ethereum_mainnet, this.logger));
+          result.push(new EthParserManager(this.config, this.database.db.ethereum_mainnet, this.logger));
           break;
         case 'ethereum_ropsten':
-          result.push(new EthRopstenCrawlerManager(this.config, this.database, this.logger));
-          result.push(new EthRopstenParserManager(this.config, this.database, this.logger));
+          result.push(new EthRopstenCrawlerManager(this.config, this.database.db.ethereum_ropsten, this.logger));
+          result.push(new EthRopstenParserManager(this.config, this.database.db.ethereum_ropsten, this.logger));
           break;
         case 'cafeca':
-          result.push(new CfcCrawlerManager(this.config, this.database, this.logger));
-          result.push(new CfcParserManager(this.config, this.database, this.logger));
+          result.push(new CfcCrawlerManager(this.config, this.database.db.cafeca, this.logger));
+          result.push(new CfcParserManager(this.config, this.database.db.cafeca, this.logger));
           break;
         default:
       }

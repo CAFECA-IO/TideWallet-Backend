@@ -7,13 +7,13 @@ class BtcParserManagerBase extends ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
     super(blockchainId, config, database, logger);
 
-    this.utxoModel = this.database.db.UTXO;
-    this.accountAddressModel = this.database.db.AccountAddress;
-    this.receiptModel = this.database.db.Receipt;
-    this.tokenTransactionModel = this.database.db.TokenTransaction;
-    this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
-    this.accountCurrencyModel = this.database.db.AccountCurrency;
-    this.addressTransactionModel = this.database.db.AddressTransaction;
+    this.utxoModel = this.database.UTXO;
+    this.accountAddressModel = this.database.AccountAddress;
+    this.receiptModel = this.database.Receipt;
+    this.tokenTransactionModel = this.database.TokenTransaction;
+    this.addressTokenTransactionModel = this.database.AddressTokenTransaction;
+    this.accountCurrencyModel = this.database.AccountCurrency;
+    this.addressTransactionModel = this.database.AddressTransaction;
     this.options = {};
     this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
     this.decimal = 8;

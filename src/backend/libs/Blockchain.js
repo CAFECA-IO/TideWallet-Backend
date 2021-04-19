@@ -511,7 +511,9 @@ class Blockchain extends Bot {
           if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
           if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
 
-          const findCurrency = await this.currencyModel.findOne({
+          const DBName = Utils.blockchainIDToDBName(blockchain_id);
+          const _db = this.database.db[DBName];
+          const findCurrency = await _db.Currency.findOne({
             where: {
               blockchain_id,
               type: 1,

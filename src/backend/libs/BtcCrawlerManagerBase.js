@@ -17,9 +17,9 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
 
     // used by BtcParserBase.parseTx.call
     // ++ remove after extract to instance class
-    this.transactionModel = this.database.db.Transaction;
-    this.utxoModel = this.database.db.UTXO;
-    this.addressTransactionModel = this.database.db.AddressTransaction;
+    this.transactionModel = this.database.Transaction;
+    this.utxoModel = this.database.UTXO;
+    this.addressTransactionModel = this.database.AddressTransaction;
 
     try {
       this.oneCycle();

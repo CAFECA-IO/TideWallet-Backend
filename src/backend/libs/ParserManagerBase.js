@@ -7,15 +7,15 @@ class ParserManagerBase {
     this.logger = logger;
     this.config = config;
 
-    this.blockchainModel = this.database.db.Blockchain;
-    this.blockScannedModel = this.database.db.BlockScanned;
-    this.currencyModel = this.database.db.Currency;
-    this.sequelize = this.database.db.sequelize;
-    this.Sequelize = this.database.db.Sequelize;
-    this.unparsedTxModel = this.database.db.UnparsedTransaction;
+    this.blockchainModel = this.database.Blockchain;
+    this.blockScannedModel = this.database.BlockScanned;
+    this.currencyModel = this.database.Currency;
+    this.sequelize = this.database.sequelize;
+    this.Sequelize = this.database.Sequelize;
+    this.unparsedTxModel = this.database.UnparsedTransaction;
 
-    this.transactionModel = this.database.db.Transaction;
-    this.pendingTransactionModel = this.database.db.PendingTransaction;
+    this.transactionModel = this.database.Transaction;
+    this.pendingTransactionModel = this.database.PendingTransaction;
 
     this.amqpHost = this.config.rabbitmq.host;
     this.jobTimeout = 10 * 60 * 1000; // 10 min

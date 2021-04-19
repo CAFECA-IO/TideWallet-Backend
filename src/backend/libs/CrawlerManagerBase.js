@@ -4,16 +4,16 @@ class CrawlerManagerBase {
     this.database = database;
     this.logger = logger;
 
-    this.accountModel = this.database.db.Account;
-    this.accountCurrencyModel = this.database.db.AccountCurrency;
-    this.accountAddressModel = this.database.db.AccountAddress;
-    this.blockchainModel = this.database.db.Blockchain;
-    this.blockScannedModel = this.database.db.BlockScanned;
-    this.currencyModel = this.database.db.Currency;
-    this.sequelize = this.database.db.sequelize;
-    this.unparsedTxModel = this.database.db.UnparsedTransaction;
-    this.pendingTransactionModel = this.database.db.PendingTransaction;
-    this.transactionModel = this.database.db.Transaction;
+    this.accountModel = this.database.Account;
+    this.accountCurrencyModel = this.database.AccountCurrency;
+    this.accountAddressModel = this.database.AccountAddress;
+    this.blockchainModel = this.database.Blockchain;
+    this.blockScannedModel = this.database.BlockScanned;
+    this.currencyModel = this.database.Currency;
+    this.sequelize = this.database.sequelize;
+    this.unparsedTxModel = this.database.UnparsedTransaction;
+    this.pendingTransactionModel = this.database.PendingTransaction;
+    this.transactionModel = this.database.Transaction;
     this.feeSyncInterval = 3600000;
     this.pendingTxSyncInterval = 15000;
   }

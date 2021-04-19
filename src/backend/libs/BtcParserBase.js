@@ -9,10 +9,10 @@ class BtcParserBase extends ParserBase {
   constructor(blockchainId, config, database, logger) {
     super(blockchainId, config, database, logger);
 
-    this.utxoModel = this.database.db.UTXO;
-    this.receiptModel = this.database.db.Receipt;
-    this.tokenTransactionModel = this.database.db.TokenTransaction;
-    this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
+    this.utxoModel = this.database.UTXO;
+    this.receiptModel = this.database.Receipt;
+    this.tokenTransactionModel = this.database.TokenTransaction;
+    this.addressTokenTransactionModel = this.database.AddressTokenTransaction;
     this.options = {};
     this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
     this.decimal = 8;
