@@ -9,7 +9,8 @@ static = "./public/"
 token_secret_expire_time = 31536000 # 365 * 24 * 60 * 60 (expires in 365 day)
 logLevel = 'info'
 user_id = 'ec6d68b5-fcee-4d36-810a-7a257554896e'
-extendPublicKey = ''
+mnemonic = ''
+centralbank = '0x4948f8DF898722314676AA4c4E79374c884DcaeC'
 
 [cryptoapis]
 key = ""

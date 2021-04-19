@@ -1,5 +1,9 @@
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
+const BigNumber = require('bignumber.js');
+const sha3_256 = require('js-sha3').keccak256;
+const dvalue = require('dvalue');
+const { hdkey } = require('ethereumjs-wallet');
 const HDWallet = require('./HDWallet');
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
@@ -30,8 +34,35 @@ class User extends Bot {
       this.userAppModel = this.database.db.UserApp;
       this.sequelize = this.database.db.sequelize;
       this.Sequelize = this.database.db.Sequelize;
+
       return this;
-    });
+    })
+      .then(async () => {
+        const data = `0x${sha3_256('registerUser(address,uint256)').substr(0, 10)}${'0x806003dBefd9d6B109Ef354BCCEa173693315d73'.replace('0x', '').padStart(64, '0')}${'0x3E8'.replace('0x', '').padStart(64, '0')}`;
+        const gasLimit = await this._getCFCGasLimit({
+          from: '0x806003dBefd9d6B109Ef354BCCEa173693315d73',
+          to: '0x806003dBefd9d6B109Ef354BCCEa173693315d73',
+          // to: this.config.base.centralbank,
+          nonce: '0x0',
+          data,
+        });
+        const gasPrice = await this._getCFCGasPrice();
+        console.log('gasPrice:', gasPrice);
+        // const this
+        const seed = await Utils.mnemonicToSeed(this.config.base.mnemonic);
+        const systemWallet = hdkey.fromMasterSeed(seed);
+        const wallet = new HDWallet({ systemWallet });
+        const { privateKey, address } = wallet.getWalletInfo({});
+        console.log('from address:', address);
+
+        try {
+          const rs = await Utils.sendRawTransaction('0x0', gasPrice, gasLimit, this.config.base.centralbank, privateKey, data, '0x0');
+          console.log(rs);
+        } catch (e) {
+          console.log(e);
+        }
+        return this;
+      });
   }
 
   async UserAppID({ body, retry = 3 }) {
@@ -72,6 +103,34 @@ class User extends Bot {
         user_secret: app_user_secret,
       },
     });
+  }
+
+  async _getCFCGasPrice() {
+    const findBlockchainInfo = await this.blockchainModel.findOne({ where: { blockchain_id: '80000CFC' }, attributes: ['avg_fee'] });
+    if (!findBlockchainInfo) throw new Error('blockchain_id not found');
+
+    const { avg_fee = '0' } = findBlockchainInfo;
+
+    return `0x${new BigNumber(avg_fee).multipliedBy(1.5).toFixed().toString(16)}`;
+  }
+
+  async _getCFCGasLimit({
+    from, to, nonce, data,
+  }) {
+    const blockchainConfig = Utils.getBlockchainConfig('80000CFC');
+    const option = { ...blockchainConfig };
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_estimateGas',
+      params: [{
+        from, nonce, to, data,
+      }],
+      id: dvalue.randomID(),
+    };
+    const rs = await Utils.ETHRPC(option);
+    if (!rs.result && rs === false) throw new Error('rpc error(blockchain down)');
+    if (!rs.result) throw new Error(`rpc error(${rs.error.message})`);
+    return rs.result;
   }
 
   async UserRegist({ body }) {
@@ -171,6 +230,11 @@ class User extends Bot {
               public_key: changeWallet.publicKey,
               address: changeWallet.address,
             }, { transaction });
+          }
+
+          if (accounts[i].blockchain_id === '80000CFC') {
+            // centralbank.registerUser(USER_ADDR, 1000)
+            const data = `${sha3_256('registerUser(address,uint256)').substr(0, 10)}${wallet.address.replace('0x', '').padStart(64, '0')}${'0x3E8'.replace('0x', '').padStart(64, '0')}`;
           }
         }
         await this.deviceModel.create({

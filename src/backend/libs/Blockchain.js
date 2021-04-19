@@ -3,6 +3,7 @@ const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue'); const { v4: uuidv4 } = require('uuid');
 const ecrequest = require('ecrequest');
 // ++ remove after extract to instance class
+const { hdkey } = require('ethereumjs-wallet');
 const BtcParserBase = require('./BtcParserBase');
 const ResponseFormat = require('./ResponseFormat'); const Bot = require('./Bot.js');
 const Codes = require('./Codes');
@@ -54,13 +55,15 @@ class Blockchain extends Bot {
   }
 
   async initBackendHDWallet() {
-    if (!this.config.base.extendPublicKey) return Promise.reject(new Error('base.extendPublicKey config not set'));
+    if (!this.config.base.mnemonic) return Promise.reject(new Error('base.mnemonic config not set'));
     try {
+      const seed = await Utils.mnemonicToSeed(this.config.base.mnemonic);
+      const _hdWallet = hdkey.fromMasterSeed(seed);
       const botUser = await this.getBot('User');
       await botUser.UserRegist({
         body: {
           wallet_name: 'TideWallet-Backend',
-          extend_public_key: this.config.base.extendPublicKey,
+          extend_public_key: _hdWallet.publicExtendedKey(),
           install_id: 'TideWallet-Backend',
           app_uuid: 'TideWallet-Backend',
         },

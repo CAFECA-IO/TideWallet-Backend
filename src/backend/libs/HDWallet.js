@@ -2,23 +2,26 @@ const { hdkey } = require('ethereumjs-wallet');
 const bs58 = require('bs58');
 const sha256 = require('js-sha256');
 const bitcoin = require('bitcoinjs-lib');
-const blockchainNetworks = require('./data/blockchainNetworks');
 const Utils = require('./Utils');
 
 class HDWallet {
-  constructor({ extendPublicKey }) {
+  constructor({ extendPublicKey, systemWallet }) {
     this.name = 'HDWallet';
+    this.systemWallet = systemWallet;
     this.hdWallet = null;
     this.parentFP = '';
     this.chainCode = '';
     this.key = '';
+    this.extendPublicKey = extendPublicKey;
 
-    const decode = bs58.decode(extendPublicKey).toString('hex');
-    if (decode.length === 164) {
-      // https://learnmeabitcoin.com/technical/extended-keys - 5. Serialization
-      this.parentFP = decode.slice(10, 18);
-      this.chainCode = decode.slice(26, 90);
-      this.key = decode.slice(90, 156);
+    if (this.extendPublicKey) {
+      const decode = bs58.decode(extendPublicKey).toString('hex');
+      if (decode.length === 164) {
+        // https://learnmeabitcoin.com/technical/extended-keys - 5. Serialization
+        this.parentFP = decode.slice(10, 18);
+        this.chainCode = decode.slice(26, 90);
+        this.key = decode.slice(90, 156);
+      }
     }
   }
 
@@ -49,6 +52,21 @@ class HDWallet {
   getWalletInfo({
     coinType = 0, change = 0, index = 0, blockchainID,
   }) {
+    // if has this.hdWallet
+    if (this.systemWallet) {
+      this.hdWallet = this.systemWallet.deriveChild(0).deriveChild(0).getWallet();
+      const privateKey = this.hdWallet.getPrivateKeyString();
+      const publicKey = this.hdWallet.getPublicKeyString();
+      const address = this.hdWallet.getAddressString();
+
+      return ({
+        coinType,
+        address,
+        privateKey,
+        publicKey,
+      });
+    }
+
     const _serializedExtendPublicKey = this.serializedExtendPublicKey(coinType);
     let publicKey = '';
     let address = '';

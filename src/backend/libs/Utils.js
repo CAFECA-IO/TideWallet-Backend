@@ -8,6 +8,9 @@ const crypto = require('crypto');
 const bitcoin = require('bitcoinjs-lib');
 const BigNumber = require('bignumber.js');
 const log4js = require('log4js');
+const EthereumTx = require('ethereumjs-tx').Transaction;
+// const Common = require('@ethereumjs/common');
+const bip39 = require('bip39');
 
 const { BN } = EthUtils;
 const toml = require('toml');
@@ -1107,6 +1110,73 @@ class Utils {
   static formatIconUrl(iconUrl) {
     const host = this.config.base.domain ? this.config.base.domain : '';
     return iconUrl.replace('undefined', host);
+  }
+
+  static sendRawTransaction(nonce, gasPrice, gasLimit, to, key, data, value) {
+    const privKey = EthUtils.toBuffer(key);
+    console.log('privKey:', privKey.toString('hex'));
+
+    // const common = new Common({
+    //   chain: {
+    //     name: 'CFC',
+    //     networkId: 1,
+    //     chainId: 3324,
+    //   },
+    // });
+
+    // const opts = { common };
+    // const tx = Transaction.fromTxData({
+    //   nonce,
+    //   gasPrice,
+    //   gasLimit,
+    //   to,
+    //   value,
+    //   data,
+    //   chainId: 1,
+    // }).sign(privKey);
+    const txParams = {
+      nonce,
+      gasPrice,
+      gasLimit,
+      to,
+      value,
+      data,
+      chainId: 3324,
+    };
+
+    const tx = new EthereumTx(txParams);
+    tx.sign(privKey);
+
+    const serializedTx = tx.serialize();
+
+    console.log('serializedTx:', serializedTx);
+    const rawTx = `0x${serializedTx.toString('hex')}`;
+    console.log('rawTx:', rawTx);
+    const params = [rawTx];
+
+    const blockchainConfig = this.getBlockchainConfig('80000CFC');
+    const option = { ...blockchainConfig };
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_sendRawTransaction',
+      params,
+      id: 7,
+    };
+    return Utils.ETHRPC(option);
+  }
+
+  static mnemonicToSeed(mnemonic, password = '') {
+    return new Promise((resolve, reject) => {
+      try {
+        bip39.mnemonicToSeed(mnemonic, password)
+          .then((seed) => {
+            this.seed = seed;
+            resolve(seed);
+          });
+      } catch (e) {
+        reject(e);
+      }
+    });
   }
 }
 
