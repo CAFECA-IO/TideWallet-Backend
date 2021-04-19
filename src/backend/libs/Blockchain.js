@@ -603,8 +603,10 @@ class Blockchain extends Bot {
   async TokenInfo({ params }) {
     try {
       const { contract, blockchain_id } = params;
+      const DBName = Utils.blockchainIDToDBName(blockchain_id);
+      const _db = this.database.db[DBName];
       // use contract check Token is exist
-      const findTokenItem = await this.currencyModel.findOne({
+      const findTokenItem = await _db.Currency.findOne({
         where: { type: 2, contract, blockchain_id },
       });
 
@@ -671,7 +673,7 @@ class Blockchain extends Bot {
       // eslint-disable-next-line no-empty
       } catch (e) {
       }
-      await this.currencyModel.create({
+      await _db.Currency.create({
         currency_id: newCurrencyID,
         blockchain_id,
         name: tokenInfoFromPeer[0],
@@ -763,8 +765,6 @@ class Blockchain extends Bot {
   async BlockHeight() {
     const now = Math.floor(Date.now() / 1000);
     if (this.cacheBlockchainInfo && (now - this.cacheBlockchainInfo.timestamp) < 30) return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo.data });
-    // const findBlockchain = await this.blockchainModel.findAll({});
-
     const findBlockchain = await this.DBOperator.findAll({ tableName: 'Blockchain' });
 
     const BlockHeightsFromPeer = await Promise.all([
