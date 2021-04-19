@@ -184,7 +184,7 @@ class Utils {
       path,
       headers: { 'content-type': 'application/json', Authorization: `Basic ${basicAuth}` },
       data,
-      timeout: 1000,
+      timeout: 30000,
     };
     const start = new Date();
     return ecRequest.post(opt)
@@ -217,7 +217,7 @@ class Utils {
       path,
       headers: { 'content-type': 'application/json' },
       data,
-      timeout: 1000,
+      timeout: 3000,
     };
     const start = new Date();
     return ecRequest.post(opt)
