@@ -737,7 +737,9 @@ class Blockchain extends Bot {
   }
 
   async findBlockScannedHeight(blockchain_id) {
-    const findBtcMainnetUnparsedTxTimestamp = await this.unparsedTransactionModel.findOne({
+    const DBName = Utils.blockchainIDToDBName(blockchain_id);
+    const _db = this.database.db[DBName];
+    const findBtcMainnetUnparsedTxTimestamp = await _db.UnparsedTransaction.findOne({
       where: { blockchain_id, retry: 0 },
       order: [['timestamp', 'ASC']],
       attributes: ['timestamp'],
@@ -745,12 +747,12 @@ class Blockchain extends Bot {
 
     let result = {};
     if (findBtcMainnetUnparsedTxTimestamp) {
-      result = await this.blockScannedModel.findOne({
+      result = await _db.BlockScanned.findOne({
         where: { blockchain_id, timestamp: findBtcMainnetUnparsedTxTimestamp.timestamp },
       });
       if (result) return result.block;
     }
-    result = await this.blockScannedModel.findOne({
+    result = await _db.BlockScanned.findOne({
       where: { blockchain_id },
       order: [['timestamp', 'DESC']],
     });
@@ -761,7 +763,10 @@ class Blockchain extends Bot {
   async BlockHeight() {
     const now = Math.floor(Date.now() / 1000);
     if (this.cacheBlockchainInfo && (now - this.cacheBlockchainInfo.timestamp) < 30) return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo.data });
-    const findBlockchain = await this.blockchainModel.findAll({});
+    // const findBlockchain = await this.blockchainModel.findAll({});
+
+    const findBlockchain = await this.DBOperator.findAll({ tableName: 'Blockchain' });
+
     const BlockHeightsFromPeer = await Promise.all([
       this.btcBlockHeight('80000000'),
       this.btcBlockHeight('80000001'),
