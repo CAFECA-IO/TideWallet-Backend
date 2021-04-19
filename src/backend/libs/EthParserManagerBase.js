@@ -9,6 +9,8 @@ class EthParserManagerBase extends ParserManagerBase {
     this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
     this.options = {};
     this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
+
+    this.jobTimeout = 15 * 1000; // 15 sec
   }
 
   async init() {
