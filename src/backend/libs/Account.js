@@ -576,24 +576,39 @@ class Account extends Bot {
   async _findAccountTXs({
     findAccountCurrency, txs, chain_index, key_index,
   }) {
-    const isToken = findAccountCurrency.Currency.type === 2;
-    const findAccountAddress = await this.accountAddressModel.findOne({
+    // find blockchain info
+    const findBlockchainInfo = await this.DBOperator.findOne({
+      tableName: 'Blockchain',
+      options: {
+        where: { blockchain_id: findAccountCurrency.Account.blockchain_id },
+      },
+    });
+    const DBName = Utils.blockchainIDToDBName(findAccountCurrency.Account.blockchain_id);
+    const _db = this.database.db[DBName];
+
+    // find currency
+    const findCurrency = await _db.Currency.findOne({
+      where: { currency_id: findAccountCurrency.currency_id },
+    });
+
+    const isToken = findCurrency.type === 2;
+    const findAccountAddress = await _db.AccountAddress.findOne({
       where: { account_id: findAccountCurrency.account_id, chain_index, key_index },
     });
     // find all tx by address
     if (findAccountAddress) {
       if (isToken) {
-        const findTxByAddress = await this.addressTokenTransactionModel.findAll({
+        const findTxByAddress = await _db.AddressTokenTransaction.findAll({
           where: {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
           },
           include: [
             {
-              model: this.tokenTransactionModel,
+              model: _db.TokenTransaction,
               include: [
                 {
-                  model: this.transactionModel,
+                  model: _db.Transaction,
                 },
               ],
             },
@@ -602,21 +617,21 @@ class Account extends Bot {
         if (findTxByAddress && findTxByAddress.length > 0) {
           for (let j = 0; j < findTxByAddress.length; j++) {
             const txInfo = findTxByAddress[j];
-            const amount = Utils.dividedByDecimal(txInfo.amount, findAccountCurrency.Currency.decimals);
+            const amount = Utils.dividedByDecimal(txInfo.amount, findCurrency.decimals);
             const gas_price = txInfo.TokenTransaction.Transaction.gas_price
-              ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.gas_price, findAccountCurrency.Currency.decimals)
+              ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.gas_price, findCurrency.decimals)
               : null;
             const fee = txInfo.TokenTransaction.Transaction.fee
-              ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.fee, findAccountCurrency.Currency.decimals)
+              ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.fee, findCurrency.decimals)
               : null;
             txs.push({
               txid: txInfo.TokenTransaction.Transaction.txid,
               // eslint-disable-next-line no-nested-ternary
               status: (isToken) ? (txInfo.TokenTransaction.result ? 'success' : 'failed') : 'success',
               amount,
-              symbol: findAccountCurrency.Currency.symbol, // "unit"
+              symbol: findCurrency.symbol, // "unit"
               direction: txInfo.TokenTransaction.direction === 0 ? 'send' : 'receive',
-              confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.TokenTransaction.Transaction.block,
+              confirmations: findBlockchainInfo.block - txInfo.TokenTransaction.Transaction.block,
               timestamp: txInfo.TokenTransaction.timestamp,
               source_addresses: Utils.formatAddressArray(txInfo.TokenTransaction.source_addresses),
               destination_addresses: Utils.formatAddressArray(txInfo.TokenTransaction.destination_addresses),
@@ -628,26 +643,26 @@ class Account extends Bot {
           }
         }
       } else {
-        const findTxByAddress = await this.addressTransactionModel.findAll({
+        const findTxByAddress = await _db.AddressTransaction.findAll({
           where: {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
           },
           include: [
             {
-              model: this.transactionModel,
+              model: _db.Transaction,
             },
           ],
         });
         if (findTxByAddress) {
           for (let j = 0; j < findTxByAddress.length; j++) {
             const txInfo = findTxByAddress[j];
-            const amount = Utils.dividedByDecimal(txInfo.amount, findAccountCurrency.Currency.decimals);
+            const amount = Utils.dividedByDecimal(txInfo.amount, findCurrency.decimals);
             const gas_price = txInfo.Transaction.gas_price
-              ? Utils.dividedByDecimal(txInfo.Transaction.gas_price, findAccountCurrency.Currency.decimals)
+              ? Utils.dividedByDecimal(txInfo.Transaction.gas_price, findCurrency.decimals)
               : null;
             const fee = txInfo.Transaction.fee
-              ? Utils.dividedByDecimal(txInfo.Transaction.fee, findAccountCurrency.Currency.decimals)
+              ? Utils.dividedByDecimal(txInfo.Transaction.fee, findCurrency.decimals)
               : null;
 
             txs.push({
@@ -655,9 +670,9 @@ class Account extends Bot {
               // eslint-disable-next-line no-nested-ternary
               status: (isToken) ? findTxByAddress.result ? 'success' : 'failed' : 'success',
               amount,
-              symbol: findAccountCurrency.Currency.symbol, // "unit"
+              symbol: findCurrency.symbol, // "unit"
               direction: txInfo.direction === 0 ? 'send' : 'receive',
-              confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.Transaction.block,
+              confirmations: findBlockchainInfo.block - txInfo.Transaction.block,
               timestamp: txInfo.Transaction.timestamp,
               source_addresses: Utils.formatAddressArray(txInfo.Transaction.source_addresses),
               destination_addresses: Utils.formatAddressArray(txInfo.Transaction.destination_addresses),
@@ -714,29 +729,21 @@ class Account extends Bot {
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
     const tokenInfo = await Utils.verifyToken(token);
     try {
-      const findAccountCurrency = await this.accountCurrencyModel.findOne({
-        where: { accountCurrency_id: account_id },
-        include: [
-          {
-            model: this.accountModel,
-            attributes: ['account_id', 'user_id'],
-            where: {
-              user_id: tokenInfo.userID,
-            },
-            include: [
-              {
-                model: this.blockchainModel,
-                attributes: ['blockchain_id', 'block', 'coin_type'],
+      const findAccountCurrency = await this.DBOperator.findOne({
+        tableName: 'AccountCurrency',
+        options: {
+          where: { accountCurrency_id: account_id },
+          include: [
+            {
+              _model: 'Account',
+              attributes: ['account_id', 'user_id', 'blockchain_id'],
+              where: {
+                user_id: tokenInfo.userID,
               },
-            ],
-          },
-          {
-            model: this.currencyModel,
-            attributes: ['type', 'symbol', 'decimals'],
-          },
-        ],
+            },
+          ],
+        },
       });
-
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
@@ -762,10 +769,7 @@ class Account extends Bot {
       // sort by timestamps
       payload.sort((a, b) => b.timestamp - a.timestamp);
 
-      return new ResponseFormat({
-        message: 'List Transactions',
-        payload,
-      });
+      return new ResponseFormat({ message: 'List Transactions', payload });
     } catch (e) {
       this.logger.error('ListTransactions e:', e);
       if (e.code) return e;

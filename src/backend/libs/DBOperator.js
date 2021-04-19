@@ -16,14 +16,14 @@ class DBOperator {
         _include.model = dbInstance[_include._model];
         options.include[i] = _include;
 
-        // TODO: refactor it
-        if (_include.include && _include.include.length > 0) {
-          for (let j = 0; j < _include.include.length; j++) {
-            const _include2 = { ..._include.include[i] };
-            _include2.model = dbInstance[_include2._model];
-            options.include[i].include[j] = _include2;
-          }
-        }
+        // // TODO: refactor it
+        // if (_include.include && _include.include.length > 0) {
+        //   for (let j = 0; j < _include.include.length; j++) {
+        //     const _include2 = { ..._include.include[i] };
+        //     _include2.model = dbInstance[_include2._model];
+        //     options.include[i].include[j] = _include2;
+        //   }
+        // }
       }
     }
     return options;
@@ -56,7 +56,7 @@ class DBOperator {
       if (!tableName) return new ResponseFormat({ message: 'db error(query need table name)', code: Codes.DB_ERROR });
       const queries = [];
       Utils.databaseInstanceName.forEach((dbName) => {
-        const _options = this.updateDBInstance(this.database.db[dbName], options);
+        const _options = this.updateDBInstance(this.database.db[dbName], { ...options });
         queries.push(this.database.db[dbName][tableName].findOne(_options));
       });
       const findItems = await Promise.all(queries).catch((error) => new ResponseFormat({ message: `db error(${error})`, code: Codes.DB_ERROR }));
