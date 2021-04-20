@@ -41,7 +41,7 @@ class DBOperator {
 
       return findItems.reduce((accumulator, currentValue) => accumulator + currentValue);
     } catch (e) {
-      this.logger.error(`findAll options: (${JSON.stringify(myOptions)}) error:`, e);
+      this.logger.error(`count options: (${JSON.stringify(myOptions)}) error:`, e);
       throw e;
     }
   }
@@ -82,6 +82,26 @@ class DBOperator {
       return findItems.find((item) => item !== null);
     } catch (e) {
       this.logger.error(`findOne options: (${JSON.stringify(myOptions)}) error:`, e);
+      throw e;
+    }
+  }
+
+  async query(rawSQL, options = {}) {
+    try {
+      if (!rawSQL) return new ResponseFormat({ message: 'db error(query need rawSQL)', code: Codes.DB_ERROR });
+      const queries = [];
+      Utils.databaseInstanceName.forEach((dbName) => {
+        const { QueryTypes } = this.database.db[dbName].sequelize;
+        options.type = QueryTypes.SELECT;
+        queries.push(this.database.db[dbName].sequelize.query(rawSQL, options));
+      });
+      const findItems = await Promise.all(queries).catch((error) => new ResponseFormat({ message: `db error(${error})`, code: Codes.DB_ERROR }));
+      if (findItems.code === Codes.DB_ERROR) throw findItems;
+      // console.log('findItems:', findItems);
+
+      return findItems.concat.apply([], findItems);
+    } catch (e) {
+      this.logger.error(`query rawSQL: (${rawSQL}) options: (${JSON.stringify(options)}) error:`, e);
       throw e;
     }
   }

@@ -118,12 +118,12 @@ class Explore extends Bot {
     }
   }
 
+  // TODO: support multi paging
   async TransactionList({ query }) {
     try {
       const { index = 0, limit = 20 } = query;
 
-      const { QueryTypes } = this.sequelize;
-      const findTransactionList = await this.sequelize.query(
+      const findTransactionList = await this.DBOperator.query(
         `SELECT
             t1.*,
             "Currency"."blockchain_id" AS "currency_blockchain_id",
@@ -168,17 +168,19 @@ class Explore extends Bot {
           ORDER BY
             "transaction_id" DESC`,
         {
-
           replacements: {
             index: Number(index),
             limit: Math.floor(Number(limit) + 1),
           },
-          type: QueryTypes.SELECT,
         },
       );
 
       const items = [];
-      const findAllAmount = await this.transactionModel.count() + await this.tokenTransactionModel.count();
+      const findAllAmount = await this.DBOperator.count({
+        tableName: 'Transaction',
+      }) + await this.DBOperator.count({
+        tableName: 'TokenTransaction',
+      });
       const meta = {
         hasNext: false,
         nextIndex: 0,
