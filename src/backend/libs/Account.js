@@ -850,16 +850,20 @@ class Account extends Bot {
   async _findAccountUTXO({
     findAccountCurrency, payload, chain_index, key_index,
   }) {
+    // find blockchain info
+    const DBName = Utils.blockchainIDToDBName(findAccountCurrency.Account.blockchain_id);
+    const _db = this.database.db[DBName];
+
     // find AccountAddress
-    const findAccountAddress = await this.accountAddressModel.findOne({ where: { account_id: findAccountCurrency.Account.account_id, chain_index, key_index } });
+    const findAccountAddress = await _db.AccountAddress.findOne({ where: { account_id: findAccountCurrency.Account.account_id, chain_index, key_index } });
     if (!findAccountAddress) return new ResponseFormat({ message: 'account not found(address not found)', code: Codes.ACCOUNT_NOT_FOUND });
 
     // find all UTXO
-    const findUTXO = await this.utxoModel.findAll({
+    const findUTXO = await _db.UTXO.findAll({
       where: { accountAddress_id: findAccountAddress.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
       include: [
         {
-          model: this.accountAddressModel,
+          model: _db.AccountAddress,
           attributes: ['address'],
         },
       ],
@@ -891,18 +895,21 @@ class Account extends Bot {
 
     try {
       // find Account
-      const findAccountCurrency = await this.accountCurrencyModel.findOne({
-        where: {
-          accountCurrency_id: account_id,
-        },
-        include: [
-          {
-            model: this.accountModel,
-            where: {
-              user_id: tokenInfo.userID,
-            },
+      const findAccountCurrency = await this.DBOperator.findOne({
+        tableName: 'AccountCurrency',
+        options: {
+          where: {
+            accountCurrency_id: account_id,
           },
-        ],
+          include: [
+            {
+              _model: 'Account',
+              where: {
+                user_id: tokenInfo.userID,
+              },
+            },
+          ],
+        },
       });
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 

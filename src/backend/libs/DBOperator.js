@@ -16,14 +16,14 @@ class DBOperator {
         _include.model = dbInstance[_include._model];
         options.include[i] = _include;
 
-        // // TODO: refactor it
-        // if (_include.include && _include.include.length > 0) {
-        //   for (let j = 0; j < _include.include.length; j++) {
-        //     const _include2 = { ..._include.include[i] };
-        //     _include2.model = dbInstance[_include2._model];
-        //     options.include[i].include[j] = _include2;
-        //   }
-        // }
+        // TODO: refactor it
+        if (_include.include && _include.include.length > 0) {
+          for (let j = 0; j < _include.include.length; j++) {
+            const _include2 = { ..._include.include[i] };
+            _include2.model = dbInstance[_include2._model];
+            options.include[i].include[j] = _include2;
+          }
+        }
       }
     }
     return options;
