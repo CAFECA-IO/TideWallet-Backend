@@ -216,14 +216,18 @@ class Explore extends Bot {
     }
   }
 
+  // TODO: support multi paging
   async BlockList({ query }) {
     try {
       const { index = 0, limit = 20 } = query;
-      const findBlocks = await this.blockScannedModel.findAll({
-        offset: Number(index),
-        limit: Number(limit) + 1,
-        attributes: ['blockchain_id', 'block', 'block_hash', 'timestamp', 'result'],
-        order: [['timestamp', 'DESC']],
+      const findBlocks = await this.DBOperator.findAll({
+        tableName: 'BlockScanned',
+        options: {
+          offset: Number(index),
+          limit: Number(limit) + 1,
+          attributes: ['blockchain_id', 'block', 'block_hash', 'timestamp', 'result'],
+          order: [['timestamp', 'DESC']],
+        },
       });
       const items = [];
 
@@ -245,7 +249,9 @@ class Explore extends Bot {
           txCount,
         });
       }
-      const findAllAmount = await this.blockScannedModel.count();
+      const findAllAmount = await this.DBOperator.count({
+        tableName: 'BlockScanned',
+      });
 
       const meta = {
         hasNext: false,
