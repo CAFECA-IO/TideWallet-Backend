@@ -30,6 +30,33 @@ module.exports = (sequelize, DataTypes) => sequelize.define('BlockScanned', {
   transaction_count: {
     type: DataTypes.INTEGER,
   },
+  miner: {
+    type: DataTypes.STRING,
+  },
+  difficulty: {
+    type: DataTypes.STRING,
+  },
+  transactions_root: {
+    type: DataTypes.STRING,
+  },
+  size: {
+    type: DataTypes.BIGINT,
+  },
+  transaction_volume: {
+    type: DataTypes.STRING,
+  },
+  gas_used: {
+    type: DataTypes.BIGINT,
+  },
+  block_reward: {
+    type: DataTypes.STRING,
+  },
+  block_fee: {
+    type: DataTypes.STRING,
+  },
+  extra_data: {
+    type: DataTypes.STRING,
+  },
 }, {
   timestamps: false,
   tableName: 'BlockScanned',

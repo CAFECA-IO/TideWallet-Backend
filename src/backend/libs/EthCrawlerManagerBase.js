@@ -134,6 +134,12 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           timestamp: parseInt(blockData.timestamp, 16),
           result: JSON.stringify(txids),
           transaction_count: txids.length,
+          miner: blockData.miner,
+          difficulty: new BigNumber(blockData.difficulty, 16).toFixed(),
+          transactions_root: blockData.transactionsRoot,
+          size: parseInt(blockData.size, 16),
+          gas_used: parseInt(blockData.gasUsed, 16),
+          extra_data: blockData.extraData,
         });
       } else {
         const updateResult = await this.blockScannedModel.update({
@@ -143,6 +149,12 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           timestamp: parseInt(blockData.timestamp, 16),
           result: JSON.stringify(txids),
           transaction_count: txids.length,
+          miner: blockData.miner,
+          difficulty: new BigNumber(blockData.difficulty, 16).toFixed(),
+          transactions_root: blockData.transactionsRoot,
+          size: parseInt(blockData.size, 16),
+          gas_used: parseInt(blockData.gasUsed, 16),
+          extra_data: blockData.extraData,
         }, {
           where: {
             blockScanned_id: insertResult.blockScanned_id,
