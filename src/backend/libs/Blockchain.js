@@ -32,20 +32,8 @@ class Blockchain extends Bot {
       this.DBOperator = new DBOperator(this.config, this.database, this.logger);
       this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
 
-      this.accountModel = this.database.db.Account;
-      this.blockchainModel = this.database.db.Blockchain;
-      this.currencyModel = this.database.db.Currency;
-      this.fiatCurrencyRateModel = this.database.db.FiatCurrencyRate;
-      this.blockScannedModel = this.database.db.BlockScanned;
-      this.unparsedTransactionModel = this.database.db.UnparsedTransaction;
-
       // used by BtcParserBase.parseTx.call
       // ++ remove after extract to instance class
-      this.transactionModel = this.database.db.Transaction;
-      this.accountAddressModel = this.database.db.AccountAddress;
-      this.utxoModel = this.database.db.UTXO;
-      this.addressTransactionModel = this.database.db.AddressTransaction;
-      this.accountCurrencyModel = this.database.db.AccountCurrency;
 
       this.sequelize = this.defaultDBInstance.sequelize;
       this.Sequelize = this.defaultDBInstance.Sequelize;
@@ -521,7 +509,7 @@ class Blockchain extends Bot {
             attributes: ['currency_id', 'decimals', 'blockchain_id', 'decimals'],
             include: [
               {
-                model: this.blockchainModel,
+                model: _db.blockchainModel,
                 attributes: ['block'],
               },
             ],

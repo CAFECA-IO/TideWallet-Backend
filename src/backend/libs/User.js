@@ -24,15 +24,8 @@ class User extends Bot {
       this.DBOperator = new DBOperator(this.config, this.database, this.logger);
       this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
 
-      this.userModel = this.database.db.User;
-      this.blockchainModel = this.database.db.Blockchain;
-      this.tokenSecretModel = this.database.db.TokenSecret;
-      this.currencyModel = this.database.db.Currency;
-      this.accountModel = this.database.db.Account;
-      this.accountCurrencyModel = this.database.db.AccountCurrency;
-      this.accountAddressModel = this.database.db.AccountAddress;
-      this.deviceModel = this.database.db.Device;
       this.userAppModel = this.database.db.UserApp;
+
       this.sequelize = this.defaultDBInstance.sequelize;
       this.Sequelize = this.defaultDBInstance.Sequelize;
       return this;
@@ -42,8 +35,8 @@ class User extends Bot {
   async UserAppID({ body, retry = 3 }) {
     const { id } = body;
 
-    const findUserApp = await this.userAppModel.findOne({
-      app_id: id,
+    const findUserApp = await this.defaultDBInstance.UserApp.findOne({
+      where: { app_id: id },
     });
     if (findUserApp) {
       return new ResponseFormat({
@@ -58,7 +51,7 @@ class User extends Bot {
     const app_user_id = crypto.randomBytes(12).toString('hex');
     const app_user_secret = crypto.randomBytes(12).toString('hex');
     try {
-      await this.userAppModel.create({
+      await this.defaultDBInstance.UserApp.create({
         app_id: id,
         app_user_id,
         app_user_secret,
