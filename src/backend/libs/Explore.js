@@ -474,15 +474,18 @@ class Explore extends Bot {
     try {
       const { address } = params;
 
-      const findAddress = await this.accountAddressModel.findAll({
-        where: { address },
-        attributes: ['account_id', 'address'],
-        include: [
-          {
-            model: this.accountModel,
-            attributes: ['blockchain_id'],
-          },
-        ],
+      const findAddress = await this.DBOperator.findOne({
+        tableName: 'AccountAddress',
+        options: {
+          where: { address },
+          attributes: ['account_id', 'address'],
+          include: [
+            {
+              _model: 'Account',
+              attributes: ['blockchain_id'],
+            },
+          ],
+        },
       });
 
       if (findAddress && findAddress.length > 0) {
@@ -522,17 +525,20 @@ class Explore extends Bot {
       // TODO: refactor it, logic same as (findAddress)
       // not in account address, find transaction table
       const findBlockID = {};
-      const findAddressTxs = await this.transactionModel.findAll({
-        where: {
-          [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
-        },
-        attributes: ['txid'],
-        include: [
-          {
-            model: this.currencyModel,
-            attributes: ['blockchain_id'],
+      const findAddressTxs = await this.DBOperator.findAll({
+        tableName: 'Transaction',
+        options: {
+          where: {
+            [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
           },
-        ],
+          attributes: ['txid'],
+          include: [
+            {
+              _model: 'Currency',
+              attributes: ['blockchain_id'],
+            },
+          ],
+        },
       });
       findAddressTxs.forEach((item) => {
         if (item.Currency) findBlockID[item.Currency.blockchain_id] = true;
