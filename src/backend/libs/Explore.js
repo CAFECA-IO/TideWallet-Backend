@@ -59,14 +59,17 @@ class Explore extends Bot {
       const { txid } = params;
       const payload = [];
 
-      const findTx = await this.transactionModel.findOne({
-        where: { txid },
-        include: [
-          {
-            model: this.currencyModel,
-            attributes: ['blockchain_id', 'name', 'icon', 'symbol', 'decimals'],
-          },
-        ],
+      const findTx = await this.DBOperator.findOne({
+        tableName: 'Transaction',
+        options: {
+          where: { txid },
+          include: [
+            {
+              _model: 'Currency',
+              attributes: ['blockchain_id', 'name', 'icon', 'symbol', 'decimals'],
+            },
+          ],
+        },
       });
       if (!findTx) return new ResponseFormat({ message: 'transaction not found', code: Codes.TX_NOT_FOUND });
 
@@ -84,14 +87,17 @@ class Explore extends Bot {
       });
 
       // find token transaction table
-      const findTokenTx = await this.tokenTransactionModel.findAll({
-        where: { txid },
-        include: [
-          {
-            model: this.currencyModel,
-            attributes: ['blockchain_id', 'name', 'icon', 'symbol', 'decimals'],
-          },
-        ],
+      const findTokenTx = await this.DBOperator.findAll({
+        tableName: 'TokenTransaction',
+        options: {
+          where: { txid },
+          include: [
+            {
+              _model: 'Currency',
+              attributes: ['blockchain_id', 'name', 'icon', 'symbol', 'decimals'],
+            },
+          ],
+        },
       });
       if (findTokenTx) {
         findTokenTx.forEach((txItem) => {
@@ -112,6 +118,7 @@ class Explore extends Bot {
 
       return new ResponseFormat({ message: 'Explore Transaction Detail', payload });
     } catch (e) {
+      console.log('e:', e);
       this.logger.error('TransactionDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
