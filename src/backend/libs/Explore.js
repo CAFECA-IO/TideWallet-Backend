@@ -275,7 +275,9 @@ class Explore extends Bot {
     try {
       const { blockchain_id, block_id } = params;
 
-      const findBlockInfo = await this.blockScannedModel.findOne({
+      const DBName = Utils.blockchainIDToDBName(blockchain_id);
+      const _db = this.database.db[DBName];
+      const findBlockInfo = await _db.BlockScanned.findOne({
         where: { blockchain_id, block_hash: block_id },
         attributes: ['blockchain_id', 'block', 'timestamp', 'result'],
       });
