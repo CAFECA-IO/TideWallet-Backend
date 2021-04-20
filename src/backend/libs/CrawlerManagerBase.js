@@ -1,3 +1,7 @@
+// ++ temp for count rollback times
+const fs = require('fs');
+const path = require('path');
+
 const { eventBus } = require('./Events');
 
 class CrawlerManagerBase {
@@ -48,6 +52,12 @@ class CrawlerManagerBase {
     //     }
     //   }
     // }, this.pendingTxSyncInterval);
+
+    // ++ temp for count rollback times
+    this.rollbackCountDir = path.normalize(`${__dirname}/../../../private/rollbackCount`);
+    if (!fs.existsSync(this.rollbackCountDir)) {
+      fs.mkdirSync(this.rollbackCountDir);
+    }
     return this;
   }
 

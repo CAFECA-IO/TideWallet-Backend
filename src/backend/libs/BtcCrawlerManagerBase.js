@@ -1,3 +1,6 @@
+// ++ temp for count rollback times
+const fs = require('fs');
+
 const dvalue = require('dvalue');
 
 const CrawlerManagerBase = require('./CrawlerManagerBase');
@@ -136,17 +139,34 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
         txids.push(tx.txid);
       }
 
-      const insertResult = await this.blockScannedModel.findOrCreate({
+      let insertResult = await this.blockScannedModel.findOne({
         where: { blockchain_id: this.bcid, block: blockData.height },
-        defaults: {
+      });
+      if (!insertResult) {
+        insertResult = await this.blockScannedModel.create({
           blockchain_id: this.bcid,
           block: blockData.height,
           block_hash: blockData.hash,
           timestamp: blockData.time,
           result: JSON.stringify(txids),
           transaction_count: txids.length,
-        },
-      });
+        });
+      } else {
+        const updateResult = await this.blockScannedModel.update({
+          blockchain_id: this.bcid,
+          block: blockData.height,
+          block_hash: blockData.hash,
+          timestamp: blockData.time,
+          result: JSON.stringify(txids),
+          transaction_count: txids.length,
+        }, {
+          where: {
+            blockScanned_id: insertResult.blockScanned_id,
+          },
+          returning: true,
+        });
+        [, [insertResult]] = updateResult;
+      }
       return insertResult;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] insertBlock(${blockData.hash}) error: ${error}`);
@@ -203,6 +223,13 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
 
       if (!await this.checkBlockHash(this.dbBlock)) {
         this.logger.error(`[${this.constructor.name}] block ${this.dbBlock} in db not the same as peer.`);
+        // ++ temp for count rollback times
+        const now = new Date();
+        const writeData = `${now.toUTCString()}\n`;
+        fs.appendFileSync(
+          `${this.rollbackCountDir}/${this.bcid}_${now.getUTCFullYear()}_${now.getUTCMonth()}_${now.getUTCDate()}.txt`,
+          writeData,
+        );
         this.stopParser();
         this.dbBlock = await this.rollbackBlock(this.dbBlock);
         this.startParser();
