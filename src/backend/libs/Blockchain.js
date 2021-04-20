@@ -939,6 +939,7 @@ CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
   }
 
   isCrawler() {
+    // ++ may change after db separate
     const blockchains = Object.keys(this.config.blockchain);
     let result = false;
     for (const blockchain of blockchains) {

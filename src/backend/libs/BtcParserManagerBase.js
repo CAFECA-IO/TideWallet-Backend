@@ -19,6 +19,8 @@ class BtcParserManagerBase extends ParserManagerBase {
     this.decimal = 8;
 
     this.updateBalanceAccounts = {};
+
+    this.jobTimeout = 10 * 60 * 1000; // 10 min
   }
 
   async init() {
