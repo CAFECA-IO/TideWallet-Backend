@@ -42,7 +42,7 @@ class Blockchain extends Bot {
       await this.initBlockchainNetworks();
       await this.initCurrency();
       await this.initFiatCurrencyRate();
-      await this.initBackendHDWallet();
+      if (!this.isCrawler()) { await this.initBackendHDWallet(); }
       return this;
     });
   }
@@ -936,6 +936,18 @@ CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
+  }
+
+  isCrawler() {
+    const blockchains = Object.keys(this.config.blockchain);
+    let result = false;
+    for (const blockchain of blockchains) {
+      if (this.config.syncSwitch[blockchain]) {
+        result = true;
+        break;
+      }
+    }
+    return result;
   }
 }
 
