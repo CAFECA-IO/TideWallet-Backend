@@ -78,11 +78,11 @@ module.exports = {
   cafeca: {
     db_name: 'cafeca',
     blockchain_id: '80000CFC',
-    name: 'Cafeca',
+    name: 'TITAN',
     coin_type: 3324,
     network_id: 3324,
     publish: true,
-    description: 'Cafeca description',
+    description: 'TITAN description',
     block: 0,
     bip32: {
       public: 0,
