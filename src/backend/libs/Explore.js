@@ -33,8 +33,8 @@ class Explore extends Bot {
       this.tokenTransactionModel = this.database.db.TokenTransaction;
       this.currencyModel = this.database.db.Currency;
 
-      this.sequelize = this.database.db.sequelize;
-      this.Sequelize = this.database.db.Sequelize;
+      this.sequelize = this.defaultDBInstance.sequelize;
+      this.Sequelize = this.defaultDBInstance.Sequelize;
       return this;
     });
   }
@@ -818,33 +818,45 @@ class Explore extends Bot {
       };
 
       const searchItems = await Promise.all([
-        this.blockScannedModel.findAll({
-          limit: 10,
-          where: {
-            block_hash: search_string,
+        this.DBOperator.findAll({
+          tableName: 'BlockScanned',
+          options: {
+            limit: 10,
+            where: {
+              block_hash: search_string,
+            },
+            attributes: ['block_hash', 'blockchain_id'],
           },
-          attributes: ['block_hash', 'blockchain_id'],
         }),
-        this.tokenTransactionModel.findAll({
-          limit: 5,
-          where: {
-            txid: search_string,
+        this.DBOperator.findAll({
+          tableName: 'TokenTransaction',
+          options: {
+            limit: 5,
+            where: {
+              txid: search_string,
+            },
+            attributes: ['txid'],
           },
-          attributes: ['txid'],
         }),
-        this.tokenTransactionModel.findAll({
-          limit: 5,
-          where: {
-            [this.Sequelize.Op.or]: [{ source_addresses: search_string }, { destination_addresses: search_string }],
+        this.DBOperator.findAll({
+          tableName: 'TokenTransaction',
+          options: {
+            limit: 5,
+            where: {
+              [this.Sequelize.Op.or]: [{ source_addresses: search_string }, { destination_addresses: search_string }],
+            },
+            attributes: ['txid'],
           },
-          attributes: ['txid'],
         }),
-        this.accountAddressModel.findAll({
-          limit: 10,
-          where: {
-            address: search_string,
+        this.DBOperator.findAll({
+          tableName: 'AccountAddress',
+          options: {
+            limit: 10,
+            where: {
+              address: search_string,
+            },
+            attributes: ['address'],
           },
-          attributes: ['address'],
         }),
       ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
       if (searchItems.code === Codes.RPC_ERROR) return searchItems;
@@ -859,12 +871,15 @@ class Explore extends Bot {
       const txLen = searchItems[1].length;
 
       if ((10 - txLen) > 0) {
-        const findTxs = await this.transactionModel.findAll({
-          limit: 10 - txLen,
-          where: {
-            [this.Sequelize.Op.or]: [{ source_addresses: search_string }, { destination_addresses: search_string }],
+        const findTxs = await this.DBOperator.findAll({
+          tableName: 'Transaction',
+          options: {
+            limit: 10 - txLen,
+            where: {
+              [this.Sequelize.Op.or]: [{ source_addresses: search_string }, { destination_addresses: search_string }],
+            },
+            attributes: ['txid'],
           },
-          attributes: ['txid'],
         });
         if (findTxs) {
           findTxs.forEach((item) => {
@@ -875,12 +890,15 @@ class Explore extends Bot {
 
       const txLen2 = searchItems[2].length;
       if ((10 - txLen2) > 0) {
-        const findTxs = await this.transactionModel.findAll({
-          limit: 10 - txLen2,
-          where: {
-            txid: search_string,
+        const findTxs = await this.DBOperator.findAll({
+          tableName: 'Transaction',
+          options: {
+            limit: 10 - txLen2,
+            where: {
+              txid: search_string,
+            },
+            attributes: ['txid'],
           },
-          attributes: ['txid'],
         });
         if (findTxs) {
           findTxs.forEach((item) => {
@@ -897,6 +915,7 @@ class Explore extends Bot {
 
       return new ResponseFormat({ message: 'Explore Search', payload });
     } catch (e) {
+      console.log('e', e);
       this.logger.error('Search e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
