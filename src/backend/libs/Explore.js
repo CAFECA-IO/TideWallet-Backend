@@ -580,6 +580,7 @@ class Explore extends Bot {
     }
   }
 
+  // TODO: support multi paging
   async AddressTransactions({ params, query }) {
     try {
       const { address } = params;
@@ -587,28 +588,37 @@ class Explore extends Bot {
 
       let isServerAccount = true;
       // STEP 1. find accountAddressModel first
-      let findAddress = await this.accountAddressModel.findOne({
-        where: { address },
-        attributes: ['accountAddress_id', 'account_id', 'address'],
+      let findAddress = await this.DBOperator.findOne({
+        tableName: 'AccountAddress',
+        options: {
+          where: { address },
+          attributes: ['accountAddress_id', 'account_id', 'address'],
+        },
       });
 
       if (!findAddress) {
         isServerAccount = false;
         // STEP 2. find transactionModel if accountAddressModel not found
-        findAddress = await this.transactionModel.findOne({
-          where: {
-            [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
+        findAddress = await this.DBOperator.findOne({
+          tableName: 'Transaction',
+          options: {
+            attributes: ['txid'],
           },
-          attributes: ['txid'],
+          operators: {
+            or: [{ source_addresses: address }, { destination_addresses: address }],
+          },
         });
 
         if (!findAddress) {
           // STEP 3. find tokenTransactionModel if transactionModel not found
-          findAddress = await this.tokenTransactionModel.findOne({
-            where: {
-              [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
+          findAddress = await this.DBOperator.findOne({
+            tableName: 'TokenTransaction',
+            options: {
+              attributes: ['txid'],
             },
-            attributes: ['txid'],
+            operators: {
+              or: [{ source_addresses: address }, { destination_addresses: address }],
+            },
           });
 
           if (!findAddress) {
@@ -630,37 +640,43 @@ class Explore extends Bot {
         // not account address, find by source_addresses || destination_addresses
 
         // find transactionModel
-        const findTxs = await this.transactionModel.findAll({
-          where: {
-            [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
+        const findTxs = await this.DBOperator.findAll({
+          tableName: 'Transaction',
+          options: {
+            offset: index,
+            limit,
+            include: [
+              {
+                _model: 'Currency',
+                attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
+              },
+            ],
+            order: [['transaction_id', 'DESC']],
           },
-          offset: index,
-          limit,
-          include: [
-            {
-              model: this.currencyModel,
-              attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
-            },
-          ],
-          order: [['transaction_id', 'DESC']],
+          operators: {
+            or: [{ source_addresses: address }, { destination_addresses: address }],
+          },
         });
 
-        const findTokenTxs = await this.tokenTransactionModel.findAll({
-          where: {
-            [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
+        const findTokenTxs = await this.DBOperator.findAll({
+          tableName: 'TokenTransaction',
+          options: {
+            offset: index,
+            limit,
+            include: [
+              {
+                _model: 'Transaction',
+              },
+              {
+                _model: 'Currency',
+                attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
+              },
+            ],
+            order: [['tokenTransaction_id', 'DESC']],
           },
-          offset: index,
-          limit,
-          include: [
-            {
-              model: this.transactionModel,
-            },
-            {
-              model: this.currencyModel,
-              attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
-            },
-          ],
-          order: [['tokenTransaction_id', 'DESC']],
+          operators: {
+            or: [{ source_addresses: address }, { destination_addresses: address }],
+          },
         });
 
         const txs = [...findTxs, ...findTokenTxs];
@@ -699,10 +715,16 @@ class Explore extends Bot {
         }
 
         // count all amount
-        const findAllAmount = await this.transactionModel.count({
-          where: { [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }] },
-        }) + await this.tokenTransactionModel.count({
-          where: { [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }] },
+        const findAllAmount = await this.DBOperator.count({
+          tableName: 'Transaction',
+          operators: {
+            or: [{ source_addresses: address }, { destination_addresses: address }],
+          },
+        }) + await this.DBOperator.count({
+          tableName: 'TokenTransaction',
+          operators: {
+            or: [{ source_addresses: address }, { destination_addresses: address }],
+          },
         });
 
         const meta = {

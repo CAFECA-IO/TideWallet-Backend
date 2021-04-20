@@ -29,11 +29,20 @@ class DBOperator {
     return options;
   }
 
+  formatOperators(dbInstance, options, operators) {
+    const { Sequelize } = dbInstance;
+    Object.keys(operators).forEach((key) => {
+      if (!options.where) options.where = {};
+      options.where[Sequelize.Op[key]] = operators[key];
+    });
+  }
+
   async count(myOptions) {
-    const { tableName, options = {} } = myOptions;
+    const { tableName, options = {}, operators = {} } = myOptions;
     try {
       const queries = [];
       Utils.databaseInstanceName.forEach((dbName) => {
+        this.formatOperators(this.database.db[dbName], options, operators);
         queries.push(this.database.db[dbName][tableName].count(options));
       });
       const findItems = await Promise.all(queries).catch((error) => new ResponseFormat({ message: `db error(${error})`, code: Codes.DB_ERROR }));
@@ -48,11 +57,12 @@ class DBOperator {
 
   async findAll(myOptions) {
     try {
-      const { tableName, options = {} } = myOptions;
+      const { tableName, options = {}, operators = {} } = myOptions;
 
       if (!tableName) return new ResponseFormat({ message: 'db error(query need table name)', code: Codes.DB_ERROR });
       const queries = [];
       Utils.databaseInstanceName.forEach((dbName) => {
+        this.formatOperators(this.database.db[dbName], options, operators);
         const _options = this.updateDBInstance(this.database.db[dbName], options);
         queries.push(this.database.db[dbName][tableName].findAll(_options));
       });
@@ -68,11 +78,12 @@ class DBOperator {
 
   async findOne(myOptions) {
     try {
-      const { tableName, options = {} } = myOptions;
+      const { tableName, options = {}, operators = {} } = myOptions;
 
       if (!tableName) return new ResponseFormat({ message: 'db error(query need table name)', code: Codes.DB_ERROR });
       const queries = [];
       Utils.databaseInstanceName.forEach((dbName) => {
+        this.formatOperators(this.database.db[dbName], options, operators);
         const _options = this.updateDBInstance(this.database.db[dbName], { ...options });
         queries.push(this.database.db[dbName][tableName].findOne(_options));
       });
