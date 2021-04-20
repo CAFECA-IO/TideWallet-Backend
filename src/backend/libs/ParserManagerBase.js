@@ -1,4 +1,5 @@
 const amqp = require('amqplib');
+const { eventBus } = require('./Events');
 
 class ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
@@ -20,6 +21,9 @@ class ParserManagerBase {
     this.amqpHost = this.config.rabbitmq.host;
     this.jobTimeout = 10 * 60 * 1000; // 10 min
     this.jobTimer = null;
+
+    this.eventListener = eventBus;
+    this.startParse = true;
   }
 
   async init() {
@@ -41,6 +45,29 @@ class ParserManagerBase {
     this.numberOfJobs = 0;
     this.jobDoneList = [];
     this.getJobCallback();
+
+    this.eventListener.on('StartParser', () => {
+      this.logger.log(`[${this.constructor.name}] StartParser event`);
+      this.startParse = true;
+    });
+    this.eventListener.on('StopParser', async () => {
+      this.logger.log(`[${this.constructor.name}] StopParser event`);
+      this.startParse = false;
+      this.isParsing = false;
+
+      // clear queue
+      await this.queueChannel.purgeQueue(this.jobQueue);
+      await this.queueChannel.purgeQueue(this.jobCallback);
+
+      // clear timer
+      if (this.jobTimer) {
+        clearTimeout(this.jobTimer);
+        this.jobTimer = null;
+      }
+
+      this.jobDoneList = [];
+      this.numberOfJobs = 0;
+    });
     return this;
   }
 

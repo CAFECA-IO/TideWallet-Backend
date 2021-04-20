@@ -211,7 +211,9 @@ class EthParserBase extends ParserBase {
       const { logs } = receipt;
 
       for (const log of logs) {
-        const { address, data, topics } = log;
+        const { address, topics } = log;
+        let { data } = log;
+        if (data === '0x') data = '0';
         const abi = ethABI[topics[0]];
 
         // 3. check topic has 'Transfer'
@@ -223,11 +225,13 @@ class EthParserBase extends ParserBase {
           const bnAmount = new BigNumber(data, 16);
           const from = Utils.parse32BytesAddress(topics[1]);
           const to = Utils.parse32BytesAddress(topics[2]);
-          const tokenTransaction = await this.tokenTransactionModel.findOrCreate({
+          let tokenTransaction = await this.tokenTransactionModel.findOne({
             where: {
               currency_id: currency.currency_id, transaction_id: transaction.transaction_id,
             },
-            defaults: {
+          });
+          if (!tokenTransaction) {
+            tokenTransaction = await this.tokenTransactionModel.create({
               transaction_id: transaction.transaction_id,
               currency_id: currency.currency_id,
               txid: transaction.txid,
@@ -236,8 +240,25 @@ class EthParserBase extends ParserBase {
               destination_addresses: to,
               amount: bnAmount.toFixed(),
               result: receipt.status === '0x1',
-            },
-          });
+            });
+          } else {
+            const updateResult = await this.tokenTransactionModel.update({
+              transaction_id: transaction.transaction_id,
+              currency_id: currency.currency_id,
+              txid: transaction.txid,
+              timestamp: transaction.timestamp,
+              source_addresses: from,
+              destination_addresses: to,
+              amount: bnAmount.toFixed(),
+              result: receipt.status === '0x1',
+            }, {
+              where: {
+                tokenTransaction_id: tokenTransaction.tokenTransaction_id,
+              },
+              returning: true,
+            });
+            [, [tokenTransaction]] = updateResult;
+          }
 
           // 6. check from address is regist address
           const accountAddressFrom = await this.checkRegistAddress(from);
@@ -246,26 +267,41 @@ class EthParserBase extends ParserBase {
             await this.setAddressTokenTransaction(
               currency.currency_id,
               accountAddressFrom.accountAddress_id,
-              tokenTransaction[0].amount,
-              tokenTransaction[0].tokenTransaction_id,
+              tokenTransaction.amount,
+              tokenTransaction.tokenTransaction_id,
               0,
             );
-            await this.accountCurrencyModel.findOrCreate({
+            const acResult = await this.accountCurrencyModel.findOne({
               where: {
                 account_id: accountAddressFrom.account_id,
                 currency_id: currency.currency_id,
                 number_of_external_key: '0',
                 number_of_internal_key: '0',
               },
-              defaults: {
+            });
+            if (!acResult) {
+              await this.accountCurrencyModel.create({
                 accountCurrency_id: uuidv4(),
                 account_id: accountAddressFrom.account_id,
                 currency_id: currency.currency_id,
                 balance: bnAmount.toFixed(),
                 number_of_external_key: '0',
                 number_of_internal_key: '0',
-              },
-            });
+              });
+            } else {
+              await this.accountCurrencyModel.update({
+                account_id: accountAddressFrom.account_id,
+                currency_id: currency.currency_id,
+                balance: bnAmount.toFixed(),
+                number_of_external_key: '0',
+                number_of_internal_key: '0',
+              }, {
+                where: {
+                  accountCurrency_id: acResult.accountCurrency_id,
+                },
+                returning: true,
+              });
+            }
           }
           // 8. check to address is regist address
           const accountAddressTo = await this.checkRegistAddress(to);
@@ -274,27 +310,42 @@ class EthParserBase extends ParserBase {
             await this.setAddressTokenTransaction(
               currency.currency_id,
               accountAddressTo.accountAddress_id,
-              tokenTransaction[0].amount,
-              tokenTransaction[0].tokenTransaction_id,
+              tokenTransaction.amount,
+              tokenTransaction.tokenTransaction_id,
               1,
             );
 
-            await this.accountCurrencyModel.findOrCreate({
+            const acResult = await this.accountCurrencyModel.findOne({
               where: {
                 account_id: accountAddressTo.account_id,
                 currency_id: currency.currency_id,
                 number_of_external_key: '0',
                 number_of_internal_key: '0',
               },
-              defaults: {
+            });
+            if (!acResult) {
+              await this.accountCurrencyModel.create({
                 accountCurrency_id: uuidv4(),
                 account_id: accountAddressTo.account_id,
                 currency_id: currency.currency_id,
                 balance: bnAmount.toFixed(),
                 number_of_external_key: '0',
                 number_of_internal_key: '0',
-              },
-            });
+              });
+            } else {
+              await this.accountCurrencyModel.update({
+                account_id: accountAddressTo.account_id,
+                currency_id: currency.currency_id,
+                balance: bnAmount.toFixed(),
+                number_of_external_key: '0',
+                number_of_internal_key: '0',
+              }, {
+                where: {
+                  accountCurrency_id: acResult.accountCurrency_id,
+                },
+                returning: true,
+              });
+            }
           }
         }
       }
@@ -367,12 +418,15 @@ class EthParserBase extends ParserBase {
         [, [insertTx]] = updateResult;
       }
 
-      await this.receiptModel.findOrCreate({
+      const insertReceipt = await this.receiptModel.findOne({
         where: {
           currency_id: this.currencyInfo.currency_id,
           transaction_id: insertTx.transaction_id,
         },
-        defaults: {
+      });
+
+      if (!insertReceipt) {
+        await this.receiptModel.create({
           transaction_id: insertTx.transaction_id,
           currency_id: this.currencyInfo.currency_id,
           contract_address: receipt.contractAddress,
@@ -381,8 +435,24 @@ class EthParserBase extends ParserBase {
           logs: JSON.stringify(receipt.logs),
           logsBloom: receipt.logsBloom,
           status: parseInt(receipt.status, 16),
-        },
-      });
+        });
+      } else {
+        await this.receiptModel.update({
+          transaction_id: insertTx.transaction_id,
+          currency_id: this.currencyInfo.currency_id,
+          contract_address: receipt.contractAddress,
+          cumulative_gas_used: parseInt(receipt.cumulativeGasUsed, 16),
+          gas_used: bnGasUsed.toFixed(),
+          logs: JSON.stringify(receipt.logs),
+          logsBloom: receipt.logsBloom,
+          status: parseInt(receipt.status, 16),
+        }, {
+          where: {
+            receipt_id: insertReceipt.receipt_id,
+          },
+          returning: true,
+        });
+      }
 
       const { from, to } = tx;
       // 3. parse receipt to check is token transfer
@@ -442,25 +512,40 @@ class EthParserBase extends ParserBase {
   async setAddressTokenTransaction(currency_id, accountAddress_id, amount, tokenTransaction_id, direction) {
     this.logger.debug(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction})`);
     try {
-      const result = await this.addressTokenTransactionModel.findOrCreate({
+      let result = await this.addressTokenTransactionModel.findOne({
         where: {
           currency_id,
           accountAddress_id,
           tokenTransaction_id,
-          amount,
-          direction,
         },
-        defaults: {
+      });
+
+      if (!result) {
+        result = await this.addressTokenTransactionModel.create({
           currency_id,
           accountAddress_id,
           tokenTransaction_id,
           amount,
           direction,
-        },
-      });
+        });
+      } else {
+        const updateResult = await this.addressTokenTransactionModel.update({
+          currency_id,
+          accountAddress_id,
+          tokenTransaction_id,
+          amount,
+          direction,
+        }, {
+          where: {
+            addressTokenTransaction_id: result.addressTokenTransaction_id,
+          },
+          returning: true,
+        });
+        [, [result]] = updateResult;
+      }
       return result;
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction}) error: ${error}`);
+      this.logger.error(`[${this.constructor.name}] setAddressTokenTransaction(${currency_id}, ${accountAddress_id}, ${tokenTransaction_id}, ${direction}) error: ${JSON.stringify(error)}`);
       return Promise.reject(error);
     }
   }
