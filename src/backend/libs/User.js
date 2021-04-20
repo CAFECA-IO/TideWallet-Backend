@@ -24,8 +24,6 @@ class User extends Bot {
       this.DBOperator = new DBOperator(this.config, this.database, this.logger);
       this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
 
-      this.userAppModel = this.database.db.UserApp;
-
       this.sequelize = this.defaultDBInstance.sequelize;
       this.Sequelize = this.defaultDBInstance.Sequelize;
       return this;

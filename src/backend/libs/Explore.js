@@ -2,6 +2,7 @@ const Bot = require('./Bot');
 const Utils = require('./Utils');
 const ResponseFormat = require('./ResponseFormat');
 const Codes = require('./Codes');
+const DBOperator = require('./DBOperator');
 
 class Explore extends Bot {
   constructor() {
@@ -18,6 +19,9 @@ class Explore extends Bot {
     return super.init({
       config, database, logger, i18n,
     }).then(() => {
+      this.DBOperator = new DBOperator(this.config, this.database, this.logger);
+      this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
+
       this.accountModel = this.database.db.Account;
       this.accountCurrencyModel = this.database.db.AccountCurrency;
       this.accountAddressModel = this.database.db.AccountAddress;
@@ -354,8 +358,11 @@ class Explore extends Bot {
   async NodeInfo({ query }) {
     try {
       const { index = 0, limit = 20 } = query;
-      const findBlockchain = await this.blockchainModel.findAll({
-        attributes: ['blockchain_id', 'name', 'block', 'avg_fee'],
+      const findBlockchain = await this.DBOperator.findAll({
+        tableName: 'Blockchain',
+        options: {
+          attributes: ['blockchain_id', 'name', 'block', 'avg_fee'],
+        },
       });
 
       // TODO: use db data to calculator
@@ -390,7 +397,9 @@ class Explore extends Bot {
         });
       });
 
-      const findAllAmount = await this.blockchainModel.count();
+      const findAllAmount = await this.DBOperator.count({
+        tableName: 'Blockchain',
+      });
       const meta = {
         hasNext: false,
         nextIndex: 0,

@@ -29,6 +29,23 @@ class DBOperator {
     return options;
   }
 
+  async count(myOptions) {
+    const { tableName, options = {} } = myOptions;
+    try {
+      const queries = [];
+      Utils.databaseInstanceName.forEach((dbName) => {
+        queries.push(this.database.db[dbName][tableName].count(options));
+      });
+      const findItems = await Promise.all(queries).catch((error) => new ResponseFormat({ message: `db error(${error})`, code: Codes.DB_ERROR }));
+      if (findItems.code === Codes.DB_ERROR) throw findItems;
+
+      return findItems.reduce((accumulator, currentValue) => accumulator + currentValue);
+    } catch (e) {
+      this.logger.error(`findAll options: (${JSON.stringify(myOptions)}) error:`, e);
+      throw e;
+    }
+  }
+
   async findAll(myOptions) {
     try {
       const { tableName, options = {} } = myOptions;

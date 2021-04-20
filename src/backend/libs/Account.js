@@ -24,20 +24,6 @@ class Account extends Bot {
       this.DBOperator = new DBOperator(this.config, this.database, this.logger);
       this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
 
-      this.userModel = this.database.db.User;
-      this.blockchainModel = this.database.db.Blockchain;
-      this.tokenSecretModel = this.database.db.TokenSecret;
-      this.currencyModel = this.database.db.Currency;
-      this.accountModel = this.database.db.Account;
-      this.accountCurrencyModel = this.database.db.AccountCurrency;
-      this.accountAddressModel = this.database.db.AccountAddress;
-      this.addressTransactionModel = this.database.db.AddressTransaction;
-      this.transactionModel = this.database.db.Transaction;
-      this.addressTokenTransactionModel = this.database.db.AddressTokenTransaction;
-      this.tokenTransactionModel = this.database.db.TokenTransaction;
-      this.deviceModel = this.database.db.Device;
-      this.utxoModel = this.database.db.UTXO;
-
       this.sequelize = this.defaultDBInstance.sequelize;
       this.Sequelize = this.defaultDBInstance.Sequelize;
       return this;
