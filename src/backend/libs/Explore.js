@@ -41,9 +41,12 @@ class Explore extends Bot {
 
   async blockchainIdToName(blockchain_id) {
     if (this.blockchainName[blockchain_id]) return this.blockchainName[blockchain_id];
-    const findOne = await this.blockchainModel.findOne({
-      where: { blockchain_id },
-      attributes: ['name'],
+    const findOne = await this.DBOperator.findOne({
+      tableName: 'Blockchain',
+      options: {
+        where: { blockchain_id },
+        attributes: ['name'],
+      },
     });
     if (!findOne) return '';
 
