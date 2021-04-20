@@ -323,17 +323,13 @@ class BtcParserBase extends ParserBase {
               model: this.accountModel,
               attributes: ['account_id', 'blockchain_id', 'extend_public_key'],
               where: { blockchain_id: this.bcid },
-              include: [
-                {
-                  model: this.blockchainModel,
-                  attributes: ['coin_type'],
-                },
-              ],
             },
           ],
           transaction,
         });
         if (accountAddressTo) {
+          // find Blockchain info
+          const findBlockInfo = Utils.blockchainIDToBlockInfo(accountAddressTo.Account.blockchain_id);
           this.updateBalanceAccounts[accountAddressTo.account_id] = { retryCount: 0 };
 
           // 7. add mapping table
@@ -378,7 +374,7 @@ class BtcParserBase extends ParserBase {
 
             if (newAccountCurrency && newAccountCurrency.length > 0 && newAccountCurrency[0] && newAccountCurrency[0][0] && newAccountCurrency[0][0][0]) {
               const hdWallet = new HDWallet({ extendPublicKey: accountAddressTo.Account.extend_public_key });
-              const coinType = accountAddressTo.Account.Blockchain.coin_type;
+              const coinType = findBlockInfo.coin_type;
               const wallet = hdWallet.getWalletInfo({
                 change: 1,
                 index: newAccountCurrency[0][0][0].number_of_internal_key,
@@ -410,7 +406,7 @@ class BtcParserBase extends ParserBase {
 
             if (newAccountCurrency && newAccountCurrency.length > 0 && newAccountCurrency[0] && newAccountCurrency[0][0] && newAccountCurrency[0][0][0]) {
               const hdWallet = new HDWallet({ extendPublicKey: accountAddressTo.Account.extend_public_key });
-              const coinType = accountAddressTo.Account.Blockchain.coin_type;
+              const coinType = findBlockInfo.coin_type;
               const wallet = hdWallet.getWalletInfo({
                 change: 0,
                 index: newAccountCurrency[0][0][0].number_of_external_key,

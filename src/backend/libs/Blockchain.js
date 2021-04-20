@@ -32,9 +32,6 @@ class Blockchain extends Bot {
       this.DBOperator = new DBOperator(this.config, this.database, this.logger);
       this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
 
-      // used by BtcParserBase.parseTx.call
-      // ++ remove after extract to instance class
-
       this.sequelize = this.defaultDBInstance.sequelize;
       this.Sequelize = this.defaultDBInstance.Sequelize;
       return this;
@@ -449,7 +446,20 @@ class Blockchain extends Bot {
     }
     try {
       // ++ change after extract to instance class
-      await BtcParserBase.parseTx.call(this, tx, currencyInfo, timestamp);
+      const DBName = Utils.blockchainIDToDBName(this.bcid);
+      const _db = this.database.db[DBName];
+      const that = { ...this };
+      that.transactionModel = _db.Transaction;
+      that.accountAddressModel = _db.AccountAddress;
+      that.accountModel = _db.Account;
+      that.blockchainModel = _db.Blockchain;
+      that.utxoModel = _db.UTXO;
+      that.addressTransactionModel = _db.AddressTransaction;
+      that.accountCurrencyModel = _db.AccountCurrency;
+      that.sequelize = _db.sequelize;
+      that.Sequelize = _db.Sequelize;
+
+      await BtcParserBase.parseTx.call(that, tx, currencyInfo, timestamp);
     } catch (error) {
       this.logger.error('saveBTCPublishTransaction retry error:', error.message);
       setTimeout(() => {
@@ -528,7 +538,7 @@ class Blockchain extends Bot {
             attributes: ['currency_id', 'decimals', 'blockchain_id', 'decimals'],
             include: [
               {
-                model: _db.blockchainModel,
+                model: _db.Blockchain,
                 attributes: ['block'],
               },
             ],
