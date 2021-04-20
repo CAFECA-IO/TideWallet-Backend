@@ -306,16 +306,30 @@ class Explore extends Bot {
     }
   }
 
+  // TODO: support multi paging
   async BlockTransactions({ params, query }) {
     try {
       const { blockchain_id, block_id } = params;
       const { index = 0, limit = 20 } = query;
 
-      const findBlockInfo = await this.blockScannedModel.findOne({
+      const DBName = Utils.blockchainIDToDBName(blockchain_id);
+      const _db = this.database.db[DBName];
+      const findBlockInfo = await _db.BlockScanned.findOne({
         where: { blockchain_id, block_hash: block_id },
-        attributes: ['block', 'timestamp', 'result'],
+        attributes: ['blockchain_id', 'block', 'timestamp', 'result'],
       });
-      if (!findBlockInfo) return new ResponseFormat({ message: 'block not found', code: Codes.BLOCK_NOT_FOUND });
+
+      const items = [];
+      const meta = {
+        hasNext: false,
+        nextIndex: 0,
+        count: 0,
+      };
+      if (!findBlockInfo) {
+        return new ResponseFormat({
+          message: 'block not found', items, meta, code: Codes.BLOCK_NOT_FOUND,
+        });
+      }
 
       const itemJSON = JSON.parse(findBlockInfo.result);
 
@@ -325,6 +339,7 @@ class Explore extends Bot {
         : (itemJSON.transactions)
           ? itemJSON.transactions.length
           : itemJSON.length || 0;
+      meta.count = txCount;
       // eslint-disable-next-line no-nested-ternary
       const txs = (itemJSON.tx !== undefined)
         ? itemJSON.tx
@@ -332,7 +347,6 @@ class Explore extends Bot {
           ? itemJSON.transactions
           : itemJSON || [];
 
-      const items = [];
       const endIndex = Number(index) + Number(limit) + 1;
       const loopEndIndex = Math.min(txs.length, endIndex);
       for (let i = index; i < loopEndIndex; i++) {
@@ -343,12 +357,12 @@ class Explore extends Bot {
           : (txItem.hash)
             ? txItem.hash
             : txItem;
-        const findTx = await this.transactionModel.findOne({
+        const findTx = await _db.Transaction.findOne({
           where: { txid },
           attributes: ['transaction_id', 'currency_id', 'txid', 'timestamp', 'source_addresses', 'destination_addresses', 'amount', 'block', 'fee'],
           include: [
             {
-              model: this.currencyModel,
+              model: _db.Currency,
               attributes: ['blockchain_id', 'name', 'icon', 'symbol', 'decimals'],
             },
           ],
@@ -369,11 +383,6 @@ class Explore extends Bot {
         }
       }
 
-      const meta = {
-        hasNext: false,
-        nextIndex: 0,
-        count: txCount || 0,
-      };
       if (items.length > Number(limit)) {
         items.pop();
         meta.hasNext = true;
