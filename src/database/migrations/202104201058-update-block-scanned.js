@@ -81,6 +81,6 @@ module.exports = {
     queryInterface.removeColumn('BlockScanned', 'block_reward'),
     queryInterface.removeColumn('BlockScanned', 'block_fee'),
     queryInterface.removeColumn('BlockScanned', 'extra_data'),
-
+    queryInterface.removeColumn('BlockScanned', 'uncles'),
   ]).catch((e) => Promise.resolve(e)),
 };
