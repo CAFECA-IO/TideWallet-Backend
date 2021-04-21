@@ -72,12 +72,9 @@
   "scripts": {
     "start": "bin/main.js",
     "deploy": "ansible-playbook tool/playbook.yml",
-    "migrateDB": "./node_modules/.bin/sequelize db:migrate --env development --config ./env.js --migrations-path ./src/database/migrations --models-path ./src/database/models",
-    "deleteDB": "./node_modules/.bin/sequelize db:migrate:undo:all --env development --config ./env.js --migrations-path ./src/database/migrations --models-path ./src/database/models",
-    "undoDB": "./node_modules/.bin/sequelize db:migrate:undo --env development --config ./env.js --migrations-path ./src/database/migrations --models-path ./src/database/models",
-    "seedDB": "./node_modules/.bin/sequelize db:seed:all --env development --config ./env.js --seeders-path ./src/database/seeders",
-    "deleteSeedDB": "./node_modules/.bin/sequelize db:seed:undo:all --env development --config ./env.js --seeders-path ./src/database/seeders",
-    "undoSeedDB": "./node_modules/.bin/sequelize db:seed:undo --env development --config ./env.js --seeders-path ./src/database/seeders"
+    "migrateDB": "sh tool/scripts/migrateDB.sh",
+    "deleteDB": "sh tool/scripts/deleteDB.sh",
+    "undoDB": "sh tool/scripts/undoDB.sh"
   },
   "version": "1.0.0"
 }
