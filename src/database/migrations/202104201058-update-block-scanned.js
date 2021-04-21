@@ -63,6 +63,13 @@ module.exports = {
         type: Sequelize.STRING,
       },
     ),
+    queryInterface.addColumn(
+      'BlockScanned',
+      'uncles',
+      {
+        type: Sequelize.STRING,
+      },
+    ),
   ]).catch((e) => Promise.resolve(e)),
   down: (queryInterface, Sequelize) => Promise.all([
     queryInterface.removeColumn('BlockScanned', 'miner'),

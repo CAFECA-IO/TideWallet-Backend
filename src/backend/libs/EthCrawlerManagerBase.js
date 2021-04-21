@@ -140,6 +140,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           size: parseInt(blockData.size, 16),
           gas_used: parseInt(blockData.gasUsed, 16),
           extra_data: blockData.extraData,
+          uncles: JSON.stringify(blockData.uncles),
         });
       } else {
         const updateResult = await this.blockScannedModel.update({
@@ -155,6 +156,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           size: parseInt(blockData.size, 16),
           gas_used: parseInt(blockData.gasUsed, 16),
           extra_data: blockData.extraData,
+          uncles: JSON.stringify(blockData.uncles),
         }, {
           where: {
             blockScanned_id: insertResult.blockScanned_id,
