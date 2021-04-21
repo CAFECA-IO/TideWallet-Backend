@@ -1,4 +1,6 @@
+const BigNumber = require('bignumber.js');
 const ParserManagerBase = require('./ParserManagerBase');
+const Utils = require('./Utils');
 
 class EthParserManagerBase extends ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
@@ -11,6 +13,7 @@ class EthParserManagerBase extends ParserManagerBase {
     this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
 
     this.jobTimeout = 15 * 1000; // 15 sec
+    this.decimal = 18;
   }
 
   async init() {
@@ -65,6 +68,7 @@ class EthParserManagerBase extends ParserManagerBase {
     // 3. update failed unparsed retry
     // 4. remove parsed transaction from UnparsedTransaction table
     // 5. update pendingTransaction
+    // 6. update block reward
     try {
       const successParsedTxs = this.jobDoneList.filter((tx) => tx.success === true);
       const failedList = this.jobDoneList.filter((tx) => tx.success === false);
@@ -81,6 +85,30 @@ class EthParserManagerBase extends ParserManagerBase {
 
       // 5. update pendingTransaction
       await this.parsePendingTransaction();
+
+      // 6. update block reward
+      if (successParsedTxs.length > 0) {
+        // https://ethereum.stackexchange.com/questions/76259/how-to-know-the-current-block-reward-in-ethereum
+        // NOTICE static may change!!!!
+        // static = 2
+        // uncleReward = (numbersOfUncle) * (static/32)
+        // reward = static + fee + uncleReward
+        try {
+          const staticReward = new BigNumber(Utils.multipliedByDecimal(2, this.decimal));
+          const tx = JSON.parse(successParsedTxs[0].transaction);
+          const block = parseInt(tx.blockNumber, 16);
+          const totalFee = await this.getTotalFee(block);
+          const numbersOfUncle = await this.getUnclesCount(block);
+          // if find
+          if (totalFee.gte(new BigNumber(0)) && numbersOfUncle.gte(new BigNumber(0))) {
+            const uncleReward = numbersOfUncle.multipliedBy(staticReward).dividedBy(32);
+            const reward = staticReward.plus(totalFee).plus(uncleReward);
+            await this.updateBlockReward(block, reward.toFixed());
+          }
+        } catch (error) {
+          this.logger.error(`[${this.constructor.name}] update block reward error: ${error}`);
+        }
+      }
 
       this.createJob();
     } catch (error) {
@@ -112,10 +140,68 @@ class EthParserManagerBase extends ParserManagerBase {
     await this.createJob();
   }
 
+  async getTotalFee(block) {
+    this.logger.debug(`[${this.constructor.name}] getTotalFee(${block})`);
+    try {
+      const txs = await this.transactionModel.findAll({
+        where: { currency_id: this.currencyInfo.currency_id, block },
+        attributes: {
+          include: ['fee'],
+        },
+      });
+      if (txs && txs.length > 0) {
+        let total = new BigNumber(0);
+        for (const tx of txs) {
+          const bnFee = new BigNumber(tx.fee);
+          total = total.plus(bnFee);
+        }
+        return total;
+      }
+      return new BigNumber(-1);
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] getTotalFee(${block}) error: ${error}`);
+      return new BigNumber(-1);
+    }
+  }
+
+  async getUnclesCount(block) {
+    this.logger.debug(`[${this.constructor.name}] getUnclesCount(${block})`);
+    try {
+      const result = await this.blockScannedModel.findOne({
+        where: { blockchain_id: this.bcid, block },
+        attributes: {
+          include: ['uncles'],
+        },
+      });
+      if (result) {
+        const uncles = JSON.parse(result.uncles);
+        return new BigNumber(uncles.length);
+      }
+      return new BigNumber(-1);
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] getUnclesCount(${block}) error: ${error}`);
+      return new BigNumber(-1);
+    }
+  }
+
   async updateBalance() {
     this.logger.debug(`[${this.constructor.name}] updateBalance`);
     // do in api
     return Promise.resolve();
+  }
+
+  async updateBlockReward(block, reward) {
+    this.logger.debug(`[${this.constructor.name}] updateBlockReward(${block}, ${reward})`);
+    try {
+      await this.blockScannedModel.update({
+        block_reward: reward,
+      }, {
+        where: { blockchain_id: this.bcid, block },
+      });
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] updateBlockReward(${block}, ${reward}) error: ${error}`);
+      throw error;
+    }
   }
 
   async parsePendingTransaction() {
