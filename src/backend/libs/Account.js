@@ -604,7 +604,7 @@ class Account extends Bot {
               amount,
               symbol: findAccountCurrency.Currency.symbol, // "unit"
               direction: txInfo.direction === 0 ? 'send' : 'receive',
-              confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.TokenTransaction.Transaction.block,
+              confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.TokenTransaction.Transaction.block + 1,
               timestamp: txInfo.TokenTransaction.timestamp,
               source_addresses: Utils.formatAddressArray(txInfo.TokenTransaction.source_addresses),
               destination_addresses: Utils.formatAddressArray(txInfo.TokenTransaction.destination_addresses),
@@ -645,7 +645,7 @@ class Account extends Bot {
               amount,
               symbol: findAccountCurrency.Currency.symbol, // "unit"
               direction: txInfo.direction === 0 ? 'send' : 'receive',
-              confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.Transaction.block,
+              confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.Transaction.block + 1,
               timestamp: txInfo.Transaction.timestamp,
               source_addresses: Utils.formatAddressArray(txInfo.Transaction.source_addresses),
               destination_addresses: Utils.formatAddressArray(txInfo.Transaction.destination_addresses),
@@ -791,7 +791,7 @@ class Account extends Bot {
           payload: {
             txid: findTX.txid,
             status: findTX.result ? 'success' : 'failed',
-            confirmations: findTX.Currency.Blockchain.block - findTX.block,
+            confirmations: findTX.Currency.Blockchain.block - findTX.block + 1,
             amount,
             blockchain_id: findTX.Currency.Blockchain.blockchain_id,
             symbol: findTX.Currency.symbol,
