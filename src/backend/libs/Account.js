@@ -253,7 +253,7 @@ class Account extends Bot {
                 balance = balance.plus(new BigNumber(utxoItem.amount));
               }
             }
-            balance = balance.toFixed();
+            balance = Utils.dividedByDecimal(balance, accountCurrency.Currency.decimals);
           }
 
           payload.push({
@@ -360,7 +360,7 @@ class Account extends Bot {
               balance = balance.plus(new BigNumber(utxoItem.amount));
             }
           }
-          balance = balance.toFixed();
+          balance = Utils.dividedByDecimal(balance, accountCurrency.Currency.decimals);
         }
 
         if (accountCurrency.Currency && accountCurrency.Currency.type === 1) {
