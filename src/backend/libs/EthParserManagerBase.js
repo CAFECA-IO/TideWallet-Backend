@@ -219,7 +219,7 @@ class EthParserManagerBase extends ParserManagerBase {
       const pendingTxs = await this.getPendingTransactionFromDB();
 
       // 3. update result which is not in step 2 array
-      const missingTxs = transactions.filter((transaction) => (pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid) && this.block - transaction.block >= 6));
+      const missingTxs = transactions.filter((transaction) => (pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid) && this.block - transaction.block + 1 >= 6));
       for (const tx of missingTxs) {
         try {
           if (tx.block) {
