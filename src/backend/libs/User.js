@@ -5,6 +5,7 @@ const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Utils = require('./Utils');
 const Codes = require('./Codes');
+const Fcm = require('./Fcm');
 
 class User extends Bot {
   constructor() {
@@ -30,6 +31,10 @@ class User extends Bot {
       this.userAppModel = this.database.db.UserApp;
       this.sequelize = this.database.db.sequelize;
       this.Sequelize = this.database.db.Sequelize;
+      return this;
+    }).then(() => {
+      this.fcm = Fcm.getInstance({ logger: this.logger });
+      console.log('\x1b[1m\x1b[32mFCM  \x1b[0m\x1b[21m init success');
       return this;
     });
   }
@@ -76,7 +81,7 @@ class User extends Bot {
 
   async UserRegist({ body }) {
     const {
-      wallet_name, extend_public_key, install_id, app_uuid,
+      wallet_name, extend_public_key, install_id, app_uuid, fcm_token,
     } = body;
 
     if (!Utils.validateString(wallet_name)
@@ -105,6 +110,8 @@ class User extends Bot {
             app_uuid,
           },
         });
+
+        await this.fcm.registAccountFCMToken(findUser.user_id, fcm_token);
 
         const payload = await Utils.generateToken({ userID: findUser.user_id });
         return new ResponseFormat({ message: 'User Regist', payload });
@@ -184,6 +191,8 @@ class User extends Bot {
 
         return insertUser.user_id;
       });
+
+      await this.fcm.registAccountFCMToken(userID, fcm_token);
 
       const payload = await Utils.generateToken({ userID });
       return new ResponseFormat({ message: 'User Regist', payload });
