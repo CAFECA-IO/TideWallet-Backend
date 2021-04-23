@@ -97,11 +97,28 @@ class BtcParserBase extends ParserBase {
     const destination_addresses = [];
     let note = '';
 
-    for (const inputData of tx.vin) {
-      // if coinbase, continue
+    const vins = [];
+    const vinPerCycle = 5;
+    let txInfos = [];
+    for (let i = 0; i < tx.vin.length; i += vinPerCycle) {
+      const arr = [];
+      const cycleVin = tx.vin.slice(i, i + vinPerCycle);
+      for (const inputData of cycleVin) {
+        // if coinbase, continue
+        if (inputData.txid) {
+          arr.push(BtcParserBase.getTransactionByTxidFromPeer.call(this, inputData.txid));
+          vins.push(inputData);
+        }
+      }
+      const result = await Promise.all(arr).catch((error) => Promise.reject(error));
+      if (!Array.isArray(result)) { throw new Error(`parseBTCTxAmounts something wrong ${result}`); }
+      txInfos = txInfos.concat(result);
+    }
+    if (txInfos.length !== vins.length) { throw new Error('parseBTCTxAmounts something wrong'); }
+    for (let i = 0; i < vins.length; i++) {
+      const inputData = vins[i];
+      const txInfo = txInfos[i];
       if (inputData.txid) {
-        // TODO: change use promise all
-        const txInfo = await BtcParserBase.getTransactionByTxidFromPeer.call(this, inputData.txid);
         if (txInfo && txInfo.vout && txInfo.vout.length > inputData.vout) {
           if (txInfo.vout[inputData.vout].scriptPubKey && txInfo.vout[inputData.vout].scriptPubKey.addresses) {
             source_addresses.push({

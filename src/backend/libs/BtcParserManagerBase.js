@@ -299,7 +299,7 @@ class BtcParserManagerBase extends ParserManagerBase {
       const pendingTxids = await this.getPendingTransactionFromDB();
 
       // 3. update result which is not in step 2 array
-      const missingTxs = transactions.filter((transaction) => (pendingTxids.every((pendingTxid) => pendingTxid !== transaction.txid) && this.block - transaction.block >= 6));
+      const missingTxs = transactions.filter((transaction) => (pendingTxids.every((pendingTxid) => pendingTxid !== transaction.txid) && this.block - transaction.block + 1 >= 6));
       for (const tx of missingTxs) {
         try {
           if (tx.block) {

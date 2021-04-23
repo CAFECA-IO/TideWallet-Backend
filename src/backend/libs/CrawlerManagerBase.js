@@ -253,7 +253,7 @@ class CrawlerManagerBase {
     // 5-1. if fail recursivly rollback
     try {
       const blockScannedData = await this.getBlockScanned(block);
-      if (!blockScannedData.timestamp) throw new Error('roll back failed, blockScanned not found');
+      if (!blockScannedData || !blockScannedData.timestamp) throw new Error('roll back failed, blockScanned not found');
 
       const prevBlockHeight = block - 1;
 
@@ -264,7 +264,7 @@ class CrawlerManagerBase {
       await this.updateBlockHeight(prevBlockHeight);
 
       if (!await this.checkBlockHash(prevBlockHeight)) {
-        return await this.rollbackBlock(prevBlockHeight);
+        return await this.rollbackBlock(prevBlockHeight).catch((error) => error);
       }
       return prevBlockHeight;
     } catch (error) {

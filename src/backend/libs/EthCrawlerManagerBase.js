@@ -233,7 +233,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           writeData,
         );
         this.stopParser();
-        this.dbBlock = await this.rollbackBlock(this.dbBlock);
+        this.dbBlock = await this.rollbackBlock(this.dbBlock).catch((error) => error);
         this.startParser();
       }
 
