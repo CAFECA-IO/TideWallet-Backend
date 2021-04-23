@@ -111,7 +111,7 @@ class User extends Bot {
           },
         });
 
-        await this.fcm.registAccountFCMToken(findUser.user_id, fcm_token);
+        if (fcm_token) await this.fcm.registAccountFCMToken(findUser.user_id, fcm_token);
 
         const payload = await Utils.generateToken({ userID: findUser.user_id });
         return new ResponseFormat({ message: 'User Regist', payload });
