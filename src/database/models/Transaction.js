@@ -64,5 +64,6 @@ module.exports = (sequelize, DataTypes) => sequelize.define('Transaction', {
       fields: ['txid'],
     },
     { fields: ['currency_id', 'result'] },
+    { fields: ['currency_id', 'block'] },
   ],
 });

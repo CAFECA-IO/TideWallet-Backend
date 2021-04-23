@@ -3,6 +3,7 @@ const fs = require('fs');
 
 const dvalue = require('dvalue');
 
+const { default: BigNumber } = require('bignumber.js');
 const CrawlerManagerBase = require('./CrawlerManagerBase');
 const Utils = require('./Utils');
 const BtcParserBase = require('./BtcParserBase');
@@ -12,6 +13,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     super(blockchainId, database, logger);
     this.options = {};
     this.syncInterval = 450000;
+    this.decimal = 8;
   }
 
   async init() {
@@ -109,6 +111,21 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     return Promise.reject();
   }
 
+  async blockStatsFromPeer(block) {
+    this.logger.debug(`[${this.constructor.name}] blockStatsFromPeer(${block})`);
+    const type = 'getblockstats';
+    const options = dvalue.clone(this.options);
+    options.data = this.constructor.cmd({ type, block });
+    const checkId = options.data.id;
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) return Promise.reject();
+      return Promise.resolve(data.result);
+    }
+    this.logger.error(`[${this.constructor.name}] blockStatsFromPeer(${block}) not found`);
+    return Promise.reject();
+  }
+
   async getTransactionByTxidFromPeer(txid) {
     this.logger.debug(`[${this.constructor.name}] getTransactionByTxidFromPeer(${txid})`);
     const type = 'getTransaction';
@@ -139,6 +156,8 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
         txids.push(tx.txid);
       }
 
+      const blockStats = await this.blockStatsFromPeer(blockData.height);
+
       let insertResult = await this.blockScannedModel.findOne({
         where: { blockchain_id: this.bcid, block: blockData.height },
       });
@@ -150,6 +169,13 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           timestamp: blockData.time,
           result: JSON.stringify(txids),
           transaction_count: txids.length,
+          miner: txs[0].vout[0].scriptPubKey.addresses[0],
+          difficulty: new BigNumber(blockData.difficulty).toFixed(),
+          transactions_root: blockData.merkleroot,
+          size: blockData.size,
+          transaction_volume: new BigNumber(blockStats.total_out).toFixed(),
+          block_reward: Utils.multipliedByDecimal(txs[0].vout[0].value, this.decimal), // ++ not the same as blockchain.com
+          block_fee: new BigNumber(blockStats.totalfee).toFixed(),
         });
       } else {
         const updateResult = await this.blockScannedModel.update({
@@ -159,6 +185,13 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           timestamp: blockData.time,
           result: JSON.stringify(txids),
           transaction_count: txids.length,
+          miner: txs[0].vout[0].scriptPubKey.addresses[0],
+          difficulty: new BigNumber(blockData.difficulty).toFixed(),
+          transactions_root: blockData.merkleroot,
+          size: blockData.size,
+          transaction_volume: new BigNumber(blockStats.total_out).toFixed(),
+          block_reward: Utils.multipliedByDecimal(txs[0].vout[0].value, this.decimal), // ++ not the same as blockchain.com
+          block_fee: new BigNumber(blockStats.totalfee).toFixed(),
         }, {
           where: {
             blockScanned_id: insertResult.blockScanned_id,
@@ -231,7 +264,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           writeData,
         );
         this.stopParser();
-        this.dbBlock = await this.rollbackBlock(this.dbBlock);
+        this.dbBlock = await this.rollbackBlock(this.dbBlock).catch((error) => error);
         this.startParser();
       }
 
@@ -448,6 +481,14 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           jsonrpc: '1.0',
           method: 'getblock',
           params: [blockHash, 2],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getblockstats':
+        result = {
+          jsonrpc: '1.0',
+          method: 'getblockstats',
+          params: [block],
           id: dvalue.randomID(),
         };
         break;
