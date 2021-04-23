@@ -47,10 +47,10 @@ class Fcm {
       });
   }
 
-  async messageToUserTopic(userID, notification) {
+  async messageToUserTopic(userID, notification, data) {
     const messageObj = {
       notification,
-      data: notification,
+      data,
       topic: userID,
       android: {
         ttl: 1000,

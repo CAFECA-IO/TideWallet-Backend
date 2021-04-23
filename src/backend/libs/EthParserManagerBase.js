@@ -289,6 +289,8 @@ class EthParserManagerBase extends ParserManagerBase {
 
             if (findAccountCurrency) {
               await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.user_id, {
+                title: 'tx is confirmations',
+              }, {
                 blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
                 eventType: 'TRANSACTION',
                 currencyId: this.currencyInfo.currency_id,

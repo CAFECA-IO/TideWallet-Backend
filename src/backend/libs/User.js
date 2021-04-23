@@ -259,6 +259,24 @@ class User extends Bot {
       throw e;
     }
   }
+
+  async test({ token }) {
+    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+    const tokenInfo = await Utils.verifyToken(token);
+    console.log('tokenInfo.userID:', tokenInfo.userID);
+    await this.fcm.messageToUserTopic(tokenInfo.userID, {
+      title: 'tx is confirmations',
+    }, {
+      blockchainId: '80000001',
+      eventType: 'TRANSACTION',
+      currencyId: '8e1ea17f-38f5-42ab-a24b-82bf8abc851b',
+      data: {
+        account_id: '8e1ea17f-38f5-42ab-a24b-82bf8abc851b',
+        txid: '0x4d8db81bfa34f9e97a00a51fad8e3a5ddc758f2827dea2352fc928b1c44b7fbd',
+        result: Math.random() < 0.5,
+      },
+    });
+  }
 }
 
 module.exports = User;
