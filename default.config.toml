@@ -218,6 +218,5 @@ pathname = [
   "post | /api/v1/explore/search/:search_string | Bot.Explore.Search",
 
   # system
-  "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets",
-  "patch | /api/v1/system/migrationTITAN | Bot.Blockchain.MigrationTITAN",
+  "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets"
 ]

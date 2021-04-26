@@ -961,68 +961,6 @@ CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
     }
     return result;
   }
-
-  async MigrationTITAN() {
-    // create all user titan account
-
-    const blockchain_id = '80001F51';
-    const currency_id = '7a55ef8a-a668-11eb-bcbc-0242ac130002';
-    const coinType = 8017;
-    const DBName = 'titan';
-    const anotherDBName = 'cafeca';
-
-    const findAllUser = await this.defaultDBInstance.User.findAll({
-      attributes: ['user_id'],
-    });
-
-    for (let i = 0; i < findAllUser.length; i++) {
-      const user = findAllUser[i];
-      const account_id = uuidv4();
-
-      const _db = this.database.db[DBName];
-      const _db2 = this.database.db[anotherDBName];
-      // find account another extend_public_key
-      const findAnotherAccount = await _db2.Account.findOne({
-        where: { user_id: user.user_id },
-        attributes: ['extend_public_key'],
-      });
-
-      // create Account
-      await _db.Account.create({
-        account_id,
-        user_id: user.user_id,
-        blockchain_id,
-        purpose: 3324,
-        curve_type: 0,
-        extend_public_key: findAnotherAccount.extend_public_key,
-        regist_block_num: 0,
-      });
-
-      const hdWallet = new HDWallet({ extendPublicKey: findAnotherAccount.extend_public_key });
-
-      // create AccountCurrency
-      await _db.AccountCurrency.create({
-        accountCurrency_id: uuidv4(),
-        account_id,
-        currency_id,
-        balance: '0',
-        number_of_external_key: '0',
-        number_of_internal_key: '0',
-      });
-
-      const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: blockchain_id });
-
-      // create AccountAddress
-      await _db.AccountAddress.create({
-        accountAddress_id: uuidv4(),
-        account_id,
-        chain_index: 0,
-        key_index: 0,
-        public_key: wallet.publicKey,
-        address: wallet.address,
-      });
-    }
-  }
 }
 
 module.exports = Blockchain;
