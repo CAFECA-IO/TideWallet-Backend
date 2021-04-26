@@ -211,7 +211,6 @@ class Account extends Bot {
           let { balance } = accountCurrency;
           const { currency_id, accountCurrency_id } = accountCurrency;
           // find network_id
-          console.log('account.blockchain_id:', account.blockchain_id);
           const network_id = Utils.blockchainIDToNetworkID(account.blockchain_id);
 
           // find Currency publish
@@ -233,11 +232,8 @@ class Account extends Bot {
                   where: { account_id: account.account_id },
                   attributes: ['address'],
                 });
-                console.log('findAddress:', !!findAddress);
                 if (findAddress) {
-                  console.log('account.blockchain_id, findAddress.address, decimals:', account.blockchain_id, findAddress.address, decimals);
                   balance = await Utils.ethGetBalanceByAddress(account.blockchain_id, findAddress.address, decimals);
-                  console.log('balance:', balance);
 
                   await _db.AccountCurrency.update(
                     { balance, balance_sync_block: findBlockHeight.block },
@@ -249,7 +245,6 @@ class Account extends Bot {
               }
             }
 
-            console.log('account.blockchain_id:', account.blockchain_id);
             payload.push({
               account_id: accountCurrency_id,
               blockchain_id: account.blockchain_id,
@@ -336,7 +331,6 @@ class Account extends Bot {
               attributes: ['address'],
             });
             if (findAddress) {
-              console.log('findCurrency.contract:', findCurrency.contract);
               if (findCurrency.contract) {
                 balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
               } else {
