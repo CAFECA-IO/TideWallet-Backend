@@ -161,6 +161,14 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       let insertResult = await this.blockScannedModel.findOne({
         where: { blockchain_id: this.bcid, block: blockData.height },
       });
+      let miner = '';
+      const coinbaseTxVout = txs[0].vout;
+      for (const vout of coinbaseTxVout) {
+        if (vout.scriptPubKey.addresses) {
+          [miner] = vout.scriptPubKey.addresses;
+          break;
+        }
+      }
       if (!insertResult) {
         insertResult = await this.blockScannedModel.create({
           blockchain_id: this.bcid,
@@ -169,7 +177,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           timestamp: blockData.time,
           result: JSON.stringify(txids),
           transaction_count: txids.length,
-          miner: txs[0].vout[0].scriptPubKey.addresses[0],
+          miner,
           difficulty: new BigNumber(blockData.difficulty).toFixed(),
           transactions_root: blockData.merkleroot,
           size: blockData.size,
@@ -185,7 +193,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           timestamp: blockData.time,
           result: JSON.stringify(txids),
           transaction_count: txids.length,
-          miner: txs[0].vout[0].scriptPubKey.addresses[0],
+          miner,
           difficulty: new BigNumber(blockData.difficulty).toFixed(),
           transactions_root: blockData.merkleroot,
           size: blockData.size,
@@ -374,7 +382,11 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
             });
           }
         }
-        await this.unparsedTxModel.bulkCreate(insertTx);
+        const createResult = await this.unparsedTxModel.bulkCreate(insertTx).catch((error) => error);
+        if (!Array.isArray(createResult)) {
+          console.log(createResult);
+          throw new Error(createResult);
+        }
         const step3 = new Date().getTime();
         this.logger.log(`[${this.constructor.name}] syncBlock ${syncBlock} step:3 insertUnparsedTransaction: ${(step3 - step2) / 1000}sec`);
 
