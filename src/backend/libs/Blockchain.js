@@ -965,10 +965,11 @@ CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
   async MigrationTITAN() {
     // create all user titan account
 
-    const blockchain_id = '';
-    const currency_id = '';
-    const coinType = '';
-    const DBName = '';
+    const blockchain_id = '80001F51';
+    const currency_id = '7a55ef8a-a668-11eb-bcbc-0242ac130002';
+    const coinType = 8017;
+    const DBName = 'titan';
+    const anotherDBName = 'cafeca';
 
     const findAllUser = await this.defaultDBInstance.User.findAll({
       attributes: ['user_id'],
@@ -979,14 +980,15 @@ CFC_UNPARSEBLOCK ${data.payload.CFC.unParseBlock}
       const account_id = uuidv4();
 
       const _db = this.database.db[DBName];
+      const _db2 = this.database.db[anotherDBName];
       // find account another extend_public_key
-      const findAnotherAccount = await _db.Account.findOne({
+      const findAnotherAccount = await _db2.Account.findOne({
         where: { user_id: user.user_id },
         attributes: ['extend_public_key'],
       });
 
       // create Account
-      _db.Account.create({
+      await _db.Account.create({
         account_id,
         user_id: user.user_id,
         blockchain_id,
