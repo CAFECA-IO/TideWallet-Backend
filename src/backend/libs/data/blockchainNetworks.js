@@ -75,12 +75,12 @@ module.exports = {
     start_block: 9722974,
     avg_fee: '0',
   },
-  cafeca: {
-    db_name: 'cafeca',
-    blockchain_id: '80000CFC',
+  titan: {
+    db_name: 'titan',
+    blockchain_id: '80001F51',
     name: 'TITAN',
-    coin_type: 3324,
-    network_id: 3324,
+    coin_type: 8017,
+    network_id: 8017,
     publish: true,
     description: 'TITAN description',
     block: 0,
@@ -91,7 +91,7 @@ module.exports = {
     pubKeyHash: 0,
     scriptHash: 0,
     wif: 0,
-    start_block: 27000,
+    start_block: 0,
     avg_fee: '0',
   },
 };
