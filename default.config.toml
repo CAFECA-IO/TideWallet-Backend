@@ -194,5 +194,6 @@ pathname = [
   "post | /api/v1/explore/search/:search_string | Bot.Explore.Search",
 
   # system
-  "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets"
+  "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets",
+  "PATH | /api/v1/system/migrationTITAN | Bot.Blockchain.MigrationTITAN",
 ]
