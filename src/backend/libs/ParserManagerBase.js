@@ -85,14 +85,14 @@ class ParserManagerBase {
   }
 
   async blockDataFromDB(block_hash) {
-    this.logger.debug(`[${this.constructor.name}] blockNumberFromDB`);
+    this.logger.debug(`[${this.constructor.name}] blockDataFromDB`);
     try {
       const result = await this.blockScannedModel.findOne({
         where: { blockchain_id: this.bcid, block_hash },
       });
       return result;
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
+      this.logger.error(`[${this.constructor.name}] blockDataFromDB error ${error}`);
       return 0;
     }
   }

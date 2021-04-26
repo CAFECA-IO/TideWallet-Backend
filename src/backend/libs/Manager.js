@@ -175,8 +175,8 @@ class Manager extends Bot {
           result.push(new CfcParserManager(this.config, this.database.db.cafeca, this.logger));
           break;
         case 'titan':
-          result.push(new TtnCrawlerManager(this.config, this.database, this.logger));
-          result.push(new TtnParserManager(this.config, this.database, this.logger));
+          result.push(new TtnCrawlerManager(this.config, this.database.db.titan, this.logger));
+          result.push(new TtnParserManager(this.config, this.database.db.titan, this.logger));
           break;
         default:
       }

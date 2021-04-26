@@ -219,5 +219,5 @@ pathname = [
 
   # system
   "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets",
-  "PATH | /api/v1/system/migrationTITAN | Bot.Blockchain.MigrationTITAN",
+  "patch | /api/v1/system/migrationTITAN | Bot.Blockchain.MigrationTITAN",
 ]

@@ -79,7 +79,7 @@ class CrawlerManagerBase {
       });
       return result;
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] blockNumberFromDB error ${error}`);
+      this.logger.error(`[${this.constructor.name}] getBlockInfo error ${error}`);
       return {};
     }
   }
