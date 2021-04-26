@@ -154,6 +154,21 @@ pending = 15000
     [database.cafeca.pool]
     max = 10
 
+  [database.titan]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.titan.dialectOptions]
+    connectTimeout = 3000
+    [database.titan.pool]
+    max = 10
+
 [jwt]
 secret = ""
 
