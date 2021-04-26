@@ -562,7 +562,7 @@ class Account extends Bot {
   }
 
   async _findAccountTXs({
-    findAccountCurrency, txs, chain_index, key_index,
+    findAccountCurrency, txs, chain_index, key_index, timestamp, limit, meta,
   }) {
     const isToken = findAccountCurrency.Currency.type === 2;
     const findAccountAddress = await this.accountAddressModel.findOne({
@@ -576,17 +576,29 @@ class Account extends Bot {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
           },
+          limit: Number(limit) + 1,
           include: [
             {
               model: this.tokenTransactionModel,
               include: [
                 {
                   model: this.transactionModel,
+                  where: {
+                    timestamp: { [this.Sequelize.Op.lt]: timestamp },
+                  },
                 },
               ],
             },
           ],
         });
+
+        const count = await this.addressTokenTransactionModel.count({
+          where: {
+            currency_id: findAccountCurrency.currency_id,
+            accountAddress_id: findAccountAddress.accountAddress_id,
+          },
+        });
+        meta.count += count;
         if (findTxByAddress && findTxByAddress.length > 0) {
           for (let j = 0; j < findTxByAddress.length; j++) {
             const txInfo = findTxByAddress[j];
@@ -621,12 +633,23 @@ class Account extends Bot {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
           },
+          limit: Number(limit) + 1,
           include: [
             {
               model: this.transactionModel,
+              where: {
+                timestamp: { [this.Sequelize.Op.lt]: timestamp },
+              },
             },
           ],
         });
+        const count = await this.addressTransactionModel.count({
+          where: {
+            currency_id: findAccountCurrency.currency_id,
+            accountAddress_id: findAccountAddress.accountAddress_id,
+          },
+        });
+        meta.count += count;
         if (findTxByAddress) {
           for (let j = 0; j < findTxByAddress.length; j++) {
             const txInfo = findTxByAddress[j];
@@ -695,9 +718,10 @@ class Account extends Bot {
     return result;
   }
 
-  async ListTransactions({ params, token }) {
+  async ListTransactions({ params, token, query }) {
     // account_id -> accountCurrency_id
     const { account_id } = params;
+    const { timestamp = Math.floor(Date.now() / 1000), limit = 20 } = query;
 
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
     const tokenInfo = await Utils.verifyToken(token);
@@ -729,30 +753,43 @@ class Account extends Bot {
 
       const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
       const result = [];
+      const count = 0;
+      const meta = {
+        hasNext: false,
+        timestamp: 0,
+        count,
+      };
+
       // find external address txs
       for (let i = 0; i <= number_of_external_key; i++) {
         // find all address
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, chain_index: 0, key_index: i,
+          findAccountCurrency, txs: result, chain_index: 0, key_index: i, timestamp, limit, meta,
         });
       }
 
       // find internal address txs
       for (let i = 0; i <= number_of_internal_key; i++) {
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, chain_index: 1, key_index: i,
+          findAccountCurrency, txs: result, chain_index: 1, key_index: i, timestamp, limit, meta,
         });
       }
 
       // merge internal txs
-      const payload = this._mergeInternalTxs({ txs: result });
+      const items = this._mergeInternalTxs({ txs: result });
 
       // sort by timestamps
-      payload.sort((a, b) => b.timestamp - a.timestamp);
+      items.sort((a, b) => b.timestamp - a.timestamp);
+
+      if (items.length > limit) {
+        meta.hasNext = true;
+        meta.timestamp = items[limit].timestamp;
+      }
 
       return new ResponseFormat({
         message: 'List Transactions',
-        payload,
+        items,
+        meta,
       });
     } catch (e) {
       this.logger.error('ListTransactions e:', e);
