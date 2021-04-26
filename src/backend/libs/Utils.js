@@ -798,6 +798,7 @@ class Utils {
 
   static async ethGetBalanceByAddress(blockchain_id, address, decimals = 18) {
     const blockchainConfig = this.getBlockchainConfig(blockchain_id);
+    console.log('blockchainConfig:', blockchainConfig);
     if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
     const option = { ...blockchainConfig };

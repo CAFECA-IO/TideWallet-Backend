@@ -211,6 +211,7 @@ class Account extends Bot {
           let { balance } = accountCurrency;
           const { currency_id, accountCurrency_id } = accountCurrency;
           // find network_id
+          console.log('account.blockchain_id:', account.blockchain_id);
           const network_id = Utils.blockchainIDToNetworkID(account.blockchain_id);
 
           // find Currency publish
@@ -224,7 +225,7 @@ class Account extends Bot {
           });
           if (findCurrency) {
             const { publish = false, decimals } = findCurrency;
-            if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C' || account.blockchain_id === '80000CFC') {
+            if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C' || account.blockchain_id === '80000CFC' || account.blockchain_id === '80001F51') {
             // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
               const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: account.blockchain_id } });
               if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
@@ -232,8 +233,11 @@ class Account extends Bot {
                   where: { account_id: account.account_id },
                   attributes: ['address'],
                 });
+                console.log('findAddress:', !!findAddress);
                 if (findAddress) {
+                  console.log('account.blockchain_id, findAddress.address, decimals:', account.blockchain_id, findAddress.address, decimals);
                   balance = await Utils.ethGetBalanceByAddress(account.blockchain_id, findAddress.address, decimals);
+                  console.log('balance:', balance);
 
                   await _db.AccountCurrency.update(
                     { balance, balance_sync_block: findBlockHeight.block },
@@ -245,6 +249,7 @@ class Account extends Bot {
               }
             }
 
+            console.log('account.blockchain_id:', account.blockchain_id);
             payload.push({
               account_id: accountCurrency_id,
               blockchain_id: account.blockchain_id,
@@ -260,7 +265,8 @@ class Account extends Bot {
 
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
-      this.logger.error('AccountList e:', e);
+      console.log(e);
+      this.logger.error('AccountList e:', JSON.stringify(e));
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
@@ -319,7 +325,7 @@ class Account extends Bot {
         });
 
         let { balance = '0' } = accountCurrency;
-        if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC') {
+        if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
           // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
           const DBName = Utils.blockchainIDToDBName(findAccount.blockchain_id);
           const _db = this.database.db[DBName];
