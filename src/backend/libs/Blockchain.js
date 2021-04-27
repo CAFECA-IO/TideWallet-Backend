@@ -482,6 +482,7 @@ class Blockchain extends Bot {
         case '8000003C':
         case '8000025B':
         case '80000CFC':
+        case '80001F51':
           option = { ...blockchainConfig };
           option.data = {
             jsonrpc: '2.0',

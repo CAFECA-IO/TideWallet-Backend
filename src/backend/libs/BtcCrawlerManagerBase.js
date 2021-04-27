@@ -381,6 +381,21 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
               retry: 0,
             });
           }
+
+          // find new receive tx
+          if (txs[j].vout && txs[j].vout.length > 0) {
+            for (let k = 0; k < txs[j].vout.length; k++) {
+              const address = txs[j].vout[k];
+
+              const findNewReceiveTX = await this.accountAddressModel.findOne({
+                where: { address },
+              });
+              if (findNewReceiveTX) {
+                // push notification
+
+              }
+            }
+          }
         }
         const createResult = await this.unparsedTxModel.bulkCreate(insertTx).catch((error) => error);
         if (!Array.isArray(createResult)) {
