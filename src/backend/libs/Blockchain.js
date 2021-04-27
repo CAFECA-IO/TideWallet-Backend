@@ -335,7 +335,7 @@ class Blockchain extends Bot {
       if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
       let gasLimit = '0';
-      if (blockchain_id === '8000003C' || blockchain_id === '8000025B' || blockchain_id === '80000CFC') {
+      if (blockchain_id === '8000003C' || blockchain_id === '8000025B' || blockchain_id === '80000CFC' || blockchain_id === '80001F51') {
         const option = { ...blockchainConfig };
         option.data = {
           jsonrpc: '2.0',
