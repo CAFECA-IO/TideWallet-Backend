@@ -2,18 +2,21 @@ const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue');
 const ParserManagerBase = require('./ParserManagerBase');
 const Utils = require('./Utils');
+const Fcm = require('./Fcm');
 
 class BtcParserManagerBase extends ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
     super(blockchainId, config, database, logger);
 
     this.utxoModel = this.database.UTXO;
+    this.accountModel = this.database.Account;
     this.accountAddressModel = this.database.AccountAddress;
     this.receiptModel = this.database.Receipt;
     this.tokenTransactionModel = this.database.TokenTransaction;
     this.addressTokenTransactionModel = this.database.AddressTokenTransaction;
     this.accountCurrencyModel = this.database.AccountCurrency;
     this.addressTransactionModel = this.database.AddressTransaction;
+
     this.options = {};
     this.syncInterval = config.syncInterval.pending ? config.syncInterval.pending : 15000;
     this.decimal = 8;
@@ -31,6 +34,7 @@ class BtcParserManagerBase extends ParserManagerBase {
     }, this.syncInterval);
 
     this.doParse();
+    this.fcm = Fcm.getInstance({ logger: console });
     return this;
   }
 
@@ -302,6 +306,7 @@ class BtcParserManagerBase extends ParserManagerBase {
       const missingTxs = transactions.filter((transaction) => (pendingTxids.every((pendingTxid) => pendingTxid !== transaction.txid) && this.block - transaction.block + 1 >= 6));
       for (const tx of missingTxs) {
         try {
+          let _result = false;
           if (tx.block) {
             await this.transactionModel.update(
               {
@@ -314,6 +319,7 @@ class BtcParserManagerBase extends ParserManagerBase {
                 },
               },
             );
+            _result = true;
           } else {
             const peerTx = await this.getTransactionByTxidFromPeer(tx.txid).catch((error) => error);
             if (peerTx.blockhash) {
@@ -321,6 +327,7 @@ class BtcParserManagerBase extends ParserManagerBase {
               tx.block = blockData.block;
               tx.timestamp = peerTx.blocktime;
               tx.result = tx.confirmations >= 6 ? true : null;
+              _result = tx.result;
             } else if (peerTx.code === -5) {
               tx.result = false;
             }
@@ -351,13 +358,42 @@ class BtcParserManagerBase extends ParserManagerBase {
               },
               {
                 model: this.accountAddressModel,
-                attributes: ['account_id'],
+                attributes: ['account_id', 'user_id'],
+                include: [
+                  {
+                    model: this.accountModel,
+                    attributes: ['blockchain_id'],
+                  },
+                ],
               },
             ],
             attributes: ['addressTransaction_id', 'currency_id', 'transaction_id'],
           });
           if (findAddressTransaction) {
             this.updateBalanceAccounts[findAddressTransaction.AccountAddress.account_id] = { retryCount: 0 };
+
+            // fcm confirmations update
+            const findAccountCurrency = await this.accountCurrencyModel.findOne({
+              where: {
+                account_id: findAddressTransaction.AccountAddress.account_id,
+                currency_id: this.currencyInfo.currency_id,
+              },
+              attributes: ['accountCurrency_id'],
+            });
+            if (findAccountCurrency) {
+              await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.user_id, {
+                title: 'tx is confirmations',
+              }, {
+                blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
+                eventType: 'TRANSACTION',
+                currencyId: this.currencyInfo.currency_id,
+                data: {
+                  account_id: findAccountCurrency.accountCurrency_id,
+                  txid: tx.txid,
+                  result: _result,
+                },
+              });
+            }
           }
         } catch (error) {
           this.logger.error(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.txid}) error: ${error}`);

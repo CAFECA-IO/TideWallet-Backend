@@ -218,5 +218,8 @@ pathname = [
   "post | /api/v1/explore/search/:search_string | Bot.Explore.Search",
 
   # system
-  "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets"
+  "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets",
+
+  # tmp
+  "post | /api/v1/test | Bot.User.test"
 ]

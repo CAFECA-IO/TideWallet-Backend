@@ -1,6 +1,7 @@
 const BigNumber = require('bignumber.js');
 const ParserManagerBase = require('./ParserManagerBase');
 const Utils = require('./Utils');
+const Fcm = require('./Fcm');
 
 class EthParserManagerBase extends ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
@@ -24,6 +25,8 @@ class EthParserManagerBase extends ParserManagerBase {
     }, this.syncInterval);
 
     this.doParse();
+
+    this.fcm = Fcm.getInstance({ logger: console });
     return this;
   }
 
@@ -222,6 +225,7 @@ class EthParserManagerBase extends ParserManagerBase {
       const missingTxs = transactions.filter((transaction) => (pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid) && this.block - transaction.block + 1 >= 6));
       for (const tx of missingTxs) {
         try {
+          let _result = false;
           if (tx.block) {
             await this.transactionModel.update(
               {
@@ -234,6 +238,7 @@ class EthParserManagerBase extends ParserManagerBase {
                 },
               },
             );
+            _result = true;
           } else {
             await this.transactionModel.update(
               {
@@ -246,6 +251,56 @@ class EthParserManagerBase extends ParserManagerBase {
                 },
               },
             );
+            _result = false;
+          }
+
+          const findAddressTransaction = await this.addressTransactionModel.findOne({
+            include: [
+              {
+                model: this.transactionModel,
+                attributes: ['transaction_id', 'txid', 'currency_id'],
+                where: {
+                  currency_id: this.currencyInfo.currency_id,
+                  txid: tx.txid,
+                },
+              },
+              {
+                model: this.accountAddressModel,
+                attributes: ['account_id', 'user_id'],
+                include: [
+                  {
+                    model: this.accountModel,
+                    attributes: ['blockchain_id'],
+                  },
+                ],
+              },
+            ],
+            attributes: ['addressTransaction_id', 'currency_id', 'transaction_id'],
+          });
+          if (findAddressTransaction) {
+            // fcm confirmations update
+            const findAccountCurrency = await this.accountCurrencyModel.findOne({
+              where: {
+                account_id: findAddressTransaction.AccountAddress.account_id,
+                currency_id: this.currencyInfo.currency_id,
+              },
+              attributes: ['accountCurrency_id'],
+            });
+
+            if (findAccountCurrency) {
+              await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.user_id, {
+                title: 'tx is confirmations',
+              }, {
+                blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
+                eventType: 'TRANSACTION',
+                currencyId: this.currencyInfo.currency_id,
+                data: {
+                  account_id: findAccountCurrency.accountCurrency_id,
+                  txid: tx.txid,
+                  result: _result,
+                },
+              });
+            }
           }
         } catch (error) {
           this.logger.error(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.hash}) error: ${error}`);

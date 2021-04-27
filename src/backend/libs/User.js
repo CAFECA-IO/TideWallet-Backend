@@ -7,6 +7,7 @@ const Utils = require('./Utils');
 const Codes = require('./Codes');
 const DBOperator = require('./DBOperator');
 const blockchainNetworks = require('./data/blockchainNetworks');
+const Fcm = require('./Fcm');
 
 class User extends Bot {
   constructor() {
@@ -26,6 +27,10 @@ class User extends Bot {
 
       this.sequelize = this.defaultDBInstance.sequelize;
       this.Sequelize = this.defaultDBInstance.Sequelize;
+      return this;
+    }).then(() => {
+      this.fcm = Fcm.getInstance({ logger: this.logger });
+      console.log('\x1b[1m\x1b[32mFCM  \x1b[0m\x1b[21m init success');
       return this;
     });
   }
@@ -72,7 +77,7 @@ class User extends Bot {
 
   async UserRegist({ body }) {
     const {
-      wallet_name, extend_public_key, install_id, app_uuid,
+      wallet_name, extend_public_key, install_id, app_uuid, fcm_token,
     } = body;
 
     if (!Utils.validateString(wallet_name)
@@ -101,6 +106,8 @@ class User extends Bot {
             app_uuid,
           },
         });
+
+        if (fcm_token) await this.fcm.registAccountFCMToken(findUser.user_id, fcm_token);
 
         const payload = await Utils.generateToken({ userID: findUser.user_id });
         return new ResponseFormat({ message: 'User Regist', payload });
@@ -184,6 +191,8 @@ class User extends Bot {
         app_uuid,
       });
 
+      await this.fcm.registAccountFCMToken(insertUser.user_id, fcm_token);
+
       const payload = await Utils.generateToken({ userID: insertUser.user_id });
       return new ResponseFormat({ message: 'User Regist', payload });
     } catch (e) {
@@ -249,6 +258,26 @@ class User extends Bot {
       if (e.code) return e;
       throw e;
     }
+  }
+
+  async test({ token, body }) {
+    const {
+      txid, accountId, currencyId, blockchainId,
+    } = body;
+    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+    const tokenInfo = await Utils.verifyToken(token);
+    await this.fcm.messageToUserTopic(tokenInfo.userID, {
+      title: 'tx is confirmations',
+    }, {
+      blockchainId,
+      eventType: 'TRANSACTION',
+      currencyId,
+      data: {
+        accountId,
+        txid,
+        result: Math.random() < 0.5,
+      },
+    });
   }
 }
 
