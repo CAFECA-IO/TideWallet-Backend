@@ -337,10 +337,10 @@ class Account extends Bot {
         });
 
         let { balance = '0' } = accountCurrency;
+        const DBName = Utils.blockchainIDToDBName(findAccount.blockchain_id);
+        const _db = this.database.db[DBName];
         if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
           // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
-          const DBName = Utils.blockchainIDToDBName(findAccount.blockchain_id);
-          const _db = this.database.db[DBName];
           const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
           if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
             const findAddress = await _db.AccountAddress.findOne({
@@ -362,13 +362,13 @@ class Account extends Bot {
             }
           }
         } else {
-          const findAllAddress = await this.accountAddressModel.findAll({
+          const findAllAddress = await _db.AccountAddress.findAll({
             where: { account_id: findAccount.account_id },
             attributes: ['accountAddress_id'],
           });
           balance = new BigNumber(0);
           for (const addressItem of findAllAddress) {
-            const findUTXOByAddress = await this.utxoModel.findAll({
+            const findUTXOByAddress = await _db.UTXO.findAll({
               where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
               attributes: ['amount'],
             });
@@ -377,7 +377,7 @@ class Account extends Bot {
               balance = balance.plus(new BigNumber(utxoItem.amount));
             }
           }
-          balance = Utils.dividedByDecimal(balance, accountCurrency.Currency.decimals);
+          balance = Utils.dividedByDecimal(balance, findCurrency.decimals);
         }
 
         if (findCurrency && findCurrency.type === 1) {
@@ -411,6 +411,7 @@ class Account extends Bot {
       payload.tokens = tokens;
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
+      console.log('AccountDetail e::', e);
       this.logger.error('AccountDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
