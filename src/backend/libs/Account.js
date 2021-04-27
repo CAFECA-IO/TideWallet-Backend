@@ -244,13 +244,13 @@ class Account extends Bot {
                 balance = accountCurrency.balance;
               }
             } else {
-              const findAllAddress = await this.accountAddressModel.findAll({
+              const findAllAddress = await _db.AccountAddress.findAll({
                 where: { account_id: account.account_id },
                 attributes: ['accountAddress_id'],
               });
               balance = new BigNumber(0);
               for (const addressItem of findAllAddress) {
-                const findUTXOByAddress = await this.utxoModel.findAll({
+                const findUTXOByAddress = await _db.UTXO.findAll({
                   where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
                   attributes: ['amount'],
                 });
@@ -259,7 +259,7 @@ class Account extends Bot {
                   balance = balance.plus(new BigNumber(utxoItem.amount));
                 }
               }
-              balance = Utils.dividedByDecimal(balance, accountCurrency.Currency.decimals);
+              balance = Utils.dividedByDecimal(balance, decimals);
             }
 
             payload.push({
@@ -639,7 +639,7 @@ class Account extends Bot {
           ],
         });
 
-        const count = await this.addressTokenTransactionModel.count({
+        const count = await _db.AddressTokenTransaction.count({
           where: {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
@@ -663,7 +663,7 @@ class Account extends Bot {
               amount,
               symbol: findCurrency.symbol, // "unit"
               direction: txInfo.direction === 0 ? 'send' : 'receive',
-              confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.TokenTransaction.Transaction.block + 1,
+              confirmations: findBlockchainInfo.block - txInfo.TokenTransaction.Transaction.block + 1,
               timestamp: txInfo.TokenTransaction.timestamp,
               source_addresses: Utils.formatAddressArray(txInfo.TokenTransaction.source_addresses),
               destination_addresses: Utils.formatAddressArray(txInfo.TokenTransaction.destination_addresses),
@@ -690,7 +690,7 @@ class Account extends Bot {
             },
           ],
         });
-        const count = await this.addressTransactionModel.count({
+        const count = await _db.AddressTransaction.count({
           where: {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
@@ -715,7 +715,7 @@ class Account extends Bot {
               amount,
               symbol: findCurrency.symbol, // "unit"
               direction: txInfo.direction === 0 ? 'send' : 'receive',
-              confirmations: findAccountCurrency.Account.Blockchain.block - txInfo.Transaction.block + 1,
+              confirmations: findBlockchainInfo.block - txInfo.Transaction.block + 1,
               timestamp: txInfo.Transaction.timestamp,
               source_addresses: Utils.formatAddressArray(txInfo.Transaction.source_addresses),
               destination_addresses: Utils.formatAddressArray(txInfo.Transaction.destination_addresses),
@@ -792,11 +792,10 @@ class Account extends Bot {
 
       const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
       const result = [];
-      const count = 0;
       const meta = {
         hasNext: false,
         timestamp: 0,
-        count,
+        count: 0,
       };
 
       // find external address txs
@@ -827,8 +826,9 @@ class Account extends Bot {
 
       return new ResponseFormat({
         message: 'List Transactions',
-        items,
-        meta,
+        // items,
+        // meta,
+        payload: items,
       });
     } catch (e) {
       this.logger.error('ListTransactions e:', e);
