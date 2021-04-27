@@ -266,11 +266,11 @@ class EthParserManagerBase extends ParserManagerBase {
               },
               {
                 model: this.accountAddressModel,
-                attributes: ['account_id', 'user_id'],
+                attributes: ['account_id'],
                 include: [
                   {
                     model: this.accountModel,
-                    attributes: ['blockchain_id'],
+                    attributes: ['blockchain_id', 'user_id'],
                   },
                 ],
               },
@@ -287,18 +287,30 @@ class EthParserManagerBase extends ParserManagerBase {
               attributes: ['accountCurrency_id'],
             });
 
+            const DBName = Utils.blockchainIDToDBName(this.bcid);
             if (findAccountCurrency) {
-              await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.user_id, {
+              await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.Account.user_id, {
                 title: 'tx is confirmations',
               }, {
                 blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
                 eventType: 'TRANSACTION',
                 currencyId: this.currencyInfo.currency_id,
-                data: {
-                  account_id: findAccountCurrency.accountCurrency_id,
+                account_id: findAccountCurrency.accountCurrency_id,
+                data: JSON.stringify({
                   txid: tx.txid,
-                  result: _result,
-                },
+                  status: _result ? 'success' : 'failed',
+                  amount: tx.amount,
+                  symbol: DBName,
+                  direction: findAddressTransaction.direction === 0 ? 'send' : 'receive',
+                  confirmations: this.block - tx.block,
+                  timestamp: tx.timestamp,
+                  source_addresses: tx.source_addresses,
+                  destination_addresses: tx.destination_addresses,
+                  fee: tx.fee,
+                  gas_price: tx.gas_price,
+                  gas_used: tx.gas_used,
+                  note: tx.note,
+                }),
               });
             }
           }

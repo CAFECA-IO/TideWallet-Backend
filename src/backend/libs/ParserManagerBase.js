@@ -8,6 +8,10 @@ class ParserManagerBase {
     this.logger = logger;
     this.config = config;
 
+    this.accountCurrencyModel = this.database.AccountCurrency;
+    this.accountModel = this.database.Account;
+    this.accountAddressModel = this.database.AccountAddress;
+    this.addressTransactionModel = this.database.AddressTransaction;
     this.blockchainModel = this.database.Blockchain;
     this.blockScannedModel = this.database.BlockScanned;
     this.currencyModel = this.database.Currency;

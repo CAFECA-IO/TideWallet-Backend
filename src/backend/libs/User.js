@@ -261,23 +261,72 @@ class User extends Bot {
   }
 
   async test({ token, body }) {
-    const {
-      txid, accountId, currencyId, blockchainId,
-    } = body;
-    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
-    const tokenInfo = await Utils.verifyToken(token);
-    await this.fcm.messageToUserTopic(tokenInfo.userID, {
-      title: 'tx is confirmations',
-    }, {
-      blockchainId,
-      eventType: 'TRANSACTION',
-      currencyId,
-      data: {
-        accountId,
-        txid,
-        result: Math.random() < 0.5,
-      },
-    });
+    try {
+      const {
+        txid, accountId, currencyId, blockchainId,
+      } = body;
+      if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+      const tokenInfo = await Utils.verifyToken(token);
+
+      const DBName = Utils.blockchainIDToDBName(blockchainId);
+      const _db = this.database.db[DBName];
+
+      const findBlockInfo = await _db.Blockchain.findOne({
+        where: { blockchain_id: blockchainId },
+      });
+
+      const findAccountCurrency = await _db.AccountCurrency.findOne({
+        where: {
+          accountCurrency_id: accountId,
+        },
+        attributes: ['account_id'],
+      });
+      const findAccountAddress = await _db.AccountAddress.findOne({
+        where: {
+          account_id: findAccountCurrency.account_id,
+        },
+        attributes: ['accountAddress_id'],
+      });
+
+      const findTx = await _db.AddressTransaction.findOne({
+        where: {
+          accountAddress_id: findAccountAddress.accountAddress_id,
+          currency_id: currencyId,
+        },
+        include: [
+          {
+            model: _db.Transaction,
+          },
+        ],
+      });
+
+      await this.fcm.messageToUserTopic(tokenInfo.userID, {
+        title: 'tx is confirmations',
+      }, {
+        blockchainId,
+        eventType: 'TRANSACTION',
+        currencyId,
+        data: JSON.stringify({
+          txid,
+          status: findTx.Transaction.result ? 'success' : 'failed',
+          amount: findTx.Transaction.amount,
+          symbol: DBName,
+          direction: findTx.direction === 0 ? 'send' : 'receive',
+          confirmations: findBlockInfo.block - findTx.Transaction.block,
+          timestamp: findTx.Transaction.timestamp,
+          source_addresses: findTx.Transaction.source_addresses,
+          destination_addresses: findTx.Transaction.destination_addresses,
+          fee: findTx.Transaction.fee,
+          gas_price: findTx.Transaction.gas_price,
+          gas_used: findTx.Transaction.gas_used,
+          note: findTx.Transaction.note,
+        }),
+      });
+      return true;
+    } catch (e) {
+      console.log(e);
+      return e;
+    }
   }
 }
 
