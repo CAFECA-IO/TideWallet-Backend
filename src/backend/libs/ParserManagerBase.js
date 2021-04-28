@@ -1,5 +1,6 @@
 const amqp = require('amqplib');
 const { eventBus } = require('./Events');
+const Fcm = require('./Fcm');
 
 class ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
@@ -31,6 +32,7 @@ class ParserManagerBase {
   }
 
   async init() {
+    this.fcm = Fcm.getInstance({ logger: console });
     this.currencyInfo = await this.getCurrencyInfo();
     this.maxRetry = 3;
 

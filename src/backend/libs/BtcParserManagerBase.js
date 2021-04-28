@@ -2,7 +2,6 @@ const BigNumber = require('bignumber.js');
 const dvalue = require('dvalue');
 const ParserManagerBase = require('./ParserManagerBase');
 const Utils = require('./Utils');
-const Fcm = require('./Fcm');
 
 class BtcParserManagerBase extends ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
@@ -34,7 +33,6 @@ class BtcParserManagerBase extends ParserManagerBase {
     }, this.syncInterval);
 
     this.doParse();
-    this.fcm = Fcm.getInstance({ logger: console });
     return this;
   }
 

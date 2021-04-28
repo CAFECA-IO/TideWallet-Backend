@@ -1,8 +1,8 @@
 // ++ temp for count rollback times
 const fs = require('fs');
 const path = require('path');
-
 const { eventBus } = require('./Events');
+const Fcm = require('./Fcm');
 
 class CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
@@ -27,6 +27,7 @@ class CrawlerManagerBase {
   }
 
   async init() {
+    this.fcm = Fcm.getInstance({ logger: this.logger });
     this.isSyncing = false;
     this.isUpdatePending = false;
     this.blockInfo = await this.getBlockInfo();

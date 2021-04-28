@@ -1,7 +1,6 @@
 const BigNumber = require('bignumber.js');
 const ParserManagerBase = require('./ParserManagerBase');
 const Utils = require('./Utils');
-const Fcm = require('./Fcm');
 
 class EthParserManagerBase extends ParserManagerBase {
   constructor(blockchainId, config, database, logger) {
@@ -25,8 +24,6 @@ class EthParserManagerBase extends ParserManagerBase {
     }, this.syncInterval);
 
     this.doParse();
-
-    this.fcm = Fcm.getInstance({ logger: console });
     return this;
   }
 
