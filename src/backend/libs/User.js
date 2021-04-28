@@ -279,7 +279,7 @@ class User extends Bot {
         where: {
           accountCurrency_id: accountId,
         },
-        attributes: ['account_id'],
+        attributes: ['account_id', 'accountCurrency_id'],
       });
       const findAccountAddress = await _db.AccountAddress.findOne({
         where: {
