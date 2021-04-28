@@ -86,17 +86,6 @@ class Fcm {
       notification,
       data,
       topic: userID,
-      android: {
-        ttl: 1000,
-        notification: {
-          click_action: 'FLUTTER_NOTIFICATION_CLICK',
-        },
-      },
-      webpush: {
-        headers: {
-          TTL: '1000',
-        },
-      },
     };
 
     await this.firebase
