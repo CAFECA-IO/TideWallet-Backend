@@ -274,6 +274,10 @@ class EthParserManagerBase extends ParserManagerBase {
                   },
                 ],
               },
+              {
+                model: this.currencyModel,
+                attributes: ['decimals'],
+              },
             ],
             attributes: ['addressTransaction_id', 'currency_id', 'transaction_id'],
           });
@@ -288,11 +292,6 @@ class EthParserManagerBase extends ParserManagerBase {
             });
 
             const DBName = Utils.blockchainIDToDBName(this.bcid);
-            const findBlockInfo = await this.blockchainModel.findOne({
-              where: { blockchain_id: this.bcid },
-              attributes: ['decimals'],
-            });
-
             if (findAccountCurrency) {
               await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.Account.user_id, {
                 title: 'tx is confirmations',
@@ -317,7 +316,7 @@ class EthParserManagerBase extends ParserManagerBase {
                     gas_price: tx.gas_price,
                     gas_used: tx.gas_used,
                     note: tx.note,
-                    balance: await Utils.ethGetBalanceByAddress(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findBlockInfo.decimals),
+                    balance: await Utils.ethGetBalanceByAddress(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.decimals),
                   },
                 }),
                 click_action: 'FLUTTER_NOTIFICATION_CLICK',

@@ -403,6 +403,7 @@ class Blockchain extends Bot {
         case '8000003C':
         case '8000025B':
         case '80000CFC':
+        case '80001F51':
           const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
           if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 

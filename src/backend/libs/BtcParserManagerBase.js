@@ -366,6 +366,10 @@ class BtcParserManagerBase extends ParserManagerBase {
                   },
                 ],
               },
+              {
+                model: this.currencyModel,
+                attributes: ['decimals'],
+              },
             ],
             attributes: ['addressTransaction_id', 'currency_id', 'transaction_id'],
           });
@@ -382,10 +386,6 @@ class BtcParserManagerBase extends ParserManagerBase {
             });
 
             const DBName = Utils.blockchainIDToDBName(this.bcid);
-            const findBlockInfo = await this.blockchainModel.findOne({
-              where: { blockchain_id: this.bcid },
-              attributes: ['decimals'],
-            });
 
             const findAllAddress = await this.accountAddressModel.findAll({
               where: { account_id: findAddressTransaction.AccountAddress.account_id },
@@ -402,7 +402,7 @@ class BtcParserManagerBase extends ParserManagerBase {
                 balance = balance.plus(new BigNumber(utxoItem.amount));
               }
             }
-            balance = Utils.dividedByDecimal(balance, findBlockInfo.decimals);
+            balance = Utils.dividedByDecimal(balance, findAddressTransaction.Currency.decimals);
             if (findAccountCurrency) {
               await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.Account.user_id, {
                 title: 'tx is confirmations',
