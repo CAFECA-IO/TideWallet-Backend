@@ -302,11 +302,11 @@ class User extends Bot {
 
       const msgObj = {
         title: 'tx is confirmations',
-        body: {
+        body: JSON.stringify({
           blockchainId,
           eventType: 'TRANSACTION',
           currencyId,
-          data: JSON.stringify({
+          data: {
             txid,
             status: findTx.Transaction.result ? 'success' : 'failed',
             amount: findTx.Transaction.amount,
@@ -320,8 +320,8 @@ class User extends Bot {
             gas_price: findTx.Transaction.gas_price,
             gas_used: findTx.Transaction.gas_used,
             note: findTx.Transaction.note,
-          }),
-        },
+          },
+        }),
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
       };
 
