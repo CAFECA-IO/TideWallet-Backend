@@ -300,9 +300,8 @@ class User extends Bot {
         ],
       });
 
-      await this.fcm.messageToUserTopic(tokenInfo.userID, {
-        title: 'tx is confirmations',
-      }, {
+      const msgObj = {
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
         blockchainId,
         eventType: 'TRANSACTION',
         currencyId,
@@ -321,7 +320,12 @@ class User extends Bot {
           gas_used: findTx.Transaction.gas_used,
           note: findTx.Transaction.note,
         }),
-      });
+      };
+
+      await this.fcm.messageToUserTopic(tokenInfo.userID, {
+        title: 'tx is confirmations',
+        body: JSON.stringify(msgObj),
+      }, msgObj);
       return true;
     } catch (e) {
       console.log(e);

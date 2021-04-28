@@ -82,7 +82,6 @@ class Fcm {
   }
 
   async messageToUserTopic(userID, notification, data) {
-    data.click_action = 'FLUTTER_NOTIFICATION_CLICK';
     const messageObj = {
       notification,
       data,
