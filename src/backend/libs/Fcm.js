@@ -16,7 +16,8 @@ class Fcm {
   async registAccountFCMToken(userID, token, retry = 5) {
     await this.firebase.messaging()
       .subscribeToTopic(token, userID)
-      .then(() => {
+      .then((test) => {
+        console.log('registAccountFCMToken', test);
         this.logger.log(`registAccountFCMToken userID(${userID}) success`);
       })
       .catch((error) => {
@@ -92,7 +93,7 @@ class Fcm {
       .messaging()
       .send(messageObj)
       .then((test) => {
-        console.log('test:', test);
+        console.log('messageToUserTopic:', test);
       })
       .catch((error) => {
         console.log('Error sending message:', error);
