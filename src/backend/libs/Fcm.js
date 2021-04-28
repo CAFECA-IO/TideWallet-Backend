@@ -47,7 +47,42 @@ class Fcm {
       });
   }
 
+  async unRegistAccountFCMToken(userID, token, retry = 5) {
+    await this.firebase.messaging()
+      .unsubscribeFromTopic(token, userID)
+      .then(() => {
+        this.logger.log(`registAccountFCMToken userID(${userID}) success`);
+      })
+      .catch((error) => {
+        console.log(error);
+        this.logger.log('registAccountFCMToken error subscribing to topic:', JSON.stringify(error));
+        if (retry < 0) {
+          throw error;
+        }
+        setTimeout(() => {
+          this.registAccountFCMToken(userID, token, retry -= 1);
+        }, 500 * retry);
+      });
+
+    await this.firebase.messaging()
+      .unsubscribeFromTopic(token, this.allTopic)
+      .then(() => {
+        this.logger.log(`registAccountFCMToken userID(${userID}) success`);
+      })
+      .catch((error) => {
+        console.log(error);
+        this.logger.log('registAccountFCMToken error subscribing to topic:', JSON.stringify(error));
+        if (retry < 0) {
+          throw error;
+        }
+        setTimeout(() => {
+          this.registAccountFCMToken(userID, token, retry -= 1);
+        }, 500 * retry);
+      });
+  }
+
   async messageToUserTopic(userID, notification, data) {
+    data.click_action = 'FLUTTER_NOTIFICATION_CLICK';
     const messageObj = {
       notification,
       data,
