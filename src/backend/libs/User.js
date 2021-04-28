@@ -301,30 +301,32 @@ class User extends Bot {
       });
 
       const msgObj = {
+        title: 'tx is confirmations',
+        body: {
+          blockchainId,
+          eventType: 'TRANSACTION',
+          currencyId,
+          data: JSON.stringify({
+            txid,
+            status: findTx.Transaction.result ? 'success' : 'failed',
+            amount: findTx.Transaction.amount,
+            symbol: DBName,
+            direction: findTx.direction === 0 ? 'send' : 'receive',
+            confirmations: findBlockInfo.block - findTx.Transaction.block,
+            timestamp: findTx.Transaction.timestamp,
+            source_addresses: findTx.Transaction.source_addresses,
+            destination_addresses: findTx.Transaction.destination_addresses,
+            fee: findTx.Transaction.fee,
+            gas_price: findTx.Transaction.gas_price,
+            gas_used: findTx.Transaction.gas_used,
+            note: findTx.Transaction.note,
+          }),
+        },
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
-        blockchainId,
-        eventType: 'TRANSACTION',
-        currencyId,
-        data: JSON.stringify({
-          txid,
-          status: findTx.Transaction.result ? 'success' : 'failed',
-          amount: findTx.Transaction.amount,
-          symbol: DBName,
-          direction: findTx.direction === 0 ? 'send' : 'receive',
-          confirmations: findBlockInfo.block - findTx.Transaction.block,
-          timestamp: findTx.Transaction.timestamp,
-          source_addresses: findTx.Transaction.source_addresses,
-          destination_addresses: findTx.Transaction.destination_addresses,
-          fee: findTx.Transaction.fee,
-          gas_price: findTx.Transaction.gas_price,
-          gas_used: findTx.Transaction.gas_used,
-          note: findTx.Transaction.note,
-        }),
       };
 
       await this.fcm.messageToUserTopic(tokenInfo.userID, {
         title: 'tx is confirmations',
-        body: JSON.stringify(msgObj),
       }, msgObj);
       return true;
     } catch (e) {
