@@ -306,7 +306,8 @@ class User extends Bot {
         title: 'tx is confirmations',
         body: JSON.stringify({
           blockchainId,
-          eventType: 'TRANSACTION',
+          accountId: findAccountCurrency.account_id,
+          eventType: 'TRANSACTION_NEW',
           currencyId,
           data: {
             txid,

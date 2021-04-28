@@ -382,29 +382,55 @@ class BtcParserManagerBase extends ParserManagerBase {
             });
 
             const DBName = Utils.blockchainIDToDBName(this.bcid);
+            const findBlockInfo = await this.blockchainModel.findOne({
+              where: { blockchain_id: this.bcid },
+              attributes: ['decimals'],
+            });
+
+            const findAllAddress = await this.accountAddressModel.findAll({
+              where: { account_id: findAddressTransaction.AccountAddress.account_id },
+              attributes: ['accountAddress_id'],
+            });
+            let balance = new BigNumber(0);
+            for (const addressItem of findAllAddress) {
+              const findUTXOByAddress = await this.utxoModel.findAll({
+                where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
+                attributes: ['amount'],
+              });
+
+              for (const utxoItem of findUTXOByAddress) {
+                balance = balance.plus(new BigNumber(utxoItem.amount));
+              }
+            }
+            balance = Utils.dividedByDecimal(balance, findBlockInfo.decimals);
             if (findAccountCurrency) {
               await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.Account.user_id, {
                 title: 'tx is confirmations',
               }, {
-                blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
-                eventType: 'TRANSACTION',
-                currencyId: this.currencyInfo.currency_id,
-                account_id: findAccountCurrency.accountCurrency_id,
-                data: JSON.stringify({
-                  txid: tx.txid,
-                  status: tx.result ? 'success' : 'failed',
-                  amount: tx.amount,
-                  symbol: DBName,
-                  direction: findAddressTransaction.direction === 0 ? 'send' : 'receive',
-                  confirmations: this.block - tx.block,
-                  timestamp: tx.timestamp,
-                  source_addresses: tx.source_addresses,
-                  destination_addresses: tx.destination_addresses,
-                  fee: tx.fee,
-                  gas_price: tx.gas_price,
-                  gas_used: tx.gas_used,
-                  note: tx.note,
+                title: 'tx is confirmations',
+                body: JSON.stringify({
+                  blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
+                  eventType: 'TRANSACTION_NEW',
+                  currencyId: this.currencyInfo.currency_id,
+                  accountId: findAccountCurrency.accountCurrency_id,
+                  data: {
+                    txid: tx.txid,
+                    status: tx.result ? 'success' : 'failed',
+                    amount: tx.amount,
+                    symbol: DBName,
+                    direction: findAddressTransaction.direction === 0 ? 'send' : 'receive',
+                    confirmations: this.block - tx.block,
+                    timestamp: tx.timestamp,
+                    source_addresses: tx.source_addresses,
+                    destination_addresses: tx.destination_addresses,
+                    fee: tx.fee,
+                    gas_price: tx.gas_price,
+                    gas_used: tx.gas_used,
+                    note: tx.note,
+                    balance,
+                  },
                 }),
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
               });
             }
           }
