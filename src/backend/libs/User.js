@@ -300,34 +300,14 @@ class User extends Bot {
         ],
       });
 
-      const msgObj = {
-        title: 'tx is confirmations',
-        body: JSON.stringify({
-          blockchainId,
-          eventType: 'TRANSACTION',
-          currencyId,
-          data: {
-            txid,
-            status: findTx.Transaction.result ? 'success' : 'failed',
-            amount: findTx.Transaction.amount,
-            symbol: DBName,
-            direction: findTx.direction === 0 ? 'send' : 'receive',
-            confirmations: findBlockInfo.block - findTx.Transaction.block,
-            timestamp: findTx.Transaction.timestamp,
-            source_addresses: findTx.Transaction.source_addresses,
-            destination_addresses: findTx.Transaction.destination_addresses,
-            fee: findTx.Transaction.fee,
-            gas_price: findTx.Transaction.gas_price,
-            gas_used: findTx.Transaction.gas_used,
-            note: findTx.Transaction.note,
-          },
-        }),
-        click_action: 'FLUTTER_NOTIFICATION_CLICK',
-      };
-
       await this.fcm.messageToUserTopic(tokenInfo.userID, {
-        title: 'tx is confirmations',
-      }, msgObj);
+        body: 'this is a body',
+        title: 'this is a title',
+      }, {
+        att1: 'value..',
+        att2: 'value..',
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+      });
       return true;
     } catch (e) {
       console.log(e);
