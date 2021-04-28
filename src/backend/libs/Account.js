@@ -348,7 +348,9 @@ class Account extends Bot {
               attributes: ['address'],
             });
             if (findAddress) {
-              if (findCurrency.contract) {
+              console.log('findCurrency.contract:', findCurrency.contract);
+              console.log('findAccount.blockchain_id, findAddress.address, findCurrency.decimals:', findAccount.blockchain_id, findAddress.address, findCurrency.decimals);
+              if (findCurrency.type === 2) {
                 balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
               } else {
                 balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, findCurrency.decimals);

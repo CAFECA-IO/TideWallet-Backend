@@ -220,6 +220,7 @@ class EthParserManagerBase extends ParserManagerBase {
 
       // 3. update result which is not in step 2 array
       const missingTxs = transactions.filter((transaction) => (pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid) && this.block - transaction.block + 1 >= 6));
+      console.log('missingTxs:', missingTxs);
       for (const tx of missingTxs) {
         try {
           let _result = false;
@@ -251,7 +252,7 @@ class EthParserManagerBase extends ParserManagerBase {
             _result = false;
           }
 
-          const findAddressTransaction = await this.addressTransactionModel.findOne({
+          const findAddressTransactions = await this.addressTransactionModel.findAll({
             include: [
               {
                 model: this.transactionModel,
@@ -263,7 +264,7 @@ class EthParserManagerBase extends ParserManagerBase {
               },
               {
                 model: this.accountAddressModel,
-                attributes: ['account_id'],
+                attributes: ['account_id', 'address'],
                 include: [
                   {
                     model: this.accountModel,
@@ -273,51 +274,86 @@ class EthParserManagerBase extends ParserManagerBase {
               },
               {
                 model: this.currencyModel,
-                attributes: ['decimals'],
+                attributes: ['decimals', 'contract', 'type'],
               },
             ],
             attributes: ['addressTransaction_id', 'currency_id', 'transaction_id'],
           });
-          if (findAddressTransaction) {
-            // fcm confirmations update
-            const findAccountCurrency = await this.accountCurrencyModel.findOne({
-              where: {
-                account_id: findAddressTransaction.AccountAddress.account_id,
-                currency_id: this.currencyInfo.currency_id,
-              },
-              attributes: ['accountCurrency_id'],
-            });
-
-            const DBName = Utils.blockchainIDToDBName(this.bcid);
-            if (findAccountCurrency) {
-              await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.Account.user_id, {
-                title: 'tx is confirmations',
-              }, {
-                title: 'tx is confirmations',
-                body: JSON.stringify({
-                  blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
-                  eventType: 'TRANSACTION_NEW',
-                  currencyId: this.currencyInfo.currency_id,
-                  accountId: findAccountCurrency.accountCurrency_id,
-                  data: {
-                    txid: tx.txid,
-                    status: _result ? 'success' : 'failed',
-                    amount: tx.amount,
-                    symbol: DBName,
-                    direction: findAddressTransaction.direction === 0 ? 'send' : 'receive',
-                    confirmations: this.block - tx.block,
-                    timestamp: tx.timestamp,
-                    source_addresses: tx.source_addresses,
-                    destination_addresses: tx.destination_addresses,
-                    fee: tx.fee,
-                    gas_price: tx.gas_price,
-                    gas_used: tx.gas_used,
-                    note: tx.note,
-                    balance: await Utils.ethGetBalanceByAddress(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.decimals),
-                  },
-                }),
-                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+          console.log('findAddressTransactions.len', findAddressTransactions.length);
+          if (findAddressTransactions && findAddressTransactions.length >0) {
+            for (let i = 0; i < findAddressTransactions.length; i++) {
+              const findAddressTransaction = findAddressTransactions[i];
+              
+              // fcm confirmations update
+              const findAccountCurrency = await this.accountCurrencyModel.findOne({
+                where: {
+                  account_id: findAddressTransaction.AccountAddress.account_id,
+                  currency_id: this.currencyInfo.currency_id,
+                },
+                attributes: ['accountCurrency_id'],
               });
+
+              const DBName = Utils.blockchainIDToDBName(this.bcid);
+              if (findAccountCurrency) {
+                console.log({
+                  title: 'tx is confirmations',
+                  body: JSON.stringify({
+                    blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
+                    eventType: 'TRANSACTION_NEW',
+                    currencyId: this.currencyInfo.currency_id,
+                    accountId: findAccountCurrency.accountCurrency_id,
+                    data: {
+                      txid: tx.txid,
+                      status: _result ? 'success' : 'failed',
+                      amount: tx.amount,
+                      symbol: DBName,
+                      direction: findAddressTransaction.direction === 0 ? 'send' : 'receive',
+                      confirmations: this.block - tx.block,
+                      timestamp: tx.timestamp,
+                      source_addresses: tx.source_addresses,
+                      destination_addresses: tx.destination_addresses,
+                      fee: tx.fee,
+                      gas_price: tx.gas_price,
+                      gas_used: tx.gas_used,
+                      note: tx.note,
+                      balance: findAddressTransaction.Currency.type === 1
+                        ? await Utils.ethGetBalanceByAddress(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.decimals)
+                        : await Utils.getERC20Token(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.contract, findAddressTransaction.Currency.decimals)
+                    },
+                  }),
+                  click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                });
+                await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.Account.user_id, {
+                  title: 'tx is confirmations',
+                }, {
+                  title: 'tx is confirmations',
+                  body: JSON.stringify({
+                    blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
+                    eventType: 'TRANSACTION_NEW',
+                    currencyId: this.currencyInfo.currency_id,
+                    accountId: findAccountCurrency.accountCurrency_id,
+                    data: {
+                      txid: tx.txid,
+                      status: _result ? 'success' : 'failed',
+                      amount: tx.amount,
+                      symbol: DBName,
+                      direction: findAddressTransaction.direction === 0 ? 'send' : 'receive',
+                      confirmations: this.block - tx.block,
+                      timestamp: tx.timestamp,
+                      source_addresses: tx.source_addresses,
+                      destination_addresses: tx.destination_addresses,
+                      fee: tx.fee,
+                      gas_price: tx.gas_price,
+                      gas_used: tx.gas_used,
+                      note: tx.note,
+                      balance: findAddressTransaction.Currency.type === 1
+                        ? await Utils.ethGetBalanceByAddress(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.decimals)
+                        : await Utils.getERC20Token(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.contract, findAddressTransaction.Currency.decimals)
+                    },
+                  }),
+                  click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                });
+              }
             }
           }
         } catch (error) {
