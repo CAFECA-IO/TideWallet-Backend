@@ -323,6 +323,7 @@ class User extends Bot {
             gas_price: findTx.Transaction.gas_price,
             gas_used: findTx.Transaction.gas_used,
             note: findTx.Transaction.note,
+            balance: 0,
           },
         }),
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
