@@ -33,7 +33,8 @@ class Fcm {
 
     await this.firebase.messaging()
       .subscribeToTopic(token, this.allTopic)
-      .then(() => {
+      .then((test) => {
+        console.log('registAccountFCMToken', test);
         this.logger.log(`registAccountFCMToken userID(${userID}) success`);
       })
       .catch((error) => {
@@ -83,6 +84,7 @@ class Fcm {
   }
 
   async messageToUserTopic(userID, notification, data) {
+    console.log('messageToUserTopic!!!');
     const messageObj = {
       notification,
       data,

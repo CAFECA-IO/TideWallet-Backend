@@ -350,6 +350,8 @@ class Account extends Bot {
               attributes: ['address'],
             });
             if (findAddress) {
+              
+              
               if (findCurrency.type === 2) {
                 balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
               } else {
