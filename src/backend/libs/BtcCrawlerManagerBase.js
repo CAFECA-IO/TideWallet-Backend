@@ -365,12 +365,13 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
         for (let j = 0; j < txs.length; j++) {
           // check tx is not in db
           const findTX = await this.unparsedTxModel.findOne({
-            where: { blockchain_id: this.bcid, txid: txs[j].hash },
+            where: { blockchain_id: this.bcid, txid: txs[j].txid },
           });
           txs[j].blockhash = syncResult.hash;
           txs[j].confirmations = syncResult.confirmations;
           txs[j].blocktime = syncResult.time;
           txs[j].height = syncResult.height;
+          if (findTX)console.log(findTX.txid);
           if (!findTX) {
             insertTx.push({
               blockchain_id: this.bcid,
@@ -382,20 +383,21 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
             });
           }
 
+          // FIXME: will be error
           // find new receive tx
-          if (txs[j].vout && txs[j].vout.length > 0) {
-            for (let k = 0; k < txs[j].vout.length; k++) {
-              const address = txs[j].vout[k];
+          // if (txs[j].vout && txs[j].vout.length > 0) {
+          //   for (let k = 0; k < txs[j].vout.length; k++) {
+          //     const address = txs[j].vout[k];
 
-              const findNewReceiveTX = await this.accountAddressModel.findOne({
-                where: { address },
-              });
-              if (findNewReceiveTX) {
-                // push notification
+          //     const findNewReceiveTX = await this.accountAddressModel.findOne({
+          //       where: { address },
+          //     });
+          //     if (findNewReceiveTX) {
+          //       // push notification
 
-              }
-            }
-          }
+          //     }
+          //   }
+          // }
         }
         const createResult = await this.unparsedTxModel.bulkCreate(insertTx).catch((error) => error);
         if (!Array.isArray(createResult)) {
