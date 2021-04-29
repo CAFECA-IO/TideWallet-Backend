@@ -299,6 +299,7 @@ class User extends Bot {
           },
         ],
       });
+      console.log('before findAccountCurrency!!!');
 
       await this.fcm.messageToUserTopic(tokenInfo.userID, {
         title: 'tx is confirmations',

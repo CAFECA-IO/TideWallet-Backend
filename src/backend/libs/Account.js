@@ -315,40 +315,44 @@ class Account extends Bot {
       if (!findAccountCurrency) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
       const findAccount = findAccountCurrency.Account;
-      const findAccountCurrencies = await this.DBOperator.findAll({
-        tableName: 'AccountCurrency',
-        options: {
-          where: {
-            account_id: findAccount.account_id,
-          },
-        },
-      });
+      const DBName = Utils.blockchainIDToDBName(findAccount.blockchain_id);
+      const _db = this.database.db[DBName];
 
+      const findAccountCurrencies = await _db.AccountCurrency.findAll({
+        where: {
+          accountCurrency_id: account_id,
+        },
+        include: [
+          {
+            model: _db.Account,
+            where: {
+              user_id: tokenInfo.userID,
+            },
+          },
+        ],
+      });
       for (let j = 0; j < findAccountCurrencies.length; j++) {
         const accountCurrency = findAccountCurrencies[j];
-        const findCurrency = await this.DBOperator.findOne({
-          tableName: 'Currency',
-          options: {
-            where: {
-              currency_id: accountCurrency.currency_id,
-              [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
-            },
+        const findCurrency = await _db.Currency.findOne({
+          where: {
+            currency_id: accountCurrency.currency_id,
+            [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
           },
         });
 
         let { balance = '0' } = accountCurrency;
-        const DBName = Utils.blockchainIDToDBName(findAccount.blockchain_id);
-        const _db = this.database.db[DBName];
         if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
           // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
           const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
           if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
             const findAddress = await _db.AccountAddress.findOne({
-              where: { account_id: findAccount.account_id },
+              where: { account_id: accountCurrency.Account.account_id },
               attributes: ['address'],
             });
             if (findAddress) {
-              if (findCurrency.contract) {
+              
+              
+              if (findCurrency.type === 2) {
                 balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
               } else {
                 balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, findCurrency.decimals);
