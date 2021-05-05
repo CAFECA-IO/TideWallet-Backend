@@ -197,6 +197,8 @@ class User extends Bot {
       return new ResponseFormat({ message: 'User Regist', payload });
     } catch (e) {
       console.log(e);
+      console.log(e.error);
+      console.log(e.error[0]);
       this.logger.error('UserRegist e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });

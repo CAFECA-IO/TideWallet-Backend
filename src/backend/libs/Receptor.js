@@ -126,7 +126,7 @@ class Receptor extends Bot {
         .catch((e) => {
           // unhandled error
           ctx.body = new ResponseFormat({ message: `unknown error(${e.message})`, code: Codes.UNKNOWN_ERROR });
-          this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${JSON.stringify(ctx.body)}`);
+          if (ctx.method !== 'GET') this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${JSON.stringify(ctx.body)}`);
           next();
         });
     });
