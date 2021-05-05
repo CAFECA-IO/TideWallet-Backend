@@ -403,9 +403,9 @@ class BtcParserManagerBase extends ParserManagerBase {
             balance = Utils.dividedByDecimal(balance, findAddressTransaction.Currency.decimals);
             if (findAccountCurrency) {
               await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.Account.user_id, {
-                title: 'tx is confirmations',
+                title: `tx (${tx.txid}) is confirmations`,
               }, {
-                title: 'tx is confirmations',
+                title: `tx (${tx.txid}) is confirmations`,
                 body: JSON.stringify({
                   blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
                   eventType: 'TRANSACTION_NEW',

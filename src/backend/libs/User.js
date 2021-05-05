@@ -304,9 +304,9 @@ class User extends Bot {
       console.log('before findAccountCurrency!!!');
 
       await this.fcm.messageToUserTopic(tokenInfo.userID, {
-        title: 'tx is confirmations',
+        title: `tx (${tx.txid}) is confirmations`,
       }, {
-        title: 'tx is confirmations',
+        title: `tx (${tx.txid}) is confirmations`,
         body: JSON.stringify({
           blockchainId,
           accountId: findAccountCurrency.accountCurrency_id,
