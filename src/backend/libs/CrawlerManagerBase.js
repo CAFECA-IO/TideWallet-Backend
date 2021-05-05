@@ -42,11 +42,11 @@ class CrawlerManagerBase {
 
     // ++ make crawler something wrong
     // ++ temp not sync pending transaction on btc
-    // setInterval(() => {
+    // setInterval(async () => {
     //   if (!this.isUpdatePending) {
     //     this.isUpdatePending = true;
     //     try {
-    //       this.updatePendingTransaction();
+    //       await this.updatePendingTransaction();
     //       this.isUpdatePending = false;
     //     } catch (error) {
     //       this.isUpdatePending = false;

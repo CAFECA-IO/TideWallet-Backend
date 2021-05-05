@@ -350,8 +350,6 @@ class Account extends Bot {
               attributes: ['address'],
             });
             if (findAddress) {
-              
-              
               if (findCurrency.type === 2) {
                 balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
               } else {
@@ -415,7 +413,6 @@ class Account extends Bot {
       payload.tokens = tokens;
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
-      console.log('AccountDetail e::', e);
       this.logger.error('AccountDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });

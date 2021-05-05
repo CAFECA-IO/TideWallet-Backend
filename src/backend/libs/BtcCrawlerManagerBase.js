@@ -371,7 +371,6 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           txs[j].confirmations = syncResult.confirmations;
           txs[j].blocktime = syncResult.time;
           txs[j].height = syncResult.height;
-          if (findTX)console.log(findTX.txid);
           if (!findTX) {
             insertTx.push({
               blockchain_id: this.bcid,

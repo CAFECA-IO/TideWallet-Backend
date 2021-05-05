@@ -16,12 +16,10 @@ class Fcm {
   async registAccountFCMToken(userID, token, retry = 5) {
     await this.firebase.messaging()
       .subscribeToTopic(token, userID)
-      .then((test) => {
-        console.log('registAccountFCMToken', test);
+      .then(() => {
         this.logger.log(`registAccountFCMToken userID(${userID}) success`);
       })
       .catch((error) => {
-        console.log(error);
         this.logger.log('registAccountFCMToken error subscribing to topic:', JSON.stringify(error));
         if (retry < 0) {
           throw error;
@@ -33,12 +31,10 @@ class Fcm {
 
     await this.firebase.messaging()
       .subscribeToTopic(token, this.allTopic)
-      .then((test) => {
-        console.log('registAccountFCMToken', test);
+      .then(() => {
         this.logger.log(`registAccountFCMToken userID(${userID}) success`);
       })
       .catch((error) => {
-        console.log(error);
         this.logger.log('registAccountFCMToken error subscribing to topic:', JSON.stringify(error));
         if (retry < 0) {
           throw error;

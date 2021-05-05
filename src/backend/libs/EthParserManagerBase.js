@@ -220,7 +220,6 @@ class EthParserManagerBase extends ParserManagerBase {
 
       // 3. update result which is not in step 2 array
       const missingTxs = transactions.filter((transaction) => (pendingTxs.every((pendingTx) => pendingTx.hash !== transaction.txid) && this.block - transaction.block + 1 >= 6));
-      console.log('missingTxs:', missingTxs);
       for (const tx of missingTxs) {
         try {
           let _result = false;
@@ -279,11 +278,10 @@ class EthParserManagerBase extends ParserManagerBase {
             ],
             attributes: ['addressTransaction_id', 'currency_id', 'transaction_id'],
           });
-          console.log('findAddressTransactions.len', findAddressTransactions.length);
-          if (findAddressTransactions && findAddressTransactions.length >0) {
+          if (findAddressTransactions && findAddressTransactions.length > 0) {
             for (let i = 0; i < findAddressTransactions.length; i++) {
               const findAddressTransaction = findAddressTransactions[i];
-              
+
               // fcm confirmations update
               const findAccountCurrency = await this.accountCurrencyModel.findOne({
                 where: {
@@ -318,7 +316,7 @@ class EthParserManagerBase extends ParserManagerBase {
                       note: tx.note,
                       balance: findAddressTransaction.Currency.type === 1
                         ? await Utils.ethGetBalanceByAddress(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.decimals)
-                        : await Utils.getERC20Token(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.contract, findAddressTransaction.Currency.decimals)
+                        : await Utils.getERC20Token(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.contract, findAddressTransaction.Currency.decimals),
                     },
                   }),
                   click_action: 'FLUTTER_NOTIFICATION_CLICK',
@@ -348,7 +346,7 @@ class EthParserManagerBase extends ParserManagerBase {
                       note: tx.note,
                       balance: findAddressTransaction.Currency.type === 1
                         ? await Utils.ethGetBalanceByAddress(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.decimals)
-                        : await Utils.getERC20Token(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.contract, findAddressTransaction.Currency.decimals)
+                        : await Utils.getERC20Token(findAddressTransaction.AccountAddress.Account.blockchain_id, findAddressTransaction.AccountAddress.address, findAddressTransaction.Currency.contract, findAddressTransaction.Currency.decimals),
                     },
                   }),
                   click_action: 'FLUTTER_NOTIFICATION_CLICK',

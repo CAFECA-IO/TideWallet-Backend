@@ -108,7 +108,6 @@ class DBOperator {
       });
       const findItems = await Promise.all(queries).catch((error) => new ResponseFormat({ message: `db error(${error})`, code: Codes.DB_ERROR }));
       if (findItems.code === Codes.DB_ERROR) throw findItems;
-      // console.log('findItems:', findItems);
 
       return findItems.concat.apply([], findItems);
     } catch (e) {
