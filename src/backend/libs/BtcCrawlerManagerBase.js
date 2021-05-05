@@ -381,22 +381,6 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
               retry: 0,
             });
           }
-
-          // FIXME: will be error
-          // find new receive tx
-          // if (txs[j].vout && txs[j].vout.length > 0) {
-          //   for (let k = 0; k < txs[j].vout.length; k++) {
-          //     const address = txs[j].vout[k];
-
-          //     const findNewReceiveTX = await this.accountAddressModel.findOne({
-          //       where: { address },
-          //     });
-          //     if (findNewReceiveTX) {
-          //       // push notification
-
-          //     }
-          //   }
-          // }
         }
         const createResult = await this.unparsedTxModel.bulkCreate(insertTx).catch((error) => error);
         if (!Array.isArray(createResult)) {
@@ -444,6 +428,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
 
       // 3. create transaction which is not in step 1 array
       const newTxids = pendingTxids.filter((pendingTxid) => transactions.every((transaction) => pendingTxid !== transaction.txid));
+      console.log('newTxids:', newTxids.length);
       for (const txid of newTxids) {
         try {
           const tx = await this.getTransactionByTxidFromPeer(txid);

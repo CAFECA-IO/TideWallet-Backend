@@ -17,18 +17,18 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   async init() {
     await super.init();
     this.peerBlock = 0;
-    try {
-      this.oneCycle();
-    } catch (error) {
-      this.logger.log(`[${this.constructor.name}] ${error}`);
-    }
-    setInterval(async () => {
-      try {
-        this.oneCycle();
-      } catch (error) {
-        this.logger.log(`[${this.constructor.name}] ${error}`);
-      }
-    }, this.syncInterval);
+    // try {
+    //   this.oneCycle();
+    // } catch (error) {
+    //   this.logger.log(`[${this.constructor.name}] ${error}`);
+    // }
+    // setInterval(async () => {
+    //   try {
+    //     this.oneCycle();
+    //   } catch (error) {
+    //     this.logger.log(`[${this.constructor.name}] ${error}`);
+    //   }
+    // }, this.syncInterval);
   }
 
   async assignParser() {
@@ -420,11 +420,12 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           });
           if (!txResult) {
             this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash})`);
+            const destination_addresses = tx.to ? tx.to : '';
             txResult = await this.transactionModel.create({
               currency_id: this.currencyInfo.currency_id,
               txid: tx.hash,
               source_addresses: tx.from,
-              destination_addresses: tx.to ? tx.to : '',
+              destination_addresses,
               amount: bnAmount.toFixed(),
               note: tx.input,
               block: parseInt(tx.blockNumber, 16),
@@ -432,6 +433,51 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
               fee,
               gas_price: bnGasPrice.toFixed(),
             });
+
+            if (destination_addresses) {
+              // new receive transaction and notify app
+              const findBlockTimestamp = await this.blockScannedModel.findOne({
+                where: { block: parseInt(tx.blockNumber, 16) },
+              });
+              const timestamp = findBlockTimestamp || Math.floor(Date.now() / 1000);
+
+              const findAddressTransactions = await this.accountAddressModel.findOne({
+                where: { address: destination_addresses },
+                include: [
+                  {
+                    model: this.accountModel,
+                  },
+                ],
+              });
+
+              await this.fcm.messageToUserTopic(findAddressTransactions.Account.user_id, {
+                title: `tx ${tx.txid} is confirmations`,
+              }, {
+                title: `tx ${tx.txid} is confirmations`,
+                body: JSON.stringify({
+                  blockchainId: this.bcid,
+                  eventType: 'TRANSACTION_NEW',
+                  currencyId: this.currencyInfo.currency_id,
+                  accountId: findAccountCurrency.accountCurrency_id,
+                  data: {
+                    txid: tx.hash,
+                    status: null,
+                    amount: bnAmount.toFixed(),
+                    symbol: this.currencyInfo.symbol,
+                    direction: 'receive',
+                    confirmations: 0,
+                    timestamp,
+                    source_addresses: tx.from,
+                    destination_addresses: tx.to ? tx.to : '',
+                    fee,
+                    gas_price: bnGasPrice.toFixed(),
+                    gas_used: null,
+                    note: tx.input,
+                  },
+                }),
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+              });
+            }
           } else {
             const updateResult = await this.transactionModel.update(
               {

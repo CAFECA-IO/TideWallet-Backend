@@ -42,17 +42,17 @@ class CrawlerManagerBase {
 
     // ++ make crawler something wrong
     // ++ temp not sync pending transaction on btc
-    // setInterval(async () => {
-    //   if (!this.isUpdatePending) {
-    //     this.isUpdatePending = true;
-    //     try {
-    //       await this.updatePendingTransaction();
-    //       this.isUpdatePending = false;
-    //     } catch (error) {
-    //       this.isUpdatePending = false;
-    //     }
-    //   }
-    // }, this.pendingTxSyncInterval);
+    setInterval(async () => {
+      if (!this.isUpdatePending) {
+        this.isUpdatePending = true;
+        try {
+          await this.updatePendingTransaction();
+          this.isUpdatePending = false;
+        } catch (error) {
+          this.isUpdatePending = false;
+        }
+      }
+    }, this.pendingTxSyncInterval);
 
     // ++ temp for count rollback times
     this.rollbackCountDir = path.normalize(`${__dirname}/../../../private/rollbackCount`);
