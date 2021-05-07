@@ -197,7 +197,6 @@ class User extends Bot {
       const payload = await Utils.generateToken({ userID: insertUser.user_id });
       return new ResponseFormat({ message: 'User Regist', payload });
     } catch (e) {
-      console.log(e);
       this.logger.error('UserRegist e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -308,9 +307,9 @@ class User extends Bot {
       console.log('before findAccountCurrency!!!');
 
       await this.fcm.messageToUserTopic(tokenInfo.userID, {
-        title: 'tx is confirmations',
+        title: `tx (${tx.txid}) is confirmations`,
       }, {
-        title: 'tx is confirmations',
+        title: `tx (${tx.txid}) is confirmations`,
         body: JSON.stringify({
           blockchainId,
           accountId: findAccountCurrency.accountCurrency_id,
