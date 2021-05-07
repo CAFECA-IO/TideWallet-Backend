@@ -256,6 +256,7 @@ class ParserManagerBase {
   }
 
   async removePendingTransaction() {
+    console.log('removePendingTransaction!!!!!!');
     this.logger.debug(`[${this.constructor.name}] removePendingTransaction`);
     try {
       const res = await this.pendingTransactionModel.destroy({
