@@ -199,6 +199,7 @@ pathname = [
   "get | /api/v1/blockchain/:blockchain_id/fee | Bot.Blockchain.GetFee",
   "post | /api/v1/blockchain/:blockchain_id/gas-limit | Bot.Blockchain.GetGasLimit",
   "get | /api/v1/blockchain/:blockchain_id/address/:address/nonce | Bot.Blockchain.GetNonce",
+  "get | /api/v1/blockchain/:blockchain_id/address/:address/nonce/platform | Bot.Blockchain.GetNonceByAddress",
   "post | /api/v1/blockchain/:blockchain_id/push-tx | Bot.Blockchain.PublishTransaction",
   "get | /api/v1/fiats/rate | Bot.Blockchain.FiatsRate",
   "get | /api/v1/crypto/rate | Bot.Blockchain.CryptoRate",

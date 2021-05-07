@@ -438,6 +438,51 @@ class Blockchain extends Bot {
     }
   }
 
+  async GetNonceByAddress({ params }) {
+    const { blockchain_id, address } = params;
+    try {
+      let option = {};
+      let nonce = '0';
+      // TODO: support another blockchain
+      switch (blockchain_id) {
+        case '8000003C':
+        case '8000025B':
+        case '80000CFC':
+        case '80001F51':
+          const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+          if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+          option = { ...blockchainConfig };
+          option.data = {
+            jsonrpc: '2.0',
+            method: 'eth_getTransactionCount',
+            params: [address, 'latest'],
+            id: dvalue.randomID(),
+          };
+          const data = await Utils.ETHRPC(option);
+
+          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
+          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          nonce = new BigNumber(data.result).toFixed();
+
+          return new ResponseFormat({
+            message: 'Get Nonce',
+            payload: { nonce },
+          });
+
+        default:
+          return new ResponseFormat({
+            message: 'Get Nonce',
+            payload: { nonce },
+          });
+      }
+    } catch (e) {
+      this.logger.error('GetNonce e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
   async saveBTCPublishTransaction(tx, currencyInfo, timestamp, retryCount = 0) {
     if (retryCount > 3) {
       this.logger.error('saveBTCPublishTransaction retry error');

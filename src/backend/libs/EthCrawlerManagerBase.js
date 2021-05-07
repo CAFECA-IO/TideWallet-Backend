@@ -434,50 +434,59 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
               gas_price: bnGasPrice.toFixed(),
             });
 
-            if (destination_addresses) {
-              // new receive transaction and notify app
-              const findBlockTimestamp = await this.blockScannedModel.findOne({
-                where: { block: parseInt(tx.blockNumber, 16) },
-              });
-              const timestamp = findBlockTimestamp || Math.floor(Date.now() / 1000);
+            // if (destination_addresses) {
+            //   // new receive transaction and notify app
+            //   const findBlockTimestamp = await this.blockScannedModel.findOne({
+            //     where: { block: parseInt(tx.blockNumber, 16) },
+            //   });
+            //   const timestamp = findBlockTimestamp || Math.floor(Date.now() / 1000);
 
-              const findAddressTransactions = await this.accountAddressModel.findOne({
-                where: { address: destination_addresses },
-                include: [
-                  {
-                    model: this.accountModel,
-                  },
-                ],
-              });
+            //   const findAddressTransactions = await this.accountAddressModel.findOne({
+            //     where: { address: destination_addresses },
+            //     include: [
+            //       {
+            //         model: this.accountModel,
+            //         attributes: ['user_id'],
+            //       },
+            //     ],
+            //   });
 
-              await this.fcm.messageToUserTopic(findAddressTransactions.Account.user_id, {
-                title: `tx ${tx.txid} is confirmations`,
-              }, {
-                title: `tx ${tx.txid} is confirmations`,
-                body: JSON.stringify({
-                  blockchainId: this.bcid,
-                  eventType: 'TRANSACTION_NEW',
-                  currencyId: this.currencyInfo.currency_id,
-                  accountId: findAccountCurrency.accountCurrency_id,
-                  data: {
-                    txid: tx.hash,
-                    status: null,
-                    amount: bnAmount.toFixed(),
-                    symbol: this.currencyInfo.symbol,
-                    direction: 'receive',
-                    confirmations: 0,
-                    timestamp,
-                    source_addresses: tx.from,
-                    destination_addresses: tx.to ? tx.to : '',
-                    fee,
-                    gas_price: bnGasPrice.toFixed(),
-                    gas_used: null,
-                    note: tx.input,
-                  },
-                }),
-                click_action: 'FLUTTER_NOTIFICATION_CLICK',
-              });
-            }
+            //   if (findAddressTransactions) {
+            //     const findAccountCurrency = await this.accountCurrencyModel.findOne({
+            //       where: { account_id: findAddressTransactions.account_id },
+            //     });
+
+            //     console.log('findAddressTransactions:', findAddressTransactions);
+
+            //     await this.fcm.messageToUserTopic(findAddressTransactions.Account.user_id, {
+            //       title: `tx ${tx.txid} is confirmations`,
+            //     }, {
+            //       title: `tx ${tx.txid} is confirmations`,
+            //       body: JSON.stringify({
+            //         blockchainId: this.bcid,
+            //         eventType: 'TRANSACTION_NEW',
+            //         currencyId: this.currencyInfo.currency_id,
+            //         accountId: findAccountCurrency.accountCurrency_id,
+            //         data: {
+            //           txid: tx.hash,
+            //           status: null,
+            //           amount: bnAmount.toFixed(),
+            //           symbol: this.currencyInfo.symbol,
+            //           direction: 'receive',
+            //           confirmations: 0,
+            //           timestamp,
+            //           source_addresses: tx.from,
+            //           destination_addresses: tx.to ? tx.to : '',
+            //           fee,
+            //           gas_price: bnGasPrice.toFixed(),
+            //           gas_used: null,
+            //           note: tx.input,
+            //         },
+            //       }),
+            //       click_action: 'FLUTTER_NOTIFICATION_CLICK',
+            //     });
+            //   }
+            // }
           } else {
             const updateResult = await this.transactionModel.update(
               {
@@ -499,6 +508,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
             [, [txResult]] = updateResult;
           }
         } catch (error) {
+          console.log('error:', error);
           this.logger.error(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash}) error: ${error}`);
         }
       }
