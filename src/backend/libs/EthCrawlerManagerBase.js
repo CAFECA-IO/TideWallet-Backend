@@ -17,18 +17,18 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
   async init() {
     await super.init();
     this.peerBlock = 0;
-    // try {
-    //   this.oneCycle();
-    // } catch (error) {
-    //   this.logger.log(`[${this.constructor.name}] ${error}`);
-    // }
-    // setInterval(async () => {
-    //   try {
-    //     this.oneCycle();
-    //   } catch (error) {
-    //     this.logger.log(`[${this.constructor.name}] ${error}`);
-    //   }
-    // }, this.syncInterval);
+    try {
+      this.oneCycle();
+    } catch (error) {
+      this.logger.log(`[${this.constructor.name}] ${error}`);
+    }
+    setInterval(async () => {
+      try {
+        this.oneCycle();
+      } catch (error) {
+        this.logger.log(`[${this.constructor.name}] ${error}`);
+      }
+    }, this.syncInterval);
   }
 
   async assignParser() {
