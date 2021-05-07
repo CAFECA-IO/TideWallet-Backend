@@ -441,7 +441,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
               });
               const timestamp = findBlockTimestamp || Math.floor(Date.now() / 1000);
 
-              console.log('destination_addresses:', destination_addresses);
               const findAddressTransactions = await this.accountAddressModel.findOne({
                 where: { address: destination_addresses },
                 include: [
@@ -452,18 +451,15 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                 ],
               });
 
-              console.log('findAddressTransactions:', findAddressTransactions);
               if (findAddressTransactions) {
                 const findAccountCurrency = await this.accountCurrencyModel.findOne({
                   where: { account_id: findAddressTransactions.account_id },
                 });
 
-                console.log('findAddressTransactions:', findAddressTransactions);
-
                 await this.fcm.messageToUserTopic(findAddressTransactions.Account.user_id, {
-                  title: `receive ${bnAmount.toFixed()} ${this.currencyInfo.symbol}`,
+                  title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,
                 }, {
-                  title: `receive ${bnAmount.toFixed()} ${this.currencyInfo.symbol}`,
+                  title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,
                   body: JSON.stringify({
                     blockchainId: this.bcid,
                     eventType: 'TRANSACTION_NEW',
@@ -510,7 +506,6 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
             [, [txResult]] = updateResult;
           }
         } catch (error) {
-          console.log('error:', error);
           this.logger.error(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash}) error: ${error}`);
         }
       }

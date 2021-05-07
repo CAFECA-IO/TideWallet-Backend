@@ -80,7 +80,6 @@ class Fcm {
   }
 
   async messageToUserTopic(userID, notification, data) {
-    console.log('messageToUserTopic!!!');
     const messageObj = {
       notification,
       data,
