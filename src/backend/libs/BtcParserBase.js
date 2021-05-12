@@ -450,15 +450,14 @@ class BtcParserBase extends ParserBase {
           console.log('_destination_addresses:', _destination_addresses);
 
           // set destination_addresses fcm data
-          const destinationItem = _destination_addresses[i];
           _destination_addresses[i] = {
-            ...destinationItem,
+            ..._destination_addresses[i],
             user_id: accountAddressTo.Account.user_id,
             accountCurrency_id: accountCurrency.accountCurrency_id,
             timestamp: tx.timestamp,
             fee: Utils.multipliedByDecimal(fee, currencyInfo.decimals),
-            source_addresses: `[${_source_addresses[i].addresses.map((item) => item).toString()}]`,
-            destination_addresses: `[${destinationItem.addresses.map((item) => item).toString()}]`,
+            source_addresses: `[${_source_addresses[i] ? _source_addresses[i].addresses.map((item) => item).toString() : ''}]`,
+            destination_addresses: `[${_destination_addresses[i] ? _destination_addresses[i].addresses.map((item) => item).toString() : ''}]`,
           };
         }
       }
