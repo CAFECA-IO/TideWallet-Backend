@@ -439,6 +439,8 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           // find db account address
           for (const txout of destination_addresses) {
             if (txout.accountCurrency_id && txout.user_id) {
+              const bnAmount = new BigNumber(txout.amount, 16);
+              const amount = bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed();
               console.log(JSON.stringify({
                 blockchainId: this.bcid,
                 eventType: 'TRANSACTION_NEW',
@@ -447,7 +449,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                 data: {
                   txid: tx.hash,
                   status: null,
-                  amount: txout.amount,
+                  amount,
                   symbol: this.currencyInfo.symbol,
                   direction: 'receive',
                   confirmations: 0,
@@ -461,9 +463,9 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                 },
               }));
               await this.fcm.messageToUserTopic(txout.user_id, {
-                title: `receive ${txout.amount} ${this.currencyInfo.symbol}`,
+                title: `receive ${amount} ${this.currencyInfo.symbol}`,
               }, {
-                title: `receive ${txout.amount} ${this.currencyInfo.symbol}`,
+                title: `receive ${amount} ${this.currencyInfo.symbol}`,
                 body: JSON.stringify({
                   blockchainId: this.bcid,
                   eventType: 'TRANSACTION_NEW',
@@ -472,7 +474,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                   data: {
                     txid: tx.hash,
                     status: null,
-                    amount: txout.amount,
+                    amount,
                     symbol: this.currencyInfo.symbol,
                     direction: 'receive',
                     confirmations: 0,
