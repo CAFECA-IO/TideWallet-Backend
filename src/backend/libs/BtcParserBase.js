@@ -458,7 +458,7 @@ class BtcParserBase extends ParserBase {
             timestamp: tx.timestamp,
             fee: Utils.multipliedByDecimal(fee, currencyInfo.decimals),
             source_addresses: `[${_source_addresses[i].addresses.map((item) => item).toString()}]`,
-            destination_addresses: `[${destinationItem[i].addresses.map((item) => item).toString()}]`,
+            destination_addresses: `[${destinationItem.addresses.map((item) => item).toString()}]`,
           };
         }
       }
