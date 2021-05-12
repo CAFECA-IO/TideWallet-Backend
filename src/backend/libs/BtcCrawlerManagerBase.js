@@ -459,7 +459,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                   fee: txout.fee,
                   gas_price: null,
                   gas_used: null,
-                  note: tx.input,
+                  note: tx.input ? tx.input : '',
                 },
               }));
               await this.fcm.messageToUserTopic(txout.user_id, {
@@ -484,7 +484,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                     fee: txout.fee,
                     gas_price: null,
                     gas_used: null,
-                    note: tx.input,
+                    note: tx.input ? tx.input : '',
                   },
                 }),
                 click_action: 'FLUTTER_NOTIFICATION_CLICK',
