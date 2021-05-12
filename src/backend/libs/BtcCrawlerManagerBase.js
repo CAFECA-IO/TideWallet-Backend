@@ -441,24 +441,24 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
             if (txout.accountCurrency_id && txout.user_id) {
               const bnAmount = new BigNumber(txout.amount, 16);
               const amount = bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed();
-              console.log(JSON.stringify({
+              console.log('fcm!!!!!!!!!!', JSON.stringify({
                 blockchainId: this.bcid,
                 eventType: 'TRANSACTION_NEW',
                 currencyId: this.currencyInfo.currency_id,
                 accountId: txout.accountCurrency_id,
                 data: {
                   txid: tx.hash,
-                  status: null,
+                  status: '',
                   amount,
                   symbol: this.currencyInfo.symbol,
                   direction: 'receive',
                   confirmations: 0,
                   timestamp: txout.timestamp ? txout.timestamp : Math.floor(Date.now() / 1000),
-                  source_addresses: tx.from,
+                  source_addresses: tx.from ? tx.from : '',
                   destination_addresses: tx.to ? tx.to : '',
                   fee: txout.fee,
-                  gas_price: null,
-                  gas_used: null,
+                  gas_price: '',
+                  gas_used: '',
                   note: tx.input ? tx.input : '',
                 },
               }));
@@ -473,17 +473,18 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                   accountId: txout.accountCurrency_id,
                   data: {
                     txid: tx.hash,
-                    status: null,
+                    status: '',
                     amount,
+                    balance: amount,
                     symbol: this.currencyInfo.symbol,
                     direction: 'receive',
                     confirmations: 0,
                     timestamp: txout.timestamp ? txout.timestamp : Math.floor(Date.now() / 1000),
-                    source_addresses: tx.from,
+                    source_addresses: tx.from ? tx.from : '',
                     destination_addresses: tx.to ? tx.to : '',
                     fee: txout.fee,
-                    gas_price: null,
-                    gas_used: null,
+                    gas_price: '',
+                    gas_used: '',
                     note: tx.input ? tx.input : '',
                   },
                 }),
