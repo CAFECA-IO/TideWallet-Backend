@@ -187,7 +187,7 @@ class BtcParserBase extends ParserBase {
 
     const destination_addresses = destination_addresses_const;
 
-    await this.sequelize.transaction(async (transaction) => {
+    return this.sequelize.transaction(async (transaction) => {
       // 1. insert tx
       const findTransaction = await this.transactionModel.findOrCreate({
         where: {
@@ -459,13 +459,10 @@ class BtcParserBase extends ParserBase {
             source_addresses: `[${_source_addresses.map((item) => item.address).toString()}]`,
             destination_addresses: `[${_destination_addresses.map((item) => item.address).toString()}]`,
           };
-          console.log('_destination_addresses[i]:', _destination_addresses[i]);
         }
-        return _destination_addresses;
       }
+      return _destination_addresses;
     });
-
-    return destination_addresses;
   }
 
   static cmd({
