@@ -320,7 +320,7 @@ class Account extends Bot {
 
       const findAccountCurrencies = await _db.AccountCurrency.findAll({
         where: {
-          accountCurrency_id: account_id,
+          account_id: findAccountCurrency.account_id,
         },
         include: [
           {

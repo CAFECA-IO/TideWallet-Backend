@@ -14,6 +14,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     this.options = {};
     this.syncInterval = 450000;
     this.decimal = 8;
+    this.updateBalanceAccounts = {};
   }
 
   async init() {
@@ -432,8 +433,64 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       for (const txid of newTxids) {
         try {
           const tx = await this.getTransactionByTxidFromPeer(txid);
-          await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
+          const destination_addresses = await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
+          console.log('BtcCrawlerManagerBase destination_addresses:', destination_addresses);
+
+          // find db account address
+          for (const txout of destination_addresses) {
+            if (txout.accountCurrency_id && txout.user_id) {
+              console.log(JSON.stringify({
+                blockchainId: this.bcid,
+                eventType: 'TRANSACTION_NEW',
+                currencyId: this.currencyInfo.currency_id,
+                accountId: txout.accountCurrency_id,
+                data: {
+                  txid: tx.hash,
+                  status: null,
+                  amount: txout.amount,
+                  symbol: this.currencyInfo.symbol,
+                  direction: 'receive',
+                  confirmations: 0,
+                  timestamp: txout.timestamp ? txout.timestamp : Math.floor(Date.now() / 1000),
+                  source_addresses: tx.from,
+                  destination_addresses: tx.to ? tx.to : '',
+                  fee: txout.fee,
+                  gas_price: null,
+                  gas_used: null,
+                  note: tx.input,
+                },
+              }));
+              await this.fcm.messageToUserTopic(txout.user_id, {
+                title: `receive ${txout.amount} ${this.currencyInfo.symbol}`,
+              }, {
+                title: `receive ${txout.amount} ${this.currencyInfo.symbol}`,
+                body: JSON.stringify({
+                  blockchainId: this.bcid,
+                  eventType: 'TRANSACTION_NEW',
+                  currencyId: this.currencyInfo.currency_id,
+                  accountId: txout.accountCurrency_id,
+                  data: {
+                    txid: tx.hash,
+                    status: null,
+                    amount: txout.amount,
+                    symbol: this.currencyInfo.symbol,
+                    direction: 'receive',
+                    confirmations: 0,
+                    timestamp: txout.timestamp ? txout.timestamp : Math.floor(Date.now() / 1000),
+                    source_addresses: tx.from,
+                    destination_addresses: tx.to ? tx.to : '',
+                    fee: txout.fee,
+                    gas_price: null,
+                    gas_used: null,
+                    note: tx.input,
+                  },
+                }),
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+              });
+            }
+          }
         } catch (error) {
+          console.log('error:', error);
           this.logger.error(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
         }
       }

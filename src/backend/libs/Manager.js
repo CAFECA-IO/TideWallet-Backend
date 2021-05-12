@@ -125,10 +125,26 @@ class Manager extends Bot {
       ecrequest.get(opt)
         .then(async (rs) => {
           const { payload } = JSON.parse(rs.data.toString());
-          await this.database.db[Utils.defaultDBInstanceName].Currency.update(
-            { exchange_rate: payload.amount },
-            { where: { symbol: crypto.symbol } },
-          );
+          if (crypto.symbol === 'BTC') {
+            await this.database.db.bitcoin_mainnet.Currency.update(
+              { exchange_rate: payload.amount },
+              { where: { currency_id: '5b1ea92e584bf50020130612' } },
+            );
+            await this.database.db.bitcoin_testnet.Currency.update(
+              { exchange_rate: payload.amount },
+              { where: { currency_id: '8e1ea17f-38f5-42ab-a24b-82bf8abc851b' } },
+            );
+          }
+          if (crypto.symbol === 'ETH') {
+            await this.database.db.ethereum_mainnet.Currency.update(
+              { exchange_rate: payload.amount },
+              { where: { currency_id: '5b755dacd5dd99000b3d92b2' } },
+            );
+            await this.database.db.ethereum_ropsten.Currency.update(
+              { exchange_rate: payload.amount },
+              { where: { currency_id: '3ab0ffc4-8cd3-4832-ab31-9d99d2691cee' } },
+            );
+          }
         })
         .catch((e) => {
           this.logger.error('syncCryptoRate error:', e);
