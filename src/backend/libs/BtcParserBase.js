@@ -460,8 +460,8 @@ class BtcParserBase extends ParserBase {
             destination_addresses: `[${_destination_addresses.map((item) => item.address).toString()}]`,
           };
           console.log('_destination_addresses[i]:', _destination_addresses[i]);
-          return _destination_addresses;
         }
+        return _destination_addresses;
       }
     });
 
