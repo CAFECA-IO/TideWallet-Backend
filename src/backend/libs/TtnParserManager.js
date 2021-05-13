@@ -5,6 +5,7 @@ class TtnParserManager extends EthParserManagerBase {
     super('80001F51', config, database, logger);
 
     this.options = config.blockchain.titan;
+    this.syncInterval = config.syncInterval.titan ? config.syncInterval.titan : 1500;
   }
 
   async init() {
