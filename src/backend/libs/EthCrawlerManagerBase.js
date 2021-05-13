@@ -446,7 +446,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                 include: [
                   {
                     model: this.accountModel,
-                    attributes: ['user_id'],
+                    attributes: ['user_id', 'blockchain_id'],
                   },
                 ],
               });
@@ -479,6 +479,9 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                       gas_price: bnGasPrice.toFixed(),
                       gas_used: null,
                       note: tx.input,
+                      balance: this.currencyInfo.type === 1
+                        ? await Utils.ethGetBalanceByAddress(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.decimals)
+                        : await Utils.getERC20Token(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.contract, this.currencyInfo.decimals),
                     },
                   }),
                   click_action: 'FLUTTER_NOTIFICATION_CLICK',

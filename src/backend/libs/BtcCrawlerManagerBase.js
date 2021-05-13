@@ -439,6 +439,26 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
           // find db account address
           for (const txout of destination_addresses) {
             if (txout.accountCurrency_id && txout.user_id) {
+              const findAccountCurrency = await this.accountCurrencyModel.findOne({
+                where: { accountCurrency_id: txout.accountCurrency_id },
+              });
+              const findAllAddress = await this.accountAddressModel.findAll({
+                where: { account_id: findAccountCurrency.account_id },
+                attributes: ['accountAddress_id'],
+              });
+              let balance = new BigNumber(0);
+              for (const addressItem of findAllAddress) {
+                const findUTXOByAddress = await this.utxoModel.findAll({
+                  where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
+                  attributes: ['amount'],
+                });
+
+                for (const utxoItem of findUTXOByAddress) {
+                  balance = balance.plus(new BigNumber(utxoItem.amount));
+                }
+              }
+              balance = Utils.dividedByDecimal(balance, this.currencyInfo.decimals);
+
               const bnAmount = new BigNumber(txout.amount, 16);
               const amount = bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed();
               console.log('fcm!!!!!!!!!!', JSON.stringify({
@@ -460,6 +480,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                   gas_price: '',
                   gas_used: '',
                   note: tx.input ? tx.input : '',
+                  balance,
                 },
               }));
               await this.fcm.messageToUserTopic(txout.user_id, {
@@ -475,7 +496,6 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                     txid: tx.hash,
                     status: '',
                     amount,
-                    balance: amount,
                     symbol: this.currencyInfo.symbol,
                     direction: 'receive',
                     confirmations: 0,
@@ -486,6 +506,9 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                     gas_price: '',
                     gas_used: '',
                     note: tx.input ? tx.input : '',
+                    balance: this.currencyInfo.type === 1
+                      ? await Utils.ethGetBalanceByAddress(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.decimals)
+                      : await Utils.getERC20Token(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.contract, this.currencyInfo.decimals),
                   },
                 }),
                 click_action: 'FLUTTER_NOTIFICATION_CLICK',

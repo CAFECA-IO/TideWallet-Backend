@@ -90,7 +90,7 @@ class CrawlerManagerBase {
     try {
       const result = await this.currencyModel.findOne({
         where: { blockchain_id: this.bcid, type: 1 },
-        attributes: ['currency_id', 'decimals', 'symbol'],
+        attributes: ['currency_id', 'decimals', 'symbol', 'type', 'contract'],
       });
       return result;
     } catch (error) {
