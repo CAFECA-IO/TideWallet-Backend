@@ -208,6 +208,7 @@ class BtcParserBase extends ParserBase {
         },
         transaction,
       });
+      let txExist = false;
 
       // check transaction exist
       if (findTransaction && findTransaction.length === 2 && findTransaction[1] === false) {
@@ -225,6 +226,7 @@ class BtcParserBase extends ParserBase {
             transaction,
           });
         }
+        txExist = true;
       }
 
       for (const outputData of tx.vout) {
@@ -461,7 +463,7 @@ class BtcParserBase extends ParserBase {
           };
         }
       }
-      return _destination_addresses;
+      return { destination_addresses: _destination_addresses, txExist };
     });
   }
 

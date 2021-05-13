@@ -433,12 +433,13 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       for (const txid of newTxids) {
         try {
           const tx = await this.getTransactionByTxidFromPeer(txid);
-          const destination_addresses = await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
+          const { destination_addresses, txExist } = await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
+          console.log('txExist:', txExist);
           console.log('BtcCrawlerManagerBase destination_addresses:', destination_addresses);
 
           // find db account address
           for (const txout of destination_addresses) {
-            if (txout.accountCurrency_id && txout.user_id) {
+            if (txout.accountCurrency_id && txout.user_id && !txExist) {
               const findAccountCurrency = await this.accountCurrencyModel.findOne({
                 where: { accountCurrency_id: txout.accountCurrency_id },
               });
