@@ -17,6 +17,7 @@ class CrawlerManagerBase {
     this.blockScannedModel = this.database.BlockScanned;
     this.currencyModel = this.database.Currency;
     this.sequelize = this.database.sequelize;
+    this.Sequelize = this.database.Sequelize;
     this.unparsedTxModel = this.database.UnparsedTransaction;
     this.pendingTransactionModel = this.database.PendingTransaction;
     this.transactionModel = this.database.Transaction;
