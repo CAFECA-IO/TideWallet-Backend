@@ -74,7 +74,7 @@ rate = true
 ethereum = 15000
 cafeca = 15000
 bitcoin = 450000
-titan = 15000
+titan = 1500
 fee = 3600000
 pending = 15000
 
