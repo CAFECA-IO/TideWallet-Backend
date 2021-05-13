@@ -506,9 +506,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                     gas_price: '',
                     gas_used: '',
                     note: tx.input ? tx.input : '',
-                    balance: this.currencyInfo.type === 1
-                      ? await Utils.ethGetBalanceByAddress(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.decimals)
-                      : await Utils.getERC20Token(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.contract, this.currencyInfo.decimals),
+                    balance,
                   },
                 }),
                 click_action: 'FLUTTER_NOTIFICATION_CLICK',
