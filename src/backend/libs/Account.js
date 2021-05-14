@@ -588,7 +588,7 @@ class Account extends Bot {
         },
       });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       this.logger.error('AccountChange e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -889,7 +889,7 @@ class Account extends Bot {
       }
       return new ResponseFormat({ message: 'txid not found', code: Codes.TX_NOT_FOUND });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       this.logger.error('TransactionDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -1005,7 +1005,7 @@ class Account extends Bot {
         payload,
       });
     } catch (e) {
-      console.log('e:', e);
+      console.log('e:', e); // -- no console.log
       this.logger.error('GetUTXO e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
