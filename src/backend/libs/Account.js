@@ -948,17 +948,12 @@ class Account extends Bot {
     }
   }
 
-  async GetUTXO({ params, token, serverCallObject = null }) {
+  async GetUTXO({ params, token }) {
     // account_id -> accountCurrency_id
     const { account_id } = params;
-    let tokenInfo = {};
 
-    if (!serverCallObject) {
-      if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
-      tokenInfo = await Utils.verifyToken(token);
-    } else {
-      tokenInfo = serverCallObject;
-    }
+    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+    const tokenInfo = await Utils.verifyToken(token);
 
     try {
       // find Account

@@ -385,7 +385,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
         }
         const createResult = await this.unparsedTxModel.bulkCreate(insertTx).catch((error) => error);
         if (!Array.isArray(createResult)) {
-          console.log(createResult);
+          console.log(createResult); // -- no console.log
           throw new Error(createResult);
         }
         const step3 = new Date().getTime();
@@ -525,7 +525,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                   note: tx.input ? tx.input : '',
                   balance,
                 },
-              }));
+              })); // -- no console.log
               await this.fcm.messageToUserTopic(txout.user_id, {
                 title: `receive ${amount} ${this.currencyInfo.symbol}`,
               }, {
@@ -582,7 +582,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                   currencyId: this.currencyInfo.currency_id,
                   accountId: txout.accountCurrency_id,
                   data: payload,
-                }));
+                })); // -- no console.log
                 await this.fcm.messageToUserTopic(txout.user_id, {
                   title: `update account(${txout.accountCurrency_id}) utxo`,
                 }, {
@@ -600,7 +600,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
             }
           }
         } catch (error) {
-          console.log('error:', error);
+          console.log('error:', error); // -- no console.log
           this.logger.error(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
         }
       }

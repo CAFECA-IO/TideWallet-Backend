@@ -52,7 +52,7 @@ class Fcm {
         this.logger.log(`registAccountFCMToken userID(${userID}) success`);
       })
       .catch((error) => {
-        console.log(error);
+        console.log(error); // -- no console.log
         this.logger.log('registAccountFCMToken error subscribing to topic:', JSON.stringify(error));
         if (retry < 0) {
           throw error;
@@ -68,7 +68,7 @@ class Fcm {
         this.logger.log(`registAccountFCMToken userID(${userID}) success`);
       })
       .catch((error) => {
-        console.log(error);
+        console.log(error); // -- no console.log
         this.logger.log('registAccountFCMToken error subscribing to topic:', JSON.stringify(error));
         if (retry < 0) {
           throw error;
@@ -90,10 +90,10 @@ class Fcm {
       .messaging()
       .send(messageObj)
       .then((test) => {
-        console.log('messageToUserTopic:', test);
+        console.log('messageToUserTopic:', test); // -- no console.log
       })
       .catch((error) => {
-        console.log('Error sending message:', error);
+        console.log('Error sending message:', error); // -- no console.log
       });
   }
 }

@@ -58,7 +58,7 @@ class Blockchain extends Bot {
         },
       });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       return Promise.reject(new Error(`Create HDWallet Error: ${e}`));
     }
   }
@@ -902,7 +902,7 @@ class Blockchain extends Bot {
 
       return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo.data });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       this.logger.error('BlockHeight error:', JSON.stringify(e));
       return new ResponseFormat({ code: Codes.UNKNOWN_ERROR, message: e.message });
     }
@@ -995,7 +995,7 @@ TTN_UNPARSEBLOCK ${data.payload.TTN.unParseBlock}
 
       return new ResponseFormat({ message: 'Explore Address Detail', payload });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       this.logger.error('NodeInfo e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });

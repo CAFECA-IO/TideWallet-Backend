@@ -118,7 +118,7 @@ class Explore extends Bot {
 
       return new ResponseFormat({ message: 'Explore Transaction Detail', payload });
     } catch (e) {
-      console.log('e:', e);
+      console.log('e:', e); // -- no console.log
       this.logger.error('TransactionDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -210,7 +210,7 @@ class Explore extends Bot {
             fee: Utils.dividedByDecimal(txItem.fee, txItem.currency_decimals),
           });
         } else {
-          console.log('breakFlag');
+          console.log('breakFlag'); // -- no console.log
           breakFlag = true;
           meta.hasNext = true;
           meta.nextIndex = Number(index) + Number(limit);
@@ -837,7 +837,7 @@ class Explore extends Bot {
 
       return new ResponseFormat({ message: 'Explore Address Transactions', items, meta });
     } catch (e) {
-      console.log('e:', e);
+      console.log('e:', e); // -- no console.log
       this.logger.error('NodeInfo e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -952,7 +952,7 @@ class Explore extends Bot {
 
       return new ResponseFormat({ message: 'Explore Search', payload });
     } catch (e) {
-      console.log('e', e);
+      console.log('e', e); // -- no console.log
       this.logger.error('Search e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });

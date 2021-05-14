@@ -483,7 +483,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                     },
                   }),
                   click_action: 'FLUTTER_NOTIFICATION_CLICK',
-                }));
+                })); // -- no console.log
 
                 await this.fcm.messageToUserTopic(findAddressTransactions.Account.user_id, {
                   title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,

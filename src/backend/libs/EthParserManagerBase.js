@@ -320,7 +320,7 @@ class EthParserManagerBase extends ParserManagerBase {
                     },
                   }),
                   click_action: 'FLUTTER_NOTIFICATION_CLICK',
-                });
+                }); // -- no console.log
                 await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.Account.user_id, {
                   title: `tx (${tx.txid}) is confirmations`,
                 }, {

@@ -760,7 +760,7 @@ class Utils {
       const address = bs58check.encode(hashPubKey);
       return address;
     } catch (e) {
-      console.log('e', e);
+      console.log('e', e); // -- no console.log
       return e;
     }
   }
@@ -953,7 +953,7 @@ class Utils {
       this.logger.error(`getTokenNameFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
       return null;
     } catch (error) {
-      console.log(error);
+      console.log(error); // -- no console.log
       this.logger.error(`getTokenNameFromPeer(${address}) error: ${error}`);
       return null;
     }
