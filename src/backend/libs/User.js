@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
+const { default: BigNumber } = require('bignumber.js');
 const HDWallet = require('./HDWallet');
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
@@ -196,9 +197,6 @@ class User extends Bot {
       const payload = await Utils.generateToken({ userID: insertUser.user_id });
       return new ResponseFormat({ message: 'User Regist', payload });
     } catch (e) {
-      console.log(e);
-      console.log(e.error);
-      console.log(e.error[0]);
       this.logger.error('UserRegist e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -264,6 +262,11 @@ class User extends Bot {
 
   async test({ token, body }) {
     try {
+      const tmp = await this.database.db.ethereum_ropsten.BlockScanned.findOne({
+        where: { block: new BigNumber('0x9864e9').toString() },
+      });
+      return tmp;
+
       const {
         txid, accountId, currencyId, blockchainId,
       } = body;
@@ -310,7 +313,7 @@ class User extends Bot {
         body: JSON.stringify({
           blockchainId,
           accountId: findAccountCurrency.accountCurrency_id,
-          eventType: 'TRANSACTION_NEW',
+          eventType: 'TRANSACTION_CONFIRM',
           currencyId,
           data: {
             txid,

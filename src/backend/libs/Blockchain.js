@@ -58,7 +58,7 @@ class Blockchain extends Bot {
         },
       });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       return Promise.reject(new Error(`Create HDWallet Error: ${e}`));
     }
   }
@@ -396,6 +396,51 @@ class Blockchain extends Bot {
 
       if (!findUserAddress) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
 
+      let option = {};
+      let nonce = '0';
+      // TODO: support another blockchain
+      switch (blockchain_id) {
+        case '8000003C':
+        case '8000025B':
+        case '80000CFC':
+        case '80001F51':
+          const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+          if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+          option = { ...blockchainConfig };
+          option.data = {
+            jsonrpc: '2.0',
+            method: 'eth_getTransactionCount',
+            params: [address, 'latest'],
+            id: dvalue.randomID(),
+          };
+          const data = await Utils.ETHRPC(option);
+
+          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
+          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          nonce = new BigNumber(data.result).toFixed();
+
+          return new ResponseFormat({
+            message: 'Get Nonce',
+            payload: { nonce },
+          });
+
+        default:
+          return new ResponseFormat({
+            message: 'Get Nonce',
+            payload: { nonce },
+          });
+      }
+    } catch (e) {
+      this.logger.error('GetNonce e:', e);
+      if (e.code) return e;
+      return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
+    }
+  }
+
+  async GetNonceByAddress({ params }) {
+    const { blockchain_id, address } = params;
+    try {
       let option = {};
       let nonce = '0';
       // TODO: support another blockchain
@@ -857,7 +902,7 @@ class Blockchain extends Bot {
 
       return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo.data });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       this.logger.error('BlockHeight error:', JSON.stringify(e));
       return new ResponseFormat({ code: Codes.UNKNOWN_ERROR, message: e.message });
     }
@@ -950,7 +995,7 @@ TTN_UNPARSEBLOCK ${data.payload.TTN.unParseBlock}
 
       return new ResponseFormat({ message: 'Explore Address Detail', payload });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       this.logger.error('NodeInfo e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });

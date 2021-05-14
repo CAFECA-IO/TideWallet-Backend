@@ -17,6 +17,7 @@ class CrawlerManagerBase {
     this.blockScannedModel = this.database.BlockScanned;
     this.currencyModel = this.database.Currency;
     this.sequelize = this.database.sequelize;
+    this.Sequelize = this.database.Sequelize;
     this.unparsedTxModel = this.database.UnparsedTransaction;
     this.pendingTransactionModel = this.database.PendingTransaction;
     this.transactionModel = this.database.Transaction;
@@ -42,17 +43,17 @@ class CrawlerManagerBase {
 
     // ++ make crawler something wrong
     // ++ temp not sync pending transaction on btc
-    // setInterval(async () => {
-    //   if (!this.isUpdatePending) {
-    //     this.isUpdatePending = true;
-    //     try {
-    //       await this.updatePendingTransaction();
-    //       this.isUpdatePending = false;
-    //     } catch (error) {
-    //       this.isUpdatePending = false;
-    //     }
-    //   }
-    // }, this.pendingTxSyncInterval);
+    setInterval(async () => {
+      if (!this.isUpdatePending) {
+        this.isUpdatePending = true;
+        try {
+          await this.updatePendingTransaction();
+          this.isUpdatePending = false;
+        } catch (error) {
+          this.isUpdatePending = false;
+        }
+      }
+    }, this.pendingTxSyncInterval);
 
     // ++ temp for count rollback times
     this.rollbackCountDir = path.normalize(`${__dirname}/../../../private/rollbackCount`);
@@ -90,7 +91,7 @@ class CrawlerManagerBase {
     try {
       const result = await this.currencyModel.findOne({
         where: { blockchain_id: this.bcid, type: 1 },
-        attributes: ['currency_id', 'decimals'],
+        attributes: ['currency_id', 'decimals', 'symbol', 'type', 'contract'],
       });
       return result;
     } catch (error) {

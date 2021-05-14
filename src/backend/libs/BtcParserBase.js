@@ -32,10 +32,11 @@ class BtcParserBase extends ParserBase {
       const unParsedTx = job;
       const transaction = JSON.parse(unParsedTx.transaction);
       // await this.parseTx(transaction, unParsedTx.timestamp);
-      await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, unParsedTx.timestamp);
+      const destination_addresses = await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, unParsedTx.timestamp);
 
       job.success = true;
       job.updateBalanceAccounts = this.updateBalanceAccounts;
+      return destination_addresses;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] doJob error: ${error}`);
       job.success = false;
@@ -181,10 +182,12 @@ class BtcParserBase extends ParserBase {
     // 8. if vout has account address, and the key index is newest, update number_of_internal_key or number_of_external_key += 1
     this.logger.debug(`[${this.constructor.name}] parseTx(${tx.txid})`);
     const {
-      fee, to, source_addresses, destination_addresses, note,
+      fee, to, source_addresses, destination_addresses: destination_addresses_const, note,
     } = await BtcParserBase.parseBTCTxAmounts.call(this, tx);
 
-    await this.sequelize.transaction(async (transaction) => {
+    const destination_addresses = destination_addresses_const;
+
+    return this.sequelize.transaction(async (transaction) => {
       // 1. insert tx
       const findTransaction = await this.transactionModel.findOrCreate({
         where: {
@@ -205,6 +208,7 @@ class BtcParserBase extends ParserBase {
         },
         transaction,
       });
+      let txExist = false;
 
       // check transaction exist
       if (findTransaction && findTransaction.length === 2 && findTransaction[1] === false) {
@@ -222,8 +226,10 @@ class BtcParserBase extends ParserBase {
             transaction,
           });
         }
+        txExist = true;
       }
 
+      let uxtoUpdate = false;
       for (const outputData of tx.vout) {
         if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
           const [address] = outputData.scriptPubKey.addresses;
@@ -261,6 +267,7 @@ class BtcParserBase extends ParserBase {
               },
               transaction,
             });
+            uxtoUpdate = true;
           }
         }
       }
@@ -286,6 +293,7 @@ class BtcParserBase extends ParserBase {
               },
               transaction,
             });
+            uxtoUpdate = true;
           }
         }
       }
@@ -338,7 +346,7 @@ class BtcParserBase extends ParserBase {
           include: [
             {
               model: this.accountModel,
-              attributes: ['account_id', 'blockchain_id', 'extend_public_key'],
+              attributes: ['account_id', 'blockchain_id', 'extend_public_key', 'user_id'],
               where: { blockchain_id: this.bcid },
             },
           ],
@@ -347,7 +355,7 @@ class BtcParserBase extends ParserBase {
         if (accountAddressTo) {
           // find Blockchain info
           const findBlockInfo = Utils.blockchainIDToBlockInfo(accountAddressTo.Account.blockchain_id);
-          this.updateBalanceAccounts[accountAddressTo.account_id] = { retryCount: 0 };
+          this.updateBalanceAccounts[accountAddressTo.Account.account_id] = { retryCount: 0 };
 
           // 7. add mapping table
           await this.addressTransactionModel.findOrCreate({
@@ -441,8 +449,20 @@ class BtcParserBase extends ParserBase {
               });
             }
           }
+
+          // set destination_addresses fcm data
+          _destination_addresses[i] = {
+            ..._destination_addresses[i],
+            user_id: accountAddressTo.Account.user_id,
+            accountCurrency_id: accountCurrency.accountCurrency_id,
+            timestamp: tx.timestamp,
+            fee: Utils.multipliedByDecimal(fee, currencyInfo.decimals),
+            source_addresses: `[${_source_addresses[i] ? _source_addresses[i].addresses.map((item) => item).toString() : ''}]`,
+            destination_addresses: `[${_destination_addresses[i] ? _destination_addresses[i].addresses.map((item) => item).toString() : ''}]`,
+          };
         }
       }
+      return { destination_addresses: _destination_addresses, txExist, uxtoUpdate };
     });
   }
 

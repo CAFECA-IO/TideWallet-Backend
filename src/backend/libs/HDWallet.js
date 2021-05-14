@@ -2,7 +2,6 @@ const { hdkey } = require('ethereumjs-wallet');
 const bs58 = require('bs58');
 const sha256 = require('js-sha256');
 const bitcoin = require('bitcoinjs-lib');
-const blockchainNetworks = require('./data/blockchainNetworks');
 const Utils = require('./Utils');
 
 class HDWallet {

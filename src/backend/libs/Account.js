@@ -277,7 +277,7 @@ class Account extends Bot {
 
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       this.logger.error('AccountList e:', JSON.stringify(e));
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -320,7 +320,7 @@ class Account extends Bot {
 
       const findAccountCurrencies = await _db.AccountCurrency.findAll({
         where: {
-          accountCurrency_id: account_id,
+          account_id: findAccountCurrency.account_id,
         },
         include: [
           {
@@ -588,7 +588,7 @@ class Account extends Bot {
         },
       });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       this.logger.error('AccountChange e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -625,7 +625,7 @@ class Account extends Bot {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
           },
-          limit: Number(limit) + 1,
+          // limit: Number(limit) + 1,
           include: [
             {
               model: _db.TokenTransaction,
@@ -889,7 +889,7 @@ class Account extends Bot {
       }
       return new ResponseFormat({ message: 'txid not found', code: Codes.TX_NOT_FOUND });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       this.logger.error('TransactionDetail e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
@@ -1000,6 +1000,7 @@ class Account extends Bot {
         payload,
       });
     } catch (e) {
+      console.log('e:', e); // -- no console.log
       this.logger.error('GetUTXO e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });

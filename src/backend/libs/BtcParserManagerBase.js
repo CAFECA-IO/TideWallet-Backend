@@ -102,6 +102,27 @@ class BtcParserManagerBase extends ParserManagerBase {
     }
   }
 
+  async blockDataFromPeer(blockHash) {
+    const blockchainConfig = Utils.getBlockchainConfig(this.bcid);
+    const option = { ...blockchainConfig };
+
+    option.data = {
+      jsonrpc: '1.0',
+      method: 'getblock',
+      params: [blockHash, 1],
+      id: dvalue.randomID(),
+    };
+
+    const checkId = option.data.id;
+    const data = await Utils.BTCRPC(option);
+    if (data instanceof Object) {
+      if (data.id !== checkId) return Promise.reject();
+      return Promise.resolve(data.result);
+    }
+    this.logger.error('\x1b[1m\x1b[90mbtc block data not found\x1b[0m\x1b[21m');
+    return Promise.reject();
+  }
+
   async doParse() {
     if (!this.startParse) {
       this.logger.log(`[${this.constructor.name}] doParse is stop`);
@@ -304,7 +325,6 @@ class BtcParserManagerBase extends ParserManagerBase {
       const missingTxs = transactions.filter((transaction) => (pendingTxids.every((pendingTxid) => pendingTxid !== transaction.txid) && this.block - transaction.block + 1 >= 6));
       for (const tx of missingTxs) {
         try {
-          let _result = false;
           if (tx.block) {
             await this.transactionModel.update(
               {
@@ -317,15 +337,22 @@ class BtcParserManagerBase extends ParserManagerBase {
                 },
               },
             );
-            _result = true;
           } else {
-            const peerTx = await this.getTransactionByTxidFromPeer(tx.txid).catch((error) => error);
+            const peerTx = await this.getTransactionByTxidFromPeer(tx.txid).catch((error) => error); ('peerTx.blockhash:', peerTx.blockhash);
             if (peerTx.blockhash) {
               const blockData = await this.blockDataFromDB(peerTx.blockhash);
-              tx.block = blockData.block;
-              tx.timestamp = peerTx.blocktime;
-              tx.result = tx.confirmations >= 6 ? true : null;
-              _result = tx.result;
+              if (blockData) {
+                tx.block = blockData.block;
+                tx.timestamp = peerTx.blocktime;
+                tx.result = tx.confirmations >= 6 ? true : null;
+              } else {
+                const blockData2 = await this.blockDataFromPeer(peerTx.blockhash);
+                if (blockData2) {
+                  tx.block = blockData2.height;
+                  tx.timestamp = peerTx.blocktime;
+                  tx.result = tx.confirmations >= 6 ? true : null;
+                }
+              }
             } else if (peerTx.code === -5) {
               tx.result = false;
             }
@@ -342,95 +369,6 @@ class BtcParserManagerBase extends ParserManagerBase {
                 },
               },
             );
-          }
-
-          const findAddressTransaction = await this.addressTransactionModel.findOne({
-            include: [
-              {
-                model: this.transactionModel,
-                attributes: ['transaction_id', 'txid', 'currency_id'],
-                where: {
-                  currency_id: this.currencyInfo.currency_id,
-                  txid: tx.txid,
-                },
-              },
-              {
-                model: this.accountAddressModel,
-                attributes: ['account_id'],
-                include: [
-                  {
-                    model: this.accountModel,
-                    attributes: ['blockchain_id', 'user_id'],
-                  },
-                ],
-              },
-              {
-                model: this.currencyModel,
-                attributes: ['decimals'],
-              },
-            ],
-            attributes: ['addressTransaction_id', 'currency_id', 'transaction_id'],
-          });
-          if (findAddressTransaction) {
-            this.updateBalanceAccounts[findAddressTransaction.AccountAddress.account_id] = { retryCount: 0 };
-
-            // fcm confirmations update
-            const findAccountCurrency = await this.accountCurrencyModel.findOne({
-              where: {
-                account_id: findAddressTransaction.AccountAddress.account_id,
-                currency_id: this.currencyInfo.currency_id,
-              },
-              attributes: ['accountCurrency_id'],
-            });
-
-            const DBName = Utils.blockchainIDToDBName(this.bcid);
-
-            const findAllAddress = await this.accountAddressModel.findAll({
-              where: { account_id: findAddressTransaction.AccountAddress.account_id },
-              attributes: ['accountAddress_id'],
-            });
-            let balance = new BigNumber(0);
-            for (const addressItem of findAllAddress) {
-              const findUTXOByAddress = await this.utxoModel.findAll({
-                where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
-                attributes: ['amount'],
-              });
-
-              for (const utxoItem of findUTXOByAddress) {
-                balance = balance.plus(new BigNumber(utxoItem.amount));
-              }
-            }
-            balance = Utils.dividedByDecimal(balance, findAddressTransaction.Currency.decimals);
-            if (findAccountCurrency) {
-              await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.Account.user_id, {
-                title: `tx (${tx.txid}) is confirmations`,
-              }, {
-                title: `tx (${tx.txid}) is confirmations`,
-                body: JSON.stringify({
-                  blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
-                  eventType: 'TRANSACTION_NEW',
-                  currencyId: this.currencyInfo.currency_id,
-                  accountId: findAccountCurrency.accountCurrency_id,
-                  data: {
-                    txid: tx.txid,
-                    status: tx.result ? 'success' : 'failed',
-                    amount: tx.amount,
-                    symbol: DBName,
-                    direction: findAddressTransaction.direction === 0 ? 'send' : 'receive',
-                    confirmations: this.block - tx.block,
-                    timestamp: tx.timestamp,
-                    source_addresses: tx.source_addresses,
-                    destination_addresses: tx.destination_addresses,
-                    fee: tx.fee,
-                    gas_price: tx.gas_price,
-                    gas_used: tx.gas_used,
-                    note: tx.note,
-                    balance,
-                  },
-                }),
-                click_action: 'FLUTTER_NOTIFICATION_CLICK',
-              });
-            }
           }
         } catch (error) {
           this.logger.error(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.txid}) error: ${error}`);

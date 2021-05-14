@@ -420,11 +420,12 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
           });
           if (!txResult) {
             this.logger.debug(`[${this.constructor.name}] parsePendingTransaction create transaction(${tx.hash})`);
+            const destination_addresses = tx.to ? tx.to : '';
             txResult = await this.transactionModel.create({
               currency_id: this.currencyInfo.currency_id,
               txid: tx.hash,
               source_addresses: tx.from,
-              destination_addresses: tx.to ? tx.to : '',
+              destination_addresses,
               amount: bnAmount.toFixed(),
               note: tx.input,
               block: parseInt(tx.blockNumber, 16),
@@ -432,6 +433,90 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
               fee,
               gas_price: bnGasPrice.toFixed(),
             });
+
+            if (destination_addresses) {
+              // new receive transaction and notify app
+              const findBlockTimestamp = await this.blockScannedModel.findOne({
+                where: { block: parseInt(tx.blockNumber, 16) },
+              });
+              const timestamp = findBlockTimestamp || Math.floor(Date.now() / 1000);
+
+              const findAddressTransactions = await this.accountAddressModel.findOne({
+                where: { address: destination_addresses },
+                include: [
+                  {
+                    model: this.accountModel,
+                    attributes: ['user_id', 'blockchain_id'],
+                  },
+                ],
+              });
+
+              if (findAddressTransactions) {
+                const findAccountCurrency = await this.accountCurrencyModel.findOne({
+                  where: { account_id: findAddressTransactions.account_id },
+                });
+
+                console.log('fcm tx new!!!!!!!!!!', JSON.stringify({
+                  title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,
+                  body: JSON.stringify({
+                    blockchainId: this.bcid,
+                    eventType: 'TRANSACTION_NEW',
+                    currencyId: this.currencyInfo.currency_id,
+                    accountId: findAccountCurrency.accountCurrency_id,
+                    data: {
+                      txid: tx.hash,
+                      status: null,
+                      amount: bnAmount.toFixed(),
+                      symbol: this.currencyInfo.symbol,
+                      direction: 'receive',
+                      confirmations: 0,
+                      timestamp,
+                      source_addresses: tx.from,
+                      destination_addresses: tx.to ? tx.to : '',
+                      fee,
+                      gas_price: bnGasPrice.toFixed(),
+                      gas_used: null,
+                      note: tx.input,
+                      balance: this.currencyInfo.type === 1
+                        ? await Utils.ethGetBalanceByAddress(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.decimals)
+                        : await Utils.getERC20Token(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.contract, this.currencyInfo.decimals),
+                    },
+                  }),
+                  click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                })); // -- no console.log
+
+                await this.fcm.messageToUserTopic(findAddressTransactions.Account.user_id, {
+                  title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,
+                }, {
+                  title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,
+                  body: JSON.stringify({
+                    blockchainId: this.bcid,
+                    eventType: 'TRANSACTION_NEW',
+                    currencyId: this.currencyInfo.currency_id,
+                    accountId: findAccountCurrency.accountCurrency_id,
+                    data: {
+                      txid: tx.hash,
+                      status: null,
+                      amount: bnAmount.toFixed(),
+                      symbol: this.currencyInfo.symbol,
+                      direction: 'receive',
+                      confirmations: 0,
+                      timestamp,
+                      source_addresses: tx.from,
+                      destination_addresses: tx.to ? tx.to : '',
+                      fee,
+                      gas_price: bnGasPrice.toFixed(),
+                      gas_used: null,
+                      note: tx.input,
+                      balance: this.currencyInfo.type === 1
+                        ? await Utils.ethGetBalanceByAddress(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.decimals)
+                        : await Utils.getERC20Token(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.contract, this.currencyInfo.decimals),
+                    },
+                  }),
+                  click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                });
+              }
+            }
           } else {
             const updateResult = await this.transactionModel.update(
               {

@@ -293,11 +293,11 @@ class EthParserManagerBase extends ParserManagerBase {
 
               const DBName = Utils.blockchainIDToDBName(this.bcid);
               if (findAccountCurrency) {
-                console.log({
+                console.log('fcm tx confirmations!!!!!!!!!!', {
                   title: `tx (${tx.txid}) is confirmations`,
                   body: JSON.stringify({
                     blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
-                    eventType: 'TRANSACTION_NEW',
+                    eventType: 'TRANSACTION_CONFIRM',
                     currencyId: this.currencyInfo.currency_id,
                     accountId: findAccountCurrency.accountCurrency_id,
                     data: {
@@ -320,14 +320,14 @@ class EthParserManagerBase extends ParserManagerBase {
                     },
                   }),
                   click_action: 'FLUTTER_NOTIFICATION_CLICK',
-                });
+                }); // -- no console.log
                 await this.fcm.messageToUserTopic(findAddressTransaction.AccountAddress.Account.user_id, {
                   title: `tx (${tx.txid}) is confirmations`,
                 }, {
                   title: `tx (${tx.txid}) is confirmations`,
                   body: JSON.stringify({
                     blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,
-                    eventType: 'TRANSACTION_NEW',
+                    eventType: 'TRANSACTION_CONFIRM',
                     currencyId: this.currencyInfo.currency_id,
                     accountId: findAccountCurrency.accountCurrency_id,
                     data: {

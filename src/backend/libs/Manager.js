@@ -125,9 +125,9 @@ class Manager extends Bot {
       ecrequest.get(opt)
         .then(async (rs) => {
           const { payload } = JSON.parse(rs.data.toString());
-          await this.database.db[Utils.defaultDBInstanceName].Currency.update(
+          await this.database.db.bitcoin_mainnet.Currency.update(
             { exchange_rate: payload.amount },
-            { where: { symbol: crypto.symbol } },
+            { where: { currency_id: crypto.asset_id } },
           );
         })
         .catch((e) => {
