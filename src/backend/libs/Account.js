@@ -277,7 +277,7 @@ class Account extends Bot {
 
       return new ResponseFormat({ message: 'Get Account List', payload });
     } catch (e) {
-      console.log(e);
+      console.log(e); // -- no console.log
       this.logger.error('AccountList e:', JSON.stringify(e));
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
