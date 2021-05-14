@@ -3,30 +3,224 @@
 title = "TideWallet-Backend"
 
 [base]
+domain = "https://service.tidewallet.io"
 folder = "TideWallet-Backend"
-static = "./build/frontend/"
-debug = false
+static = "./public/"
+token_secret_expire_time = 31536000 # 365 * 24 * 60 * 60 (expires in 365 day)
+logLevel = 'info'
+user_id = 'ec6d68b5-fcee-4d36-810a-7a257554896e'
+extendPublicKey = ''
 
-[blockchain]
-type = "ethereum"
+[cryptoapis]
+key = ""
+
+[blockchain.ethereum_mainnet]
+blockchain_id = "8000003C"
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 8545
+path = "/"
+
+[blockchain.ethereum_ropsten]
+blockchain_id = "8000025B"
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 8545
+path = "/"
+
+[blockchain.cafeca]
+blockchain_id = "80000CFC"
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 8545
+path = "/"
+
+[blockchain.bitcoin_mainnet]
+blockchain_id = "80000000"
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 18332
+path = "/"
+user = ''
+password = ''
+
+[blockchain.bitcoin_testnet]
+blockchain_id = "80000001"
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 18332
+path = "/"
+user = ''
+password = ''
+
+[blockchain.titan]
+blockchain_id = "80001F51"
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 8545
+path = "/"
+
+[syncSwitch]
+bitcoin_mainnet = false
+bitcoin_testnet = false
+ethereum_mainnet = false
+ethereum_ropsten = false
+cafeca = false
+titan = false
+cryptoRate = true
+rate = true
+
+[syncInterval]
+ethereum = 15000
+cafeca = 15000
+bitcoin = 450000
+titan = 1500
+fee = 3600000
+pending = 15000
 
 [database]
-protocol = "postgres"
-host = "postgres"
-port = ""
-user = ""
-password = ""
-dbName = ""
-logging = false
-autoReconnect = true
-ormEnable = true
-  [database.dialectOptions]
-  connectTimeout = 3000
+  [database.bitcoin_mainnet]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.bitcoin_mainnet.dialectOptions]
+    connectTimeout = 3000
+    [database.bitcoin_mainnet.pool]
+    max = 10
+    
+  [database.bitcoin_testnet]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.bitcoin_testnet.dialectOptions]
+    connectTimeout = 3000
+    [database.bitcoin_testnet.pool]
+    max = 10
+    
+  [database.ethereum_mainnet]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.ethereum_mainnet.dialectOptions]
+    connectTimeout = 3000
+    [database.ethereum_mainnet.pool]
+    max = 10
+    
+  [database.ethereum_ropsten]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.ethereum_ropsten.dialectOptions]
+    connectTimeout = 3000
+    [database.ethereum_ropsten.pool]
+    max = 10
+    
+  [database.cafeca]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.cafeca.dialectOptions]
+    connectTimeout = 3000
+    [database.cafeca.pool]
+    max = 10
 
-  [database.pool]
-  max = 100
+  [database.titan]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.titan.dialectOptions]
+    connectTimeout = 3000
+    [database.titan.pool]
+    max = 10
+
+[jwt]
+secret = ""
+
+[rabbitmq]
+host = "amqp://localhost"
 
 [api]
 pathname = [
-  "get | /,/version | Static.Utils.readPackageInfo"
+  "get | /,/version | Static.Utils.readPackageInfo",
+  "get | /api/v1/blockchain | Bot.Blockchain.BlockchainList",
+  "get | /api/v1/blockchain/:blockchain_id | Bot.Blockchain.BlockchainDetail",
+  "get | /api/v1/currency | Bot.Blockchain.CurrencyList",
+  "get | /api/v1/currency/:currency_id | Bot.Blockchain.CurrencyDetail",
+  "get | /api/v1/blockchain/:blockchain_id/token | Bot.Blockchain.TokenList",
+  "get | /api/v1/blockchain/:blockchain_id/token/:token_id | Bot.Blockchain.TokenDetail",
+  "post | /api/v1/user | Bot.User.UserRegist",
+  "post | /api/v1/user/id | Bot.User.UserAppID",
+  "get | /api/v1/token/verify | Bot.User.AccessTokenVerify",
+  "post | /api/v1/token/renew | Bot.User.AccessTokenRenew",
+  "post | /api/v1/wallet/blockchain/:blockchain_id/contract/:contract | Bot.Account.TokenRegist",
+  "get | /api/v1/wallet/accounts | Bot.Account.AccountList",
+  "get | /api/v1/wallet/account/:account_id | Bot.Account.AccountDetail",
+  "get | /api/v1/wallet/account/address/:account_id/receive | Bot.Account.AccountReceive",
+  "get | /api/v1/wallet/account/address/:account_id/change | Bot.Account.AccountChange",
+  "get | /api/v1/wallet/account/txs/:account_id | Bot.Account.ListTransactions",
+  "get | /api/v1/wallet/account/tx/:txid | Bot.Account.TransactionDetail",
+  "get | /api/v1/wallet/account/txs/uxto/:account_id | Bot.Account.GetUTXO",
+  "get | /api/v1/blockchain/:blockchain_id/fee | Bot.Blockchain.GetFee",
+  "post | /api/v1/blockchain/:blockchain_id/gas-limit | Bot.Blockchain.GetGasLimit",
+  "get | /api/v1/blockchain/:blockchain_id/address/:address/nonce | Bot.Blockchain.GetNonce",
+  "get | /api/v1/blockchain/:blockchain_id/address/:address/nonce/platform | Bot.Blockchain.GetNonceByAddress",
+  "post | /api/v1/blockchain/:blockchain_id/push-tx | Bot.Blockchain.PublishTransaction",
+  "get | /api/v1/fiats/rate | Bot.Blockchain.FiatsRate",
+  "get | /api/v1/crypto/rate | Bot.Blockchain.CryptoRate",
+  "get | /api/v1/blockchain/:blockchain_id/contract/:contract | Bot.Blockchain.TokenInfo",
+  "get | /api/v1/blockchains/height | Bot.Blockchain.BlockHeight",
+  "get | /api/v1/blockchains/height/metrics | Bot.Blockchain.BlockHeightMetrics",
+
+  # explore
+  "get | /api/v1/explore/info | Bot.Explore.NodeInfo",
+  "get | /api/v1/explore/address/:address | Bot.Explore.AddressDetail",
+  "get | /api/v1/explore/address/:address/transactions | Bot.Explore.AddressTransactions",
+  "get | /api/v1/explore/transactions | Bot.Explore.TransactionList",
+  "get | /api/v1/explore/transaction/:txid | Bot.Explore.TransactionDetail",
+  "get | /api/v1/explore/Blocks | Bot.Explore.BlockList",
+  "get | /api/v1/explore/blockchain/:blockchain_id/block/:block_id | Bot.Explore.BlockDetail",
+  "get | /api/v1/explore/blockchain/:blockchain_id/block/:block_id/transactions | Bot.Explore.BlockTransactions",
+  "post | /api/v1/explore/search/:search_string | Bot.Explore.Search",
+
+  # system
+  "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets",
+
+  # tmp
+  "post | /api/v1/test | Bot.User.test",
 ]

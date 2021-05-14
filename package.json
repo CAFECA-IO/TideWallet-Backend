@@ -10,32 +10,53 @@
   },
   "bundleDependencies": false,
   "dependencies": {
+    "amqplib": "^0.7.1",
+    "base58": "^2.0.1",
+    "bignumber.js": "^9.0.1",
+    "bip32": "^2.0.6",
+    "bitcoinjs-lib": "^5.2.0",
+    "bs58": "^4.0.1",
+    "bs58check": "^2.1.2",
     "command-line-args": "^5.0.2",
     "dvalue": "^1.0.20",
-    "ecrequest": "^1.1.3",
+    "ecrequest": "^1.1.5",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.22.1",
+    "ethereumjs-util": "^7.0.8",
+    "ethereumjs-wallet": "^1.0.1",
+    "firebase-admin": "^9.6.0",
     "i18n": "^0.8.3",
+    "js-sha256": "^0.9.0",
+    "jsonwebtoken": "^8.5.1",
     "koa": "^2.7.0",
     "koa-body": "^4.0.8",
+    "koa-compress": "^5.0.1",
+    "koa-cors": "0.0.16",
+    "koa-helmet": "^6.0.0",
     "koa-router": "^7.4.0",
     "koa-session": "^5.10.1",
     "koa-static": "^5.0.0",
-    "level": "^4.0.0",
+    "level": "^6.0.1",
+    "log4js": "^6.3.0",
     "ncp": "^2.0.0",
     "pem": "^1.14.2",
     "pg": "^8.5.1",
+    "rand-token": "^1.0.1",
     "sequelize": "^6.5.0",
     "spdy": "^4.0.0",
     "toml": "^3.0.0",
-    "ws": "^6.2.0"
+    "uuid": "^8.3.2",
+    "web3": "^1.3.4",
+    "ws": "^6.2.0",
+    "zlib": "^1.0.5"
   },
   "deprecated": false,
   "description": "Backend API Service and Blockchain Crawler for TideWallet",
   "devDependencies": {
     "@babel/core": "^7.3.3",
     "babel-plugin-transform-decorators-legacy": "^1.3.5",
-    "eslint": "^7.19.0"
+    "eslint": "^7.19.0",
+    "sequelize-cli": "^6.2.0"
   },
   "keywords": [
     "frontend",
@@ -50,7 +71,11 @@
     "url": "git+https://github.com:BOLT-Protocol/TideWallet-Backend.git"
   },
   "scripts": {
-    "start": "bin/main.js"
+    "start": "bin/main.js",
+    "deploy": "ansible-playbook tool/playbook.yml",
+    "migrateDB": "sh tool/scripts/migrateDB.sh",
+    "deleteDB": "sh tool/scripts/deleteDB.sh",
+    "undoDB": "sh tool/scripts/undoDB.sh"
   },
-  "version": "0.1.11"
+  "version": "1.0.0"
 }

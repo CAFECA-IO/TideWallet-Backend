@@ -1,0 +1,7 @@
+[multi]
+backend ansible_ssh_host=127.0.0.1 ansible_port=22 ansible_user=vagrant ansible_ssh_private_key_file=key_path
+btc_mainnet_crawler ansible_ssh_host=127.0.0.1 ansible_port=22 ansible_user=vagrant ansible_ssh_private_key_file=key_path
+btc_testnet_crawler ansible_ssh_host=127.0.0.1 ansible_port=22 ansible_user=vagrant ansible_ssh_private_key_file=key_path
+eth_mainnet_crawler ansible_ssh_host=127.0.0.1 ansible_port=22 ansible_user=vagrant ansible_ssh_private_key_file=key_path
+eth_testnet_crawler ansible_ssh_host=127.0.0.1 ansible_port=22 ansible_user=vagrant ansible_ssh_private_key_file=key_path
+cfc_crawler ansible_ssh_host=127.0.0.1 ansible_port=22 ansible_user=vagrant ansible_ssh_private_key_file=key_path

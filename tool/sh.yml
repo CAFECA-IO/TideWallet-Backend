@@ -1,0 +1,7 @@
+run_script: >
+  cd TideWallet-Backend;
+  git checkout .;
+  git checkout develop;
+  git pull origin develop;
+  npm run migrateDB;
+  pm2 restart all;

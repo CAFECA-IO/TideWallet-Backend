@@ -1,15 +1,37 @@
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-
 const level = require('level');
+const bs58check = require('bs58check');
+const EthUtils = require('ethereumjs-util');
+const crypto = require('crypto');
+const bitcoin = require('bitcoinjs-lib');
+const BigNumber = require('bignumber.js');
+const log4js = require('log4js');
+
+const Web3 = require('web3');
+
+const { BN } = EthUtils;
 const toml = require('toml');
+const randToken = require('rand-token');
+const JWT = require('jsonwebtoken');
 const i18n = require('i18n');
 const dvalue = require('dvalue');
 const ecRequest = require('ecrequest');
-const initialORM = require('../database/models');
+const blockchainNetworks = require('./data/blockchainNetworks');
+
+const Codes = require('./Codes');
+const ResponseFormat = require('./ResponseFormat');
+const initialORM = require('../../database/models');
 
 class Utils {
+  constructor() {
+    // assign by readConfig
+    this.config = {};
+    this.logger = {};
+    this.database = {};
+  }
+
   static waterfallPromise(jobs) {
     return jobs.reduce((prev, curr) => prev.then(() => curr()), Promise.resolve());
   }
@@ -152,6 +174,40 @@ class Utils {
     return result;
   }
 
+  static BTCRPC({
+    // eslint-disable-next-line no-shadow
+    protocol, port, hostname, path, data, user, password,
+  }) {
+    const basicAuth = this.base64Encode(`${user}:${password}`);
+    const opt = {
+      protocol,
+      port,
+      hostname,
+      path,
+      headers: { 'content-type': 'application/json', Authorization: `Basic ${basicAuth}` },
+      data,
+      timeout: 30000,
+    };
+    const start = new Date();
+    return ecRequest.post(opt)
+      .then((rs) => {
+        let response = '';
+        try {
+          response = JSON.parse(rs.data);
+        } catch (e) {
+          this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
+          this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+          return false;
+        }
+        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        return Promise.resolve(response);
+      })
+      .catch((e) => {
+        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        throw e;
+      });
+  }
+
   static ETHRPC({
     // eslint-disable-next-line no-shadow
     protocol, port, hostname, path, data,
@@ -163,8 +219,26 @@ class Utils {
       path,
       headers: { 'content-type': 'application/json' },
       data,
+      timeout: 3000,
     };
-    return ecRequest.post(opt).then((rs) => Promise.resolve(JSON.parse(rs.data)));
+    const start = new Date();
+    return ecRequest.post(opt)
+      .then((rs) => {
+        let response = '';
+        try {
+          response = JSON.parse(rs.data);
+        } catch (e) {
+          this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
+          this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+          return e;
+        }
+        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        return Promise.resolve(response);
+      })
+      .catch((e) => {
+        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        throw e;
+      });
   }
 
   static initialAll({ configPath }) {
@@ -179,20 +253,16 @@ class Utils {
       })
       .then((config) => Promise.all([
         config,
-        this.initialLevel(config),
         initialORM(config),
         this.initialLogger(config),
-        this.initiali18n(config),
         this.initialProcess(config),
       ]))
       .then((rs) => Promise.resolve({
         config: rs[0],
         database: {
-          leveldb: rs[1],
-          mongodb: rs[2],
+          db: rs[1],
         },
-        logger: rs[3],
-        i18n: rs[4],
+        logger: rs[2],
       }))
       .catch(console.trace);
   }
@@ -429,10 +499,25 @@ class Utils {
   }
 
   static initialLogger({ base }) {
+    log4js.configure({
+      appenders: {
+        out: {
+          type: 'stdout',
+        },
+      },
+      categories: {
+        default: {
+          appenders: ['out'],
+          level: base.logLevel || 'debug',
+        },
+      },
+    });
+    this.loggerAdapter = log4js.getLogger('TideWallet');
     return Promise.resolve({
-      log: console.log,
-      debug: base.debug ? console.log : () => {},
-      trace: console.trace,
+      log: (...data) => this.loggerAdapter.info('%s', data),
+      error: (...data) => this.loggerAdapter.error('%s', data),
+      debug: (...data) => this.loggerAdapter.debug('%s', data),
+      trace: (...data) => this.loggerAdapter.trace('%s', data),
     });
   }
 
@@ -446,10 +531,20 @@ class Utils {
     config, database, logger, i18n,
   }) {
     const interfaceFN = 'Bot.js';
-    // const interfaceBot = require(path.resolve(__dirname, interfaceFN));
+    this.config = config;
+    this.database = database;
+    this.logger = logger;
+    this.databaseInstanceName = [];
+    this.web3 = new Web3();
+
+    Object.keys(database.db).forEach((item) => {
+      this.databaseInstanceName.push(item);
+    });
+
+    this.defaultDBInstanceName = this.databaseInstanceName.findIndex((element) => element === 'cafeca') !== -1 ? 'cafeca' : this.databaseInstanceName[0];
     return this.scanFolder({ folder: __dirname })
-      .then((list) => list.filter((v) => path.parse(v).name !== path.parse(interfaceFN).name))
-      // eslint-disable-next-line global-require, import/no-dynamic-require
+      .then((list) => list.filter((v) => (path.parse(v).name !== path.parse(interfaceFN).name) && v.indexOf('.js') !== -1))
+      // eslint-disable-next-line import/no-dynamic-require, global-require
       .then((list) => list.map((v) => require(v)))
       .then((list) => list.filter((v) => v.isBot))
       // eslint-disable-next-line new-cap
@@ -537,7 +632,7 @@ class Utils {
         if (options.credentials === true) {
           if (origin === '*') {
             // `credentials` can't be true when the `origin` is set to `*`
-            ctx.remove('Access-Control-Allow-Credentials');
+            // -- ctx.remove('Access-Control-Allow-Credentials');
           } else {
             ctx.set('Access-Control-Allow-Credentials', 'true');
           }
@@ -551,6 +646,502 @@ class Utils {
         await next();
       }
     };
+  }
+
+  static validateString(str) {
+    return !(!str || typeof str !== 'string' || str.length <= 0);
+  }
+
+  static validateNumber(num) {
+    if (!(/^(([\d]{1,18}(\.\d*)*)|(10{18}))$/.test(num)) || num < 0) {
+      return false;
+    }
+    return true;
+  }
+
+  static async generateToken({ userID, data = {} }) {
+    const tokenSecret = randToken.uid(256);
+    const expireTime = new Date(new Date().getTime() + (Number(this.config.base.token_secret_expire_time) * 1000));
+
+    const findOne = await this.database.db[this.defaultDBInstanceName].TokenSecret.findOrCreate({
+      where: { user_id: userID },
+      defaults: {
+        tokenSecret, user_id: userID, expire_time: expireTime,
+      },
+    });
+
+    if (!findOne[1]) {
+      // update
+      await this.database.db[this.defaultDBInstanceName].TokenSecret.update({
+        tokenSecret, user_id: userID, expire_time: expireTime,
+      },
+      {
+        where: { user_id: userID },
+      });
+    }
+
+    return {
+      token: JWT.sign({ userID, ...data }, this.config.jwt.secret, {
+        expiresIn: this.config.base.token_secret_expire_time,
+      }),
+      tokenSecret,
+      user_id: userID,
+    };
+  }
+
+  static base64Encode(string) {
+    const buf = Buffer.from(string);
+    return buf.toString('base64');
+  }
+
+  static async verifyToken(token, ignoreExpiration = false) {
+    try {
+      const option = { ignoreExpiration };
+      const data = JWT.verify(token, this.config.jwt.secret, option);
+
+      const { userID } = data;
+      const findUser = await this.database.db[this.defaultDBInstanceName].User.findOne({
+        where: { user_id: userID },
+      });
+
+      if (!findUser) throw new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
+
+      data.user = findUser;
+      return data;
+    } catch (err) {
+      if (err.code === Codes.USER_NOT_FOUND) throw new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
+      if (err.message === 'jwt expired') throw new ResponseFormat({ message: 'expired access token', code: Codes.EXPIRED_ACCESS_TOKEN });
+      throw new ResponseFormat({ message: `server error(${err.message})`, code: Codes.SERVER_ERROR });
+    }
+  }
+
+  static ripemd160(data) {
+    const hash = crypto.createHash('ripemd160');
+    hash.update(data);
+    return hash.digest();
+  }
+
+  static sha256(message) {
+    const hash = crypto.createHash('sha256');
+    hash.update(message);
+    return hash.digest();
+  }
+
+  static compressedPublicKey(uncomperedPublicKey) {
+    if (typeof uncomperedPublicKey === 'string') uncomperedPublicKey = Buffer.from(uncomperedPublicKey, 'hex');
+    if (uncomperedPublicKey.length % 2 === 1) {
+      uncomperedPublicKey = uncomperedPublicKey.slice(1, uncomperedPublicKey.length);
+    }
+
+    const x = uncomperedPublicKey.slice(0, 32);
+    const y = uncomperedPublicKey.slice(32, 64);
+
+    const bnP = new BN('fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f', 16);
+
+    const bnX = new BN(x.toString('hex'), 16);
+    const bnY = new BN(y.toString('hex'), 16);
+
+    const check = bnX.pow(new BN(3)).add(new BN(7)).sub((bnY.pow(new BN(2)))).mod(bnP);
+
+    if (!check.isZero()) return 'Error';
+    const prefix = bnY.isEven() ? '02' : '03';
+    const compressed = Buffer.concat([Buffer.from(prefix, 'hex'), x]);
+
+    return compressed;
+  }
+
+  static toP2pkhAddress(blockchainID, pubkey) {
+    try {
+      const _pubkey = pubkey.replace('0x', '');
+      const fingerprint = this.ripemd160(this.sha256(_pubkey.length > 33 ? this.compressedPublicKey(_pubkey) : _pubkey));
+      const findNetwork = Object.values(blockchainNetworks).find((value) => value.blockchain_id === blockchainID);
+      const prefix = Buffer.from((findNetwork.pubKeyHash).toString(16).padStart(2, '0'), 'hex');
+      const hashPubKey = Buffer.concat([prefix, fingerprint]);
+      const address = bs58check.encode(hashPubKey);
+      return address;
+    } catch (e) {
+      console.log('e', e); // -- no console.log
+      return e;
+    }
+  }
+
+  static pubkeyToP2WPKHAddress(blockchainID, pubkey) {
+    let address;
+    if (blockchainID === '80000000') {
+      const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.bitcoin });
+      address = p2wpkh.address;
+    } else if (blockchainID === '80000001') {
+      const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.testnet });
+      address = p2wpkh.address;
+    }
+    return address;
+  }
+
+  static toP2wpkhAddress(blockchainID, pubkey) {
+    // Compressed Public Key to P2WPKH Address
+    const address = this.pubkeyToP2WPKHAddress(blockchainID, pubkey);
+    return address;
+  }
+
+  static is0xPrefixed(value) {
+    return value.toString().slice(0, 2) === '0x';
+  }
+
+  static parse32BytesAddress(address) {
+    if (typeof address !== 'string') return '';
+    const parsedAddr = address.slice(-40);
+    if (Utils.is0xPrefixed(address)) {
+      return `0x${parsedAddr}`;
+    }
+    return parsedAddr;
+  }
+
+  static async ethGetBalanceByAddress(blockchain_id, address, decimals = 18) {
+    const blockchainConfig = this.getBlockchainConfig(blockchain_id);
+    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+
+    const option = { ...blockchainConfig };
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_getBalance',
+      params: [address, 'pending'],
+      id: dvalue.randomID(),
+    };
+
+    const checkId = option.data.id;
+    const data = await this.ETHRPC(option);
+    if (data instanceof Object) {
+      if (data.id === checkId) {
+        // use address find account
+        try {
+          if (!data.result) return '0';
+          return new BigNumber(data.result).dividedBy(new BigNumber(10 ** decimals)).toFixed();
+
+          // eslint-disable-next-line no-empty
+        } catch (e) {
+          return '0';
+        }
+      }
+    }
+  }
+
+  static async getERC20Token(blockchain_id, address, contract, decimals = 18) {
+    const _address = address.replace('0x', '').padStart(64, '0');
+    const command = `0x70a08231${_address}`;
+
+    const blockchainConfig = this.getBlockchainConfig(blockchain_id);
+    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    const option = { ...blockchainConfig };
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_call',
+      params: [{
+        to: contract,
+        data: command,
+      },
+      'latest'],
+      id: dvalue.randomID(),
+    };
+
+    const checkId = option.data.id;
+    const data = await this.ETHRPC(option);
+    if (data instanceof Object) {
+      if (data.id === checkId) {
+        // use address find account
+        try {
+          return new BigNumber(data.result).dividedBy(new BigNumber(10 ** decimals)).toFixed();
+
+          // eslint-disable-next-line no-empty
+        } catch (e) {
+          return '0';
+        }
+      }
+    }
+  }
+
+  static dividedByDecimal(amount, decimal) {
+    if (typeof decimal === 'undefined' || decimal === null) return '0';
+    let _amount = (amount instanceof BigNumber) ? amount : new BigNumber(amount);
+    if (typeof amount === 'string' && (amount).indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
+    return _amount.dividedBy(new BigNumber(10 ** decimal)).toFixed();
+  }
+
+  static multipliedByDecimal(amount, decimal) {
+    if (typeof decimal === 'undefined' || decimal === null) return '8';
+    let _amount = (amount instanceof BigNumber) ? amount : new BigNumber(amount);
+    if (typeof amount === 'string' && (amount).indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
+    return _amount.multipliedBy(new BigNumber(10 ** decimal)).toFixed();
+  }
+
+  static getBlockchainConfig(blockchain_id) {
+    return Object.values(this.config.blockchain).find((info) => info.blockchain_id === blockchain_id) || false;
+  }
+
+  static hash160(data) {
+    return this.ripemd160(this.sha256(data));
+  }
+
+  static pubkeyToBIP49RedeemScript(compressedPubKey) {
+    const rs = [0x00, 0x14];
+    rs.push(...this.hash160(compressedPubKey));
+    return Buffer.from(rs);
+  }
+
+  static pubkeyToP2SHAddress(type, compressedPubKey) {
+    const redeemScript = this.pubkeyToBIP49RedeemScript(compressedPubKey);
+    const fingerprint = this.hash160(redeemScript);
+    // List<int> checksum = sha256(sha256(fingerprint)).sublist(0, 4);
+    // bs58check library 會幫加checksum
+    const address = bs58check.encode(Uint8Array.from([type.p2shAddressPrefix, ...fingerprint]));
+    return address;
+  }
+
+  static formatAddressArray(addresses) {
+    if (typeof addresses === 'string') {
+      try {
+        addresses = JSON.parse(addresses);
+      } catch (e) {
+        // if is eth address: '0x123456789...' JSON.parse will panic, only return string
+        return addresses;
+      }
+    }
+    let result = [];
+    addresses.forEach((addressItem) => {
+      if (Array.isArray(addressItem.addresses)) {
+        result = result.concat(addressItem.addresses);
+      } else {
+        result.push(addressItem.addresses);
+      }
+    });
+
+    return result.join();
+  }
+
+  static randomStr(length) {
+    let key = '';
+    const charset = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let i = 0; i < length; i++) { key += charset.charAt(Math.floor(Math.random() * charset.length)); }
+    return key;
+  }
+
+  static async getTokenNameFromPeer(options, address) {
+    try {
+      const command = '0x06fdde03'; // erc20 get name
+      options.data = {
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{
+          to: address,
+          data: command,
+        }, 'latest'],
+        id: dvalue.randomID(),
+      };
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error('getTokenNameFromPeer fail');
+          return null;
+        }
+        if (data.result) {
+          const nameEncode = data.result;
+          if (nameEncode.length !== 194) return nameEncode;
+          const name = this.web3.eth.abi.decodeParameter('string', nameEncode);
+          return Promise.resolve(name);
+        }
+      }
+      this.logger.error(`getTokenNameFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      return null;
+    } catch (error) {
+      console.log(error); // -- no console.log
+      this.logger.error(`getTokenNameFromPeer(${address}) error: ${error}`);
+      return null;
+    }
+  }
+
+  static async getTokenSymbolFromPeer(options, address) {
+    try {
+      const command = '0x95d89b41'; // erc20 get synbol
+      options.data = {
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{
+          to: address,
+          data: command,
+        }, 'latest'],
+        id: dvalue.randomID(),
+      };
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error('getTokenSymbolFromPeer fail');
+          return null;
+        }
+        if (data.result) {
+          const symbolEncode = data.result;
+          if (symbolEncode.length !== 194) return symbolEncode;
+          const symbol = this.web3.eth.abi.decodeParameter('string', symbolEncode);
+          return Promise.resolve(symbol);
+        }
+      }
+      this.logger.error(`getTokenSymbolFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`getTokenSymbolFromPeer(${address}) error: ${error}`);
+      return null;
+    }
+  }
+
+  static async getTokenDecimalFromPeer(options, address) {
+    try {
+      const command = '0x313ce567'; // erc20 get decimals
+      options.data = {
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{
+          to: address,
+          data: command,
+        }, 'latest'],
+        id: dvalue.randomID(),
+      };
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error('getTokenDecimalFromPeer fail');
+          return null;
+        }
+        const decimals = data.result;
+        if (data.result) { return Promise.resolve(parseInt(decimals, 16)); }
+      }
+      this.logger.error(`getTokenDecimalFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`getTokenDecimalFromPeer(${address}) error: ${error}`);
+      return null;
+    }
+  }
+
+  static async getTokenTotalSupplyFromPeer(options, address) {
+    try {
+      const command = '0x18160ddd'; // erc20 get total supply
+      options.data = {
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{
+          to: address,
+          data: command,
+        }, 'latest'],
+        id: dvalue.randomID(),
+      };
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error('getTokenTotalSupplyFromPeer fail');
+          return null;
+        }
+        if (data.result) {
+          const bnTotalSupply = new BigNumber(data.result, 16);
+          return Promise.resolve(bnTotalSupply.toFixed());
+        }
+      }
+      this.logger.error(`getTokenTotalSupplyFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`getTokenTotalSupplyFromPeer(${address}) error: ${error}`);
+      return null;
+    }
+  }
+
+  static async ethGetBlockByNumber(option, blockHeight) {
+    option.data = {
+      jsonrpc: '2.0',
+      method: 'eth_getBlockByNumber',
+      params: [`0x${(blockHeight).toString(16)}`, false],
+      id: dvalue.randomID(),
+    };
+    const rs = await this.ETHRPC(option);
+    if (rs && rs.result && rs.result.number !== null) return rs;
+    return null;
+  }
+
+  static async getETHTps(blockchain_id, blockHeight) {
+    const blockchainConfig = this.getBlockchainConfig(blockchain_id);
+    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    const option = { ...blockchainConfig };
+
+    const findAllTxs = await Promise.all([
+      this.ethGetBlockByNumber(option, blockHeight),
+      this.ethGetBlockByNumber(option, blockHeight - 1),
+      this.ethGetBlockByNumber(option, blockHeight - 2),
+    ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+    if (findAllTxs.code === Codes.RPC_ERROR) return 0;
+
+    const timeTaken = findAllTxs[0].result.timestamp - findAllTxs[2].result.timestamp;
+    const transactionCount = findAllTxs.reduce((prev, curr) => {
+      const prevLen = (prev.result) ? prev.result.transactions.length : prev.len;
+      return { len: prevLen + curr.result.transactions.length };
+    }, { len: 0 });
+    const tps = transactionCount.len / timeTaken;
+    return tps.toFixed(2);
+  }
+
+  static async btcGetBlockByNumber(option, blockHeight) {
+    option.data = {
+      jsonrpc: '1.0',
+      method: 'getblockstats',
+      params: [blockHeight, ['time', 'txs']],
+      id: dvalue.randomID(),
+    };
+    const rs = await this.BTCRPC(option);
+    if (rs && rs.result && rs.result.number !== null) return rs;
+    return null;
+  }
+
+  static async getBTCTps(blockchain_id, blockHeight) {
+    const blockchainConfig = this.getBlockchainConfig(blockchain_id);
+    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    const option = { ...blockchainConfig };
+
+    const findAllTxs = await Promise.all([
+      this.btcGetBlockByNumber(option, blockHeight),
+      this.btcGetBlockByNumber(option, blockHeight - 1),
+      this.btcGetBlockByNumber(option, blockHeight - 2),
+    ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+    if (findAllTxs.code === Codes.RPC_ERROR) return 0;
+
+    const timeTaken = findAllTxs[0].result.time - findAllTxs[2].result.time;
+    const transactionCount = findAllTxs.reduce((prev, curr) => {
+      if (prev.result)console.log(prev.result.txs);
+      const prevLen = (prev.result) ? prev.result.txs : prev.len;
+      return { len: prevLen + curr.result.txs };
+    }, { len: 0 });
+    const tps = transactionCount.len / timeTaken;
+    return tps.toFixed(2);
+  }
+
+  static blockchainIDToDBName(blockchainID) {
+    const { db_name } = Utils.blockchainIDToBlockInfo(blockchainID);
+    return db_name;
+  }
+
+  static blockchainIDToNetworkID(blockchainID) {
+    const { network_id } = Utils.blockchainIDToBlockInfo(blockchainID);
+    return network_id;
+  }
+
+  static blockchainIDToBlockInfo(blockchainID) {
+    const networks = Object.values(blockchainNetworks);
+    const findIndex = networks.findIndex((item) => item.blockchain_id === blockchainID);
+    if (findIndex === -1) throw new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    return networks[findIndex];
+  }
+
+  static formatIconUrl(iconUrl) {
+    const host = this.config.base.domain ? this.config.base.domain : '';
+    return iconUrl.replace('undefined', host);
   }
 }
 

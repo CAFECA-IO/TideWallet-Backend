@@ -1,5 +1,4 @@
 const path = require('path');
-
 const pem = require('pem');
 const http = require('http');
 const spdy = require('spdy');
@@ -7,6 +6,13 @@ const Koa = require('koa');
 const Router = require('koa-router');
 const bodyParser = require('koa-body');
 const staticServe = require('koa-static');
+const compress = require('koa-compress');
+const helmet = require('koa-helmet');
+const cors = require('koa-cors');
+const zlib = require('zlib');
+const Utils = require('./Utils');
+const ResponseFormat = require('./ResponseFormat');
+const Codes = require('./Codes');
 
 // eslint-disable-next-line import/no-dynamic-require
 const Bot = require(path.resolve(__dirname, 'Bot.js'));
@@ -36,10 +42,23 @@ class Receptor extends Bot {
       .then(() => this.createPem())
       .then((options) => {
         const app = new Koa();
-        app.use(staticServe(this.config.base.static))
+        const corsOptions = {
+          credentials: true,
+        };
+        app
+          .use(cors(corsOptions))
+          .use(staticServe(this.config.base.static))
           .use(bodyParser({ multipart: true }))
           .use(this.router.routes())
-          .use(this.router.allowedMethods());
+          .use(this.router.allowedMethods())
+          .use(compress({
+            threshold: 2048,
+            gzip: {
+              flush: zlib.constants.Z_SYNC_FLUSH,
+            },
+            br: false,
+          }))
+          .use(helmet());
         return this.listen({ options, callback: app.callback() });
       });
   }
@@ -85,6 +104,7 @@ class Receptor extends Bot {
   register({ pathname, options, operation }) {
     const method = options.method.toLowerCase();
     this.router[method](pathname, (ctx, next) => {
+      const requestID = Utils.randomStr(6);
       const inputs = {
         body: ctx.request.body,
         files: ctx.request.files,
@@ -93,11 +113,20 @@ class Receptor extends Bot {
         method: ctx.method,
         query: ctx.query,
         session: ctx.session,
-
+        token: ctx.header.token,
+        requestID,
       };
+      this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} request body: ${JSON.stringify(ctx.request.body)}`);
       return operation(inputs)
         .then((rs) => {
           ctx.body = rs;
+          this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${JSON.stringify(ctx.body)}`);
+          next();
+        })
+        .catch((e) => {
+          // unhandled error
+          ctx.body = new ResponseFormat({ message: `unknown error(${e.message})`, code: Codes.UNKNOWN_ERROR });
+          if (ctx.method !== 'GET') this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${JSON.stringify(ctx.body)}`);
           next();
         });
     });
