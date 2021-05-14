@@ -953,7 +953,6 @@ class Account extends Bot {
     const { account_id } = params;
     let tokenInfo = {};
 
-    console.log('serverCallObject:', serverCallObject);
     if (!serverCallObject) {
       if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
       tokenInfo = await Utils.verifyToken(token);
