@@ -625,7 +625,7 @@ class Account extends Bot {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
           },
-          limit: Number(limit) + 1,
+          // limit: Number(limit) + 1,
           include: [
             {
               model: _db.TokenTransaction,
@@ -948,12 +948,18 @@ class Account extends Bot {
     }
   }
 
-  async GetUTXO({ params, token }) {
+  async GetUTXO({ params, token, serverCallObject = null }) {
     // account_id -> accountCurrency_id
     const { account_id } = params;
+    let tokenInfo = {};
 
-    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
-    const tokenInfo = await Utils.verifyToken(token);
+    console.log('serverCallObject:', serverCallObject);
+    if (!serverCallObject) {
+      if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+      tokenInfo = await Utils.verifyToken(token);
+    } else {
+      tokenInfo = serverCallObject;
+    }
 
     try {
       // find Account
@@ -1000,6 +1006,7 @@ class Account extends Bot {
         payload,
       });
     } catch (e) {
+      console.log('e:', e);
       this.logger.error('GetUTXO e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });

@@ -325,7 +325,6 @@ class BtcParserManagerBase extends ParserManagerBase {
       const missingTxs = transactions.filter((transaction) => (pendingTxids.every((pendingTxid) => pendingTxid !== transaction.txid) && this.block - transaction.block + 1 >= 6));
       for (const tx of missingTxs) {
         try {
-          // let _result = false;
           if (tx.block) {
             await this.transactionModel.update(
               {
@@ -338,10 +337,8 @@ class BtcParserManagerBase extends ParserManagerBase {
                 },
               },
             );
-            // _result = true;
           } else {
-            const peerTx = await this.getTransactionByTxidFromPeer(tx.txid).catch((error) => error);
-            console.log('peerTx.blockhash:', peerTx.blockhash);
+            const peerTx = await this.getTransactionByTxidFromPeer(tx.txid).catch((error) => error); ('peerTx.blockhash:', peerTx.blockhash);
             if (peerTx.blockhash) {
               const blockData = await this.blockDataFromDB(peerTx.blockhash);
               if (blockData) {
@@ -349,16 +346,13 @@ class BtcParserManagerBase extends ParserManagerBase {
                 tx.timestamp = peerTx.blocktime;
                 tx.result = tx.confirmations >= 6 ? true : null;
               } else {
-                console.log('call blockDataFromPeer');
                 const blockData2 = await this.blockDataFromPeer(peerTx.blockhash);
-                // console.log('blockData2:', blockData2);
                 if (blockData2) {
                   tx.block = blockData2.height;
                   tx.timestamp = peerTx.blocktime;
                   tx.result = tx.confirmations >= 6 ? true : null;
                 }
               }
-              // _result = tx.result;
             } else if (peerTx.code === -5) {
               tx.result = false;
             }
@@ -377,7 +371,6 @@ class BtcParserManagerBase extends ParserManagerBase {
             );
           }
         } catch (error) {
-          console.log('error', error);
           this.logger.error(`[${this.constructor.name}] parsePendingTransaction update failed transaction(${tx.txid}) error: ${error}`);
         }
       }

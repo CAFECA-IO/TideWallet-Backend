@@ -456,6 +456,35 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                   where: { account_id: findAddressTransactions.account_id },
                 });
 
+                console.log('fcm tx new!!!!!!!!!!', JSON.stringify({
+                  title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,
+                  body: JSON.stringify({
+                    blockchainId: this.bcid,
+                    eventType: 'TRANSACTION_NEW',
+                    currencyId: this.currencyInfo.currency_id,
+                    accountId: findAccountCurrency.accountCurrency_id,
+                    data: {
+                      txid: tx.hash,
+                      status: null,
+                      amount: bnAmount.toFixed(),
+                      symbol: this.currencyInfo.symbol,
+                      direction: 'receive',
+                      confirmations: 0,
+                      timestamp,
+                      source_addresses: tx.from,
+                      destination_addresses: tx.to ? tx.to : '',
+                      fee,
+                      gas_price: bnGasPrice.toFixed(),
+                      gas_used: null,
+                      note: tx.input,
+                      balance: this.currencyInfo.type === 1
+                        ? await Utils.ethGetBalanceByAddress(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.decimals)
+                        : await Utils.getERC20Token(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.contract, this.currencyInfo.decimals),
+                    },
+                  }),
+                  click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                }));
+
                 await this.fcm.messageToUserTopic(findAddressTransactions.Account.user_id, {
                   title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,
                 }, {

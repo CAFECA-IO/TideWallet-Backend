@@ -229,6 +229,7 @@ class BtcParserBase extends ParserBase {
         txExist = true;
       }
 
+      let uxtoUpdate = false;
       for (const outputData of tx.vout) {
         if (outputData.scriptPubKey && outputData.scriptPubKey.addresses) {
           const [address] = outputData.scriptPubKey.addresses;
@@ -266,6 +267,7 @@ class BtcParserBase extends ParserBase {
               },
               transaction,
             });
+            uxtoUpdate = true;
           }
         }
       }
@@ -291,6 +293,7 @@ class BtcParserBase extends ParserBase {
               },
               transaction,
             });
+            uxtoUpdate = true;
           }
         }
       }
@@ -350,7 +353,6 @@ class BtcParserBase extends ParserBase {
           transaction,
         });
         if (accountAddressTo) {
-          console.log('accountAddressTo!!!!!!!', destinationAddress);
           // find Blockchain info
           const findBlockInfo = Utils.blockchainIDToBlockInfo(accountAddressTo.Account.blockchain_id);
           this.updateBalanceAccounts[accountAddressTo.Account.account_id] = { retryCount: 0 };
@@ -448,9 +450,6 @@ class BtcParserBase extends ParserBase {
             }
           }
 
-          console.log('_source_addresses:', _source_addresses);
-          console.log('_destination_addresses:', _destination_addresses);
-
           // set destination_addresses fcm data
           _destination_addresses[i] = {
             ..._destination_addresses[i],
@@ -463,7 +462,7 @@ class BtcParserBase extends ParserBase {
           };
         }
       }
-      return { destination_addresses: _destination_addresses, txExist };
+      return { destination_addresses: _destination_addresses, txExist, uxtoUpdate };
     });
   }
 

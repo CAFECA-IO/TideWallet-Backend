@@ -417,6 +417,41 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     return insertResult;
   }
 
+  async _findAccountUTXO({
+    findAccountCurrency, payload, chain_index, key_index,
+  }) {
+    // find AccountAddress
+    const findAccountAddress = await this.accountAddressModel.findOne({ where: { account_id: findAccountCurrency.Account.account_id, chain_index, key_index } });
+    if (!findAccountAddress) return;
+
+    // find all UTXO
+    const findUTXO = await this.utxoModel.findAll({
+      where: { accountAddress_id: findAccountAddress.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
+      include: [
+        {
+          model: this.accountAddressModel,
+          attributes: ['address'],
+        },
+      ],
+    });
+
+    for (let i = 0; i < findUTXO.length; i++) {
+      const utxo = findUTXO[i];
+      payload.push({
+        txid: utxo.txid,
+        utxo_id: utxo.utxo_id,
+        vout: utxo.vout,
+        type: utxo.type,
+        amount: utxo.amount,
+        script: utxo.script,
+        timestamp: utxo.on_block_timestamp,
+        chain_index,
+        key_index,
+        address: utxo.AccountAddress.address,
+      });
+    }
+  }
+
   async updatePendingTransaction() {
     this.logger.debug(`[${this.constructor.name}] updatePendingTransaction`);
     try {
@@ -429,19 +464,26 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
 
       // 3. create transaction which is not in step 1 array
       const newTxids = pendingTxids.filter((pendingTxid) => transactions.every((transaction) => pendingTxid !== transaction.txid));
-      console.log('newTxids:', newTxids.length);
       for (const txid of newTxids) {
         try {
           const tx = await this.getTransactionByTxidFromPeer(txid);
-          const { destination_addresses, txExist } = await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
-          console.log('txExist:', txExist);
-          console.log('BtcCrawlerManagerBase destination_addresses:', destination_addresses);
+          const { destination_addresses, txExist, uxtoUpdate } = await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
 
           // find db account address
           for (const txout of destination_addresses) {
             if (txout.accountCurrency_id && txout.user_id && !txExist) {
               const findAccountCurrency = await this.accountCurrencyModel.findOne({
-                where: { accountCurrency_id: txout.accountCurrency_id },
+                where: {
+                  accountCurrency_id: txout.accountCurrency_id,
+                },
+                include: [
+                  {
+                    model: this.accountModel,
+                    where: {
+                      user_id: txout.user_id,
+                    },
+                  },
+                ],
               });
               const findAllAddress = await this.accountAddressModel.findAll({
                 where: { account_id: findAccountCurrency.account_id },
@@ -462,7 +504,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
 
               const bnAmount = new BigNumber(txout.amount, 16);
               const amount = bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed();
-              console.log('fcm!!!!!!!!!!', JSON.stringify({
+              console.log('fcm tx new!!!!!!!!!!', JSON.stringify({
                 blockchainId: this.bcid,
                 eventType: 'TRANSACTION_NEW',
                 currencyId: this.currencyInfo.currency_id,
@@ -512,6 +554,49 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
                 }),
                 click_action: 'FLUTTER_NOTIFICATION_CLICK',
               });
+
+              if (uxtoUpdate) {
+                // find Account
+                const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
+                const payload = [];
+                // find external address txs
+                for (let i = 0; i <= number_of_external_key; i++) {
+                  // find all address
+                  await this._findAccountUTXO({
+                    findAccountCurrency, payload, chain_index: 0, key_index: i,
+                  });
+                }
+
+                // find internal address txs
+                for (let i = 0; i <= number_of_internal_key; i++) {
+                  await this._findAccountUTXO({
+                    findAccountCurrency, payload, chain_index: 1, key_index: i,
+                  });
+                }
+
+                // sort by timestamps
+                payload.sort((a, b) => b.timestamp - a.timestamp);
+                console.log('fcm UTXO new!!!!!!!!!!', JSON.stringify({
+                  blockchainId: this.bcid,
+                  eventType: 'UTXO',
+                  currencyId: this.currencyInfo.currency_id,
+                  accountId: txout.accountCurrency_id,
+                  data: payload,
+                }));
+                await this.fcm.messageToUserTopic(txout.user_id, {
+                  title: `update account(${txout.accountCurrency_id}) utxo`,
+                }, {
+                  title: `update account(${txout.accountCurrency_id}) utxo`,
+                  body: JSON.stringify({
+                    blockchainId: this.bcid,
+                    eventType: 'UTXO',
+                    currencyId: this.currencyInfo.currency_id,
+                    accountId: txout.accountCurrency_id,
+                    data: payload,
+                  }),
+                  click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                });
+              }
             }
           }
         } catch (error) {
