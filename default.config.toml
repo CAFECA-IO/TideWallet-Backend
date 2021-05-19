@@ -53,6 +53,24 @@ path = "/"
 user = ''
 password = ''
 
+[blockchain.bitcoin_cash_mainnet]
+blockchain_id = "80000091"
+protocol = "https:"
+hostname = "bitcoincash.tidewallet.io"
+port = 443
+path = "/"
+user = "tideisun"
+password = "BpZ9SCNs4KEUkUut"
+
+[blockchain.bitcoin_cash_testnet]
+blockchain_id = "80000001"
+protocol = "https:"
+hostname = "bitcoincash-testnet.tidewallet.io"
+port = 443
+path = "/"
+user = "tideisun"
+password = "BpZ9SCNs4KEUkUut"
+
 [blockchain.titan]
 blockchain_id = "80001F51"
 protocol = "http:"
@@ -74,6 +92,7 @@ rate = true
 ethereum = 15000
 cafeca = 15000
 bitcoin = 450000
+bitcoin_cash = 450000
 titan = 1500
 fee = 3600000
 pending = 15000
