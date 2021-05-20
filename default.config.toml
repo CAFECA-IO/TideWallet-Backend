@@ -127,6 +127,36 @@ pending = 15000
     connectTimeout = 3000
     [database.bitcoin_testnet.pool]
     max = 10
+
+  [database.bitcoin_cash_mainnet]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.bitcoin_mainnet.dialectOptions]
+    connectTimeout = 3000
+    [database.bitcoin_mainnet.pool]
+    max = 10
+    
+  [database.bitcoin_cash_testnet]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.bitcoin_testnet.dialectOptions]
+    connectTimeout = 3000
+    [database.bitcoin_testnet.pool]
+    max = 10
     
   [database.ethereum_mainnet]
   protocol = "postgres"
