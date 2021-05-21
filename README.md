@@ -1,10 +1,30 @@
 # TideWallet-Backend
 Backend API Service and Blockchain Crawler for TideWallet
 
+## General Requirements
+
+- Node.js - v10.16.3
+
 ## API doc
 
 [postman](https://github.com/BOLT-Protocol/TideWallet-Backend/blob/master/doc)
 
+
+## Init FCM
+
+```
+source: https://firebase.google.com/docs/admin/setup#initialize-sdk
+
+To generate a private key file for your service account:
+
+In the Firebase console, open Settings > Service Accounts.
+
+Click Generate New Private Key, then confirm by clicking Generate Key.
+
+Securely store the JSON file containing the key.
+```
+
+copy file to `private/service-account-file.json`
 
 ## Install RabbitMQ
 

@@ -48,7 +48,7 @@ module.exports = {
     {
       name: 'Aave',
       symbol: 'AAVE',
-      contract: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9',
+      contract: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
     },
     {
       name: 'Maker',
@@ -73,7 +73,7 @@ module.exports = {
     {
       name: 'Balancer',
       symbol: 'BAL',
-      contract: '0xba100000625a3754423978a60c9317c58a424e3D',
+      contract: '0xba100000625a3754423978a60c9317c58a424e3d',
     },
   ],
 };
