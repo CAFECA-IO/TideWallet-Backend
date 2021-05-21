@@ -26,6 +26,42 @@ Securely store the JSON file containing the key.
 
 copy file to `private/service-account-file.json`
 
+## Init auto pull script
+
+Step1. add update script
+
+```
+vim update.sh
+```
+
+```bash
+changed=0
+cd /home/ubuntu/TideWallet-Backend
+git checkout .
+git checkout main
+git remote update && git status -uno | grep -q 'Your branch is behind' && changed=1
+if [ $changed = 1 ]; then
+  git pull origin main
+  pm2 restart 0
+fi
+```
+
+Step2. update script permissions
+
+```
+chmod +x update.sh
+```
+
+Step3. add crontab
+
+```
+crontab -e
+```
+
+```
+* * * * * /home/ubuntu/update.sh
+```
+
 ## Install RabbitMQ
 
 ```
