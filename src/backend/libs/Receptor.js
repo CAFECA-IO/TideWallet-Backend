@@ -17,8 +17,6 @@ const Codes = require('./Codes');
 // eslint-disable-next-line import/no-dynamic-require
 const Bot = require(path.resolve(__dirname, 'Bot.js'));
 
-http.globalAgent.maxSockets = 10;
-
 const defaultHTTP = [5566, 80];
 const defaultHTTPS = [7788, 443];
 
