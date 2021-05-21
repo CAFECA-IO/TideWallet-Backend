@@ -111,7 +111,7 @@ class Blockchain extends Bot {
       for (const tokenItem of tokenList[dbName]) {
         const findCurrency = await this.database.db[dbName].Currency.findOne({ where: { contract: tokenItem.contract } });
         if (findCurrency) {
-          if ((findCurrency.name !== tokenItem.name) || (findCurrency.name !== tokenItem.name)) {
+          if ((findCurrency.name !== tokenItem.name) || (findCurrency.symbol !== tokenItem.symbol)) {
             await this.database.db[dbName].Currency.update({
               name: tokenItem.name,
               symbol: tokenItem.symbol,
