@@ -17,6 +17,8 @@ const Codes = require('./Codes');
 // eslint-disable-next-line import/no-dynamic-require
 const Bot = require(path.resolve(__dirname, 'Bot.js'));
 
+http.globalAgent.maxSockets = 10;
+
 const defaultHTTP = [5566, 80];
 const defaultHTTPS = [7788, 443];
 
@@ -120,13 +122,17 @@ class Receptor extends Bot {
       return operation(inputs)
         .then((rs) => {
           ctx.body = rs;
-          this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${JSON.stringify(ctx.body)}`);
+          let rsString = JSON.stringify(ctx.body);
+          if ((ctx.method === 'GET')) rsString = rsString.slice(0, 4000);
+          this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${rsString} ...`);
           next();
         })
         .catch((e) => {
           // unhandled error
           ctx.body = new ResponseFormat({ message: `unknown error(${e.message})`, code: Codes.UNKNOWN_ERROR });
-          if (ctx.method !== 'GET') this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${JSON.stringify(ctx.body)}`);
+          let rsString = JSON.stringify(ctx.body);
+          if ((ctx.method === 'GET')) rsString = rsString.slice(0, 4000);
+          this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${rsString}`);
           next();
         });
     });

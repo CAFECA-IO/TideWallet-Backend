@@ -12,6 +12,7 @@ const Utils = require('./Utils');
 const blockchainNetworks = require('./data/blockchainNetworks');
 const fiatCurrencyRate = require('./data/fiatCurrencyRate');
 const currency = require('./data/currency');
+const tokenList = require('./data/tokenList');
 const DBOperator = require('./DBOperator');
 const HDWallet = require('./HDWallet');
 
@@ -22,6 +23,7 @@ class Blockchain extends Bot {
     this.tags = {};
     this.cacheBlockchainInfo = {};
     this.updateBalanceAccounts = {};
+    this.tideWalletTokenList = [];
   }
 
   init({
@@ -40,6 +42,7 @@ class Blockchain extends Bot {
       await this.initBlockchainNetworks();
       await this.initCurrency();
       await this.initFiatCurrencyRate();
+      await this.initTokenList();
       if (!this.isCrawler()) { await this.initBackendHDWallet(); }
       return this;
     });
@@ -101,6 +104,28 @@ class Blockchain extends Bot {
         defaults: fiatCurrencyRateItem,
       });
     }
+  }
+
+  async initTokenList() {
+    for (const dbName of Object.keys(tokenList)) {
+      for (const tokenItem of tokenList[dbName]) {
+        const findCurrency = await this.database.db[dbName].Currency.findOne({ where: { contract: tokenItem.contract } });
+        if (findCurrency) {
+          this.tideWalletTokenList.push({
+            currency_id: findCurrency.currency_id,
+            name: findCurrency.name,
+            symbol: findCurrency.symbol,
+            type: findCurrency.type,
+            publish: findCurrency.publish,
+            decimals: findCurrency.decimals,
+            exchange_rate: findCurrency.exchange_rate,
+            icon: findCurrency.icon || `${this.config.base.domain}/icon/ERC20.png`,
+            contract: findCurrency.contract,
+          });
+        }
+      }
+    }
+    console.log('this.tideWalletTokenList:', JSON.stringify(this.tideWalletTokenList));
   }
 
   async BlockchainList() {
@@ -210,8 +235,11 @@ class Blockchain extends Bot {
     }
   }
 
-  async TokenList({ params }) {
+  async TokenList({ params, query }) {
     const { blockchain_id } = params;
+    const { type } = query;
+
+    if (type && type === 'TideWallet') return new ResponseFormat({ message: 'List Supported Currencies', payload: this.tideWalletTokenList });
     try {
       let payload = await this.DBOperator.findAll({
         tableName: 'Currency',
