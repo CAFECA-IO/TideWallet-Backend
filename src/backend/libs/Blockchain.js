@@ -111,6 +111,14 @@ class Blockchain extends Bot {
       for (const tokenItem of tokenList[dbName]) {
         const findCurrency = await this.database.db[dbName].Currency.findOne({ where: { contract: tokenItem.contract } });
         if (findCurrency) {
+          if ((findCurrency.name !== tokenItem.name) || (findCurrency.name !== tokenItem.name)) {
+            await this.database.db[dbName].Currency.update({
+              name: tokenItem.name,
+              symbol: tokenItem.symbol,
+            }, {
+              where: { contract: tokenItem.contract },
+            });
+          }
           this.tideWalletTokenList.push({
             currency_id: findCurrency.currency_id,
             name: findCurrency.name,
@@ -125,7 +133,6 @@ class Blockchain extends Bot {
         }
       }
     }
-    console.log('this.tideWalletTokenList:', JSON.stringify(this.tideWalletTokenList));
   }
 
   async BlockchainList() {
