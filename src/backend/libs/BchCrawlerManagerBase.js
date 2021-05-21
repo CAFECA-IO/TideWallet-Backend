@@ -78,7 +78,7 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.error('\x1b[1m\x1b[90mbtc block number not found\x1b[0m\x1b[21m');
+    this.logger.error('\x1b[1m\x1b[90mbch block number not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -93,7 +93,7 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.error('\x1b[1m\x1b[90mbtc block data not found\x1b[0m\x1b[21m');
+    this.logger.error('\x1b[1m\x1b[90mbch block data not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -108,7 +108,7 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.error('\x1b[1m\x1b[90mbtc block hash not found\x1b[0m\x1b[21m');
+    this.logger.error('\x1b[1m\x1b[90mbch block hash not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
