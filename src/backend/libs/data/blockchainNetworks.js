@@ -62,7 +62,7 @@ module.exports = {
     name: 'Bitcoin Cash Testnet',
     coin_type: 1,
     network_id: 0,
-    publish: true,
+    publish: false,
     description: 'Bitcoin Cash Testnet description',
     block: 0,
     bip32: {

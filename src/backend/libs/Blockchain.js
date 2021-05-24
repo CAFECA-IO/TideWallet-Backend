@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const ecrequest = require('ecrequest');
 // ++ remove after extract to instance class
 const BtcParserBase = require('./BtcParserBase');
+const BchParserBase = require('./BchParserBase');
 const ResponseFormat = require('./ResponseFormat');
 const Bot = require('./Bot.js');
 const Codes = require('./Codes');
@@ -549,6 +550,38 @@ class Blockchain extends Bot {
     }
   }
 
+  async saveBCHPublishTransaction(tx, currencyInfo, timestamp, retryCount = 0) {
+    if (retryCount > 3) {
+      this.logger.error('saveBCHPublishTransaction retry error');
+      this.logger.error('saveBCHPublishTransaction tx', JSON.stringify(tx));
+      this.logger.error('saveBCHPublishTransaction currencyInfo', JSON.stringify(currencyInfo.toJSON()));
+      return;
+    }
+    try {
+      // ++ change after extract to instance class
+      const DBName = Utils.blockchainIDToDBName(this.bcid);
+      const _db = this.database.db[DBName];
+      const that = { ...this };
+      that.transactionModel = _db.Transaction;
+      that.accountAddressModel = _db.AccountAddress;
+      that.accountModel = _db.Account;
+      that.blockchainModel = _db.Blockchain;
+      that.utxoModel = _db.UTXO;
+      that.addressTransactionModel = _db.AddressTransaction;
+      that.accountCurrencyModel = _db.AccountCurrency;
+      that.sequelize = _db.sequelize;
+      that.Sequelize = _db.Sequelize;
+
+      await BchParserBase.parseTx.call(that, tx, currencyInfo, timestamp);
+    } catch (error) {
+      this.logger.error('saveBCHPublishTransaction retry error:', error.message);
+      setTimeout(() => {
+        this.saveBCHPublishTransaction(tx, currencyInfo, timestamp, retryCount += 1);
+      }, 300);
+    }
+  }
+
+
   async PublishTransaction({ params, body }) {
     const { blockchain_id } = params;
     const { hex } = body;
@@ -631,6 +664,60 @@ class Blockchain extends Bot {
           const _data = { ...data.result, height: findCurrency.Blockchain.block };
 
           await this.saveBTCPublishTransaction(_data, findCurrency, Math.floor(Date.now() / 1000), 0);
+
+          return new ResponseFormat({
+            message: 'Publish Transaction',
+            payload: { txid },
+          });
+
+        case '80000091':
+        case '80000001': // ++ TODO change bch testnet blocId by Emily 2021.05.24
+          option = { ...blockchainConfig };
+          let txid = '';
+          // send transaction
+          option.data = {
+            jsonrpc: '1.0',
+            method: 'sendrawtransaction',
+            params: [hex],
+            id: dvalue.randomID(),
+          };
+          data = await Utils.BCHRPC(option);
+          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
+          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          txid = data.result;
+
+          // if send success, insert transaction & pending utxo to db
+          option.data = {
+            jsonrpc: '1.0',
+            method: 'decoderawtransaction',
+            params: [hex],
+            id: dvalue.randomID(),
+          };
+          data = await Utils.BCHRPC(option);
+          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
+          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+
+          const DBName = Utils.blockchainIDToDBName(blockchain_id);
+          const _db = this.database.db[DBName];
+          const findCurrency = await _db.Currency.findOne({
+            where: {
+              blockchain_id,
+              type: 1,
+            },
+            attributes: ['currency_id', 'decimals', 'blockchain_id', 'decimals'],
+            include: [
+              {
+                model: _db.Blockchain,
+                attributes: ['block'],
+              },
+            ],
+          });
+
+          this.bcid = blockchain_id;
+          this.decimal = findCurrency.decimals;
+          const _data = { ...data.result, height: findCurrency.Blockchain.block };
+
+          await this.saveBCHPublishTransaction(_data, findCurrency, Math.floor(Date.now() / 1000), 0);
 
           return new ResponseFormat({
             message: 'Publish Transaction',
@@ -837,6 +924,23 @@ class Blockchain extends Bot {
     return new BigNumber(data.result).toNumber();
   }
 
+  async bchBlockHeight(blockchain_id) {
+    const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+    const option = { ...blockchainConfig };
+
+    option.data = {
+      jsonrpc: '1.0',
+      method: 'getblockcount',
+      params: [],
+      id: dvalue.randomID(),
+    };
+
+    const data = await Utils.BCHRPC(option);
+    if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
+    if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+    return new BigNumber(data.result).toNumber();
+  }
+
   async findBlockScannedHeight(blockchain_id) {
     const DBName = Utils.blockchainIDToDBName(blockchain_id);
     const _db = this.database.db[DBName];
@@ -870,17 +974,23 @@ class Blockchain extends Bot {
       const BlockHeightsFromPeer = await Promise.all([
         this.btcBlockHeight('80000000'),
         this.btcBlockHeight('80000001'),
+        this.bchBlockHeight('80000091'),
+        this.bchBlockHeight('80000001'), // ++ TODO change bch testnet blocId by Emily 2021.05.24
         this.ethBlockHeight('8000003C'),
         this.ethBlockHeight('8000025B'),
         this.ethBlockHeight('80001F51'),
       ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
       if (BlockHeightsFromPeer.code === Codes.RPC_ERROR) return BlockHeightsFromPeer;
-      const [btcMainnetBlockHeight, btcTestnetBlockHeight, ethMainnetBlockHeight, ethTestnetBlockHeight, ttnBlockHeight] = BlockHeightsFromPeer;
+      const [btcMainnetBlockHeight, btcTestnetBlockHeight,bchMainnetBlockHeight, bchTestnetBlockHeight, ethMainnetBlockHeight, ethTestnetBlockHeight, ttnBlockHeight] = BlockHeightsFromPeer;
 
       const _dbBtcMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000000');
       const dbBtcMainnetBlockHeight = _dbBtcMainnetBlockHeight ? _dbBtcMainnetBlockHeight.block : 0;
       const _dbBtcTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000001');
       const dbBtcTestnetBlockHeight = _dbBtcTestnetBlockHeight ? _dbBtcTestnetBlockHeight.block : 0;
+      const _dbBchMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000091');
+      const dbBchMainnetBlockHeight = _dbBchMainnetBlockHeight ? _dbBchMainnetBlockHeight.block : 0;
+      const _dbBchTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000001'); // ++ TODO change bch testnet blocId by Emily 2021.05.24
+      const dbBchTestnetBlockHeight = _dbBchTestnetBlockHeight ? _dbBchTestnetBlockHeight.block : 0;
       const _dbEthMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '8000003C');
       const dbEthMainnetBlockHeight = _dbEthMainnetBlockHeight ? _dbEthMainnetBlockHeight.block : 0;
       const _dbEthTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '8000025B');
@@ -890,6 +1000,8 @@ class Blockchain extends Bot {
 
       const btcMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000000');
       const btcTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000001');
+      const bchMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000091');
+      const bchTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000001'); // ++ TODO change bch testnet blocId by Emily 2021.05.24
       const ethMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000003C');
       const ethTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000025B');
       const ttnBlockScannedBlockHeight = await this.findBlockScannedHeight('80001F51');
@@ -910,6 +1022,20 @@ class Blockchain extends Bot {
             blockScanned_blockHeight: btcTestnetBlockScannedBlockHeight,
             unCrawlerBlock: btcTestnetBlockHeight - dbBtcTestnetBlockHeight,
             unParseBlock: btcTestnetBlockHeight - btcTestnetBlockScannedBlockHeight,
+          },
+          BCH_MAINNET: {
+            blockHeight: bchMainnetBlockHeight,
+            db_blockHeight: dbBchMainnetBlockHeight,
+            blockScanned_blockHeight: bchMainnetBlockScannedBlockHeight,
+            unCrawlerBlock: bchMainnetBlockHeight - dbBchMainnetBlockHeight,
+            unParseBlock: bchMainnetBlockHeight - bchMainnetBlockScannedBlockHeight,
+          },
+          BCH_TESTNET: {
+            blockHeight: bchTestnetBlockHeight,
+            db_blockHeight: dbBchTestnetBlockHeight,
+            blockScanned_blockHeight: bchTestnetBlockScannedBlockHeight,
+            unCrawlerBlock: bchTestnetBlockHeight - dbBchTestnetBlockHeight,
+            unParseBlock: bchTestnetBlockHeight - bchTestnetBlockScannedBlockHeight,
           },
           ETH_MAINNET: {
             blockHeight: ethMainnetBlockHeight,
@@ -959,6 +1085,18 @@ BTC_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BTC_TESTNET.blockScanned_blo
 BTC_TESTNET_UNCRAWLERBLOCK ${data.payload.BTC_TESTNET.unCrawlerBlock}
 BTC_TESTNET_UNPARSEBLOCK ${data.payload.BTC_TESTNET.unParseBlock}
 
+BCH_MAINNET_BLOCKHEIGHT ${data.payload.BCH_MAINNET.blockHeight}
+BCH_MAINNET_DB_BLOCKHEIGHT ${data.payload.BCH_MAINNET.db_blockHeight}
+BCH_MAINNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BCH_MAINNET.blockScanned_blockHeight}
+BCH_MAINNET_UNCRAWLERBLOCK ${data.payload.BCH_MAINNET.unCrawlerBlock}
+BCH_MAINNET_UNPARSEBLOCK ${data.payload.BCH_MAINNET.unParseBlock}
+
+BCH_TESTNET_BLOCKHEIGHT ${data.payload.BCH_TESTNET.blockHeight}
+BCH_TESTNET_DB_BLOCKHEIGHT ${data.payload.BCH_TESTNET.db_blockHeight}
+BCH_TESTNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.BCH_TESTNET.blockScanned_blockHeight}
+BCH_TESTNET_UNCRAWLERBLOCK ${data.payload.BCH_TESTNET.unCrawlerBlock}
+BCH_TESTNET_UNPARSEBLOCK ${data.payload.BCH_TESTNET.unParseBlock}
+
 ETH_MAINNET_BLOCKHEIGHT ${data.payload.ETH_MAINNET.blockHeight}
 ETH_MAINNET_DB_BLOCKHEIGHT ${data.payload.ETH_MAINNET.db_blockHeight}
 ETH_MAINNET_BLOCKSCANNED_BLOCKHEIGHT ${data.payload.ETH_MAINNET.blockScanned_blockHeight}
@@ -1006,8 +1144,9 @@ TTN_UNPARSEBLOCK ${data.payload.TTN.unParseBlock}
               case '80001F51':
                 _balance = await Utils.ethGetBalanceByAddress(accountItem.blockchain_id, addressItem.address, 18);
                 break;
-              case '80000000':
-              case '80000001':
+                case '80000000':
+                case '80000091':
+                case '80000001':
                 // eslint-disable-next-line no-case-declarations
                 const findAccountCurrency = await this.accountCurrencyModel.findOne({
                   where: { account_id: accountItem.account_id },
