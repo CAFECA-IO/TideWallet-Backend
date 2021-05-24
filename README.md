@@ -38,14 +38,11 @@ vim update.sh
 changed=0
 cd /home/ubuntu/TideWallet-Backend
 git checkout .
-git checkout develop
-git remote update
-git status -uno | grep 'Your branch is up to date'
-changed=$?
+git checkout main
+git remote update && git status -uno | grep -q 'Your branch is behind' && changed=1
 if [ $changed = 1 ]; then
-  git pull origin develop
-  pm2 restart 1
-  changed=0
+  git pull origin main
+  pm2 restart 0
 fi
 ```
 
@@ -62,7 +59,7 @@ crontab -e
 ```
 
 ```
-*/1 * * * * /home/ubuntu/update.sh
+* * * * * /home/ubuntu/update.sh
 ```
 
 ## Install RabbitMQ
