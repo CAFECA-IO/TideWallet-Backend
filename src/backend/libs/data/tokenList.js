@@ -76,4 +76,16 @@ module.exports = {
       contract: '0xba100000625a3754423978a60c9317c58a424e3d',
     },
   ],
+  titan: [
+    {
+      name: 'XPlay',
+      symbol: 'XPA',
+      contract: '0x44bf3a96420c0688d657aca23e343e79581304b1',
+    },
+    {
+      name: 'TestTokenTransfer',
+      symbol: 'TTT',
+      contract: '0x323ba586e7a634db733fea42956e71e9d2c992da',
+    },
+  ],
 };

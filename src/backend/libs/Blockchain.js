@@ -133,6 +133,7 @@ class Blockchain extends Bot {
         }
       }
     }
+    console.log('this.tideWalletTokenList.:', this.tideWalletTokenList);
   }
 
   async BlockchainList() {
