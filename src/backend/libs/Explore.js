@@ -429,6 +429,10 @@ class Explore extends Bot {
           case '80000001':
             tpsItems.push(Utils.getBTCTps(findBlockchain[i].blockchain_id, findBlockchain[i].block));
             break;
+          case '80000091':
+          case '80000001': // ++ TODO change bch testnet blocId by Emily 2021.05.24
+            tpsItems.push(Utils.getBCHTps(findBlockchain[i].blockchain_id, findBlockchain[i].block));
+            break;
           default:
             break;
         }

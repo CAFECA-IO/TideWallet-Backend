@@ -533,9 +533,10 @@ class Account extends Bot {
       if (!findBlockInfo) return new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
       let chain_index = 0;
-      // only BTC has change address
+      // only BTC Base has change address
       switch (findAccountCurrency.Account.blockchain_id) {
         case '80000000':
+        case '80000091':
         case '80000001':
           chain_index = 1;
           break;
