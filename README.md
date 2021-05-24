@@ -144,3 +144,64 @@ ansible-playbook tool/playbook.yml
 * sometimes crawler would be blocked for unknown reasons. It always happened after running several days.
 
 * according [PostgreSQL Out Of Memory](https://italux.medium.com/postgresql-out-of-memory-3fc1105446d), postgres grow 9.6G memory usage in 60 mins during 20 Parsers before catch up blocks. can use crontab and pm2 restart to release connection.
+
+## 本地開發環境設定
+
+須先安裝：
+
+- Node.js
+- Docker
+- PostgreSQL(範例使用 docker 方法安裝)
+- RabbitMQ(範例使用 docker 方法安裝)
+
+
+### DB 安裝（docker）
+
+```
+docker run -p 5432:5432 -e "POSTGRES_PASSWORD=admin" -d -v data:/var/lib/postgresql/data --name db postgres:13.1
+```
+
+### 建立 DB 程式所需要的 db
+
+```
+// 可以查看 default.config.toml 共有哪些連線資訊
+createdb bitcoin_mainnet -U postgres
+createdb bitcoin_testnet -U postgres
+createdb bitcoin_cash_mainnet -U postgres
+createdb bitcoin_cash_testnet -U postgres
+createdb ethereum_mainnet -U postgres
+createdb ethereum_ropsten -U postgres
+createdb cafeca -U postgres
+createdb titan -U postgres
+```
+
+### 安裝 RabbitMQ （docker）
+
+```
+docker run -d \
+--hostname my-rabbit \
+--name rabbitmq \
+-p 4369:4369 \
+-p 5671:5671 \
+-p 5672:5672 \
+-p 15671:15671 \
+-p 15672:15672 \
+-e RABBITMQ_DEFAULT_USER=tidewallet \
+-e RABBITMQ_DEFAULT_PASS=aw8YrUZZMAd4ehdu \
+rabbitmq:3-management
+```
+
+### 設定設定檔
+
+將範例的設定檔複製到 private/config.toml 後，修改成符合該環境的設定
+
+```
+cp ./default.config.toml private/config.toml
+vim private/config.toml
+```
+
+### start
+
+```
+npm start
+```
