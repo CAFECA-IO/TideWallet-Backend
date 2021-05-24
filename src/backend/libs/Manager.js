@@ -17,6 +17,8 @@ const TtnCrawlerManager = require('./TtnCrawlerManager');
 // parser
 const BtcParserManager = require('./BtcParserManager');
 const BtcTestnetParserManager = require('./BtcTestnetParserManager');
+const BchParserManager = require('./BchParserManager');
+const BchTestnetParserManager = require('./BchTestnetParserManager');
 const EthParserManager = require('./EthParserManager');
 const EthRopstenParserManager = require('./EthRopstenParserManager');
 const CfcParserManager = require('./CfcParserManager');
@@ -218,10 +220,24 @@ class Manager extends Bot {
               this.logger
             )
           );
+          result.push(
+            new BchParserManager(
+              this.config,
+              this.database.db.bitcoin_cash_mainnet,
+              this.logger
+            )
+          );
           break;
         case 'bitcoin_cash_testnet':
           result.push(
             new BchTestnetCrawlerManager(
+              this.config,
+              this.database.db.bitcoin_cash_testnet,
+              this.logger
+            )
+          );
+          result.push(
+            new BchTestnetParserManager(
               this.config,
               this.database.db.bitcoin_cash_testnet,
               this.logger
