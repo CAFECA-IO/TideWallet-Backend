@@ -1,31 +1,31 @@
-const ecrequest = require("ecrequest");
-const { v4: uuidv4 } = require("uuid");
-const { default: BigNumber } = require("bignumber.js");
-const Bot = require("./Bot");
-const Utils = require("./Utils");
+const ecrequest = require('ecrequest');
+const { v4: uuidv4 } = require('uuid');
+const { default: BigNumber } = require('bignumber.js');
+const Bot = require('./Bot');
+const Utils = require('./Utils');
 
 // crawler
-const BtcCrawlerManager = require("./BtcCrawlerManager");
-const BtcTestnetCrawlerManager = require("./BtcTestnetCrawlerManager");
-const BchCrawlerManager = require("./BchCrawlerManager");
-const BchTestnetCrawlerManager = require("./BchTestnetCrawlerManager");
-const EthCrawlerManager = require("./EthCrawlerManager");
-const EthRopstenCrawlerManager = require("./EthRopstenCrawlerManager");
-const CfcCrawlerManager = require("./CfcCrawlerManager");
-const TtnCrawlerManager = require("./TtnCrawlerManager");
+const BtcCrawlerManager = require('./BtcCrawlerManager');
+const BtcTestnetCrawlerManager = require('./BtcTestnetCrawlerManager');
+const BchCrawlerManager = require('./BchCrawlerManager');
+const BchTestnetCrawlerManager = require('./BchTestnetCrawlerManager');
+const EthCrawlerManager = require('./EthCrawlerManager');
+const EthRopstenCrawlerManager = require('./EthRopstenCrawlerManager');
+const CfcCrawlerManager = require('./CfcCrawlerManager');
+const TtnCrawlerManager = require('./TtnCrawlerManager');
 
 // parser
-const BtcParserManager = require("./BtcParserManager");
-const BtcTestnetParserManager = require("./BtcTestnetParserManager");
-const EthParserManager = require("./EthParserManager");
-const EthRopstenParserManager = require("./EthRopstenParserManager");
-const CfcParserManager = require("./CfcParserManager");
-const TtnParserManager = require("./TtnParserManager");
+const BtcParserManager = require('./BtcParserManager');
+const BtcTestnetParserManager = require('./BtcTestnetParserManager');
+const EthParserManager = require('./EthParserManager');
+const EthRopstenParserManager = require('./EthRopstenParserManager');
+const CfcParserManager = require('./CfcParserManager');
+const TtnParserManager = require('./TtnParserManager');
 
 class Manager extends Bot {
   constructor() {
     super();
-    this.name = "Manager";
+    this.name = 'Manager';
     this._crawlerManagers = [];
     this.rateSyncInterval = 86400000;
     this.cryptoRateSyncInterval = 3600000;
@@ -71,16 +71,16 @@ class Manager extends Bot {
 
   syncRate() {
     const opt = {
-      protocol: "https:",
-      port: "",
-      hostname: "rate.bot.com.tw",
-      path: "/xrt/fltxt/0/day",
+      protocol: 'https:',
+      port: '',
+      hostname: 'rate.bot.com.tw',
+      path: '/xrt/fltxt/0/day',
     };
 
     ecrequest.get(opt).then(async (rs) => {
       const parseObject = rs.data
         .toString()
-        .split("\n")
+        .split('\n')
         .map((item) => item.split(/[ ]+/));
 
       for (const item of parseObject) {
@@ -125,20 +125,20 @@ class Manager extends Bot {
   }
 
   syncCryptoRate() {
-    const BTCObj = { asset_id: "5b1ea92e584bf50020130612", symbol: "BTC" };
-    const BCHObj = { asset_id: "5b1ea92e584bf50021130612", symbol: "BCH" };
-    const ETHObj = { asset_id: "5b755dacd5dd99000b3d92b2", symbol: "ETH" };
-    const USDID = "5b1ea92e584bf50020130615";
+    const BTCObj = { asset_id: '5b1ea92e584bf50020130612', symbol: 'BTC' };
+    const BCHObj = { asset_id: '5b1ea92e584bf50021130612', symbol: 'BCH' };
+    const ETHObj = { asset_id: '5b755dacd5dd99000b3d92b2', symbol: 'ETH' };
+    const USDID = '5b1ea92e584bf50020130615';
 
     for (const crypto of [BTCObj, BCHObj, ETHObj]) {
       const opt = {
-        protocol: "https:",
-        port: "",
-        hostname: "api.cryptoapis.io",
+        protocol: 'https:',
+        port: '',
+        hostname: 'api.cryptoapis.io',
         path: `/v1/exchange-rates/${crypto.asset_id}/${USDID}`,
         headers: {
-          "X-API-Key": this.config.cryptoapis.key,
-          "Content-Type": "application/json",
+          'X-API-Key': this.config.cryptoapis.key,
+          'Content-Type': 'application/json',
         },
       };
 
@@ -153,13 +153,13 @@ class Manager extends Bot {
           );
         })
         .catch((e) => {
-          this.logger.error("syncCryptoRate error:", e);
+          this.logger.error('syncCryptoRate error:', e);
         });
     }
   }
 
   createManager() {
-    this.logger.log("createManager");
+    this.logger.log('createManager');
     const result = [];
     const { syncSwitch } = this.config;
     const syncSwitchSet = Object.keys(syncSwitch);
@@ -178,7 +178,7 @@ class Manager extends Bot {
       if (!syncSwitch[blockchianName]) return;
       this.logger.log(blockchianName);
       switch (blockchianName) {
-        case "bitcoin_mainnet":
+        case 'bitcoin_mainnet':
           result.push(
             new BtcCrawlerManager(
               this.config,
@@ -194,7 +194,7 @@ class Manager extends Bot {
             )
           );
           break;
-        case "bitcoin_testnet":
+        case 'bitcoin_testnet':
           result.push(
             new BtcTestnetCrawlerManager(
               this.config,
@@ -210,7 +210,7 @@ class Manager extends Bot {
             )
           );
           break;
-        case "bitcoin_cash_mainnet":
+        case 'bitcoin_cash_mainnet':
           result.push(
             new BchCrawlerManager(
               this.config,
@@ -219,7 +219,7 @@ class Manager extends Bot {
             )
           );
           break;
-        case "bitcoin_cash_testnet":
+        case 'bitcoin_cash_testnet':
           result.push(
             new BchTestnetCrawlerManager(
               this.config,
@@ -228,7 +228,7 @@ class Manager extends Bot {
             )
           );
           break;
-        case "ethereum_mainnet":
+        case 'ethereum_mainnet':
           result.push(
             new EthCrawlerManager(
               this.config,
@@ -244,7 +244,7 @@ class Manager extends Bot {
             )
           );
           break;
-        case "ethereum_ropsten":
+        case 'ethereum_ropsten':
           result.push(
             new EthRopstenCrawlerManager(
               this.config,
@@ -260,7 +260,7 @@ class Manager extends Bot {
             )
           );
           break;
-        case "cafeca":
+        case 'cafeca':
           result.push(
             new CfcCrawlerManager(
               this.config,
@@ -276,7 +276,7 @@ class Manager extends Bot {
             )
           );
           break;
-        case "titan":
+        case 'titan':
           result.push(
             new TtnCrawlerManager(
               this.config,
