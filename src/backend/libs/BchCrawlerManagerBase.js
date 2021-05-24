@@ -6,7 +6,7 @@ const dvalue = require('dvalue');
 const { default: BigNumber } = require('bignumber.js');
 const CrawlerManagerBase = require('./CrawlerManagerBase');
 const Utils = require('./Utils');
-const BtcParserBase = require('./BtcParserBase');
+const BchParserBase = require('./BchParserBase');
 
 class BchCrawlerManagerBase extends CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
@@ -21,7 +21,7 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
     await super.init();
     this.peerBlock = 0;
 
-    // used by BtcParserBase.parseTx.call
+    // used by BchParserBase.parseTx.call
     // ++ remove after extract to instance class
     this.transactionModel = this.database.Transaction;
     this.utxoModel = this.database.UTXO;
@@ -467,7 +467,7 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
       for (const txid of newTxids) {
         try {
           const tx = await this.getTransactionByTxidFromPeer(txid);
-          const { destination_addresses, txExist, uxtoUpdate } = await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
+          const { destination_addresses, txExist, uxtoUpdate } = await BchParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
 
           // find db account address
           for (const txout of destination_addresses) {
