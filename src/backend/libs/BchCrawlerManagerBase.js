@@ -6,7 +6,7 @@ const dvalue = require('dvalue');
 const { default: BigNumber } = require('bignumber.js');
 const CrawlerManagerBase = require('./CrawlerManagerBase');
 const Utils = require('./Utils');
-// const BchParserBase = require('./BchParserBase');
+const BtcParserBase = require('./BtcParserBase');
 
 class BchCrawlerManagerBase extends CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
@@ -21,7 +21,7 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
     await super.init();
     this.peerBlock = 0;
 
-    // used by BchParserBase.parseTx.call
+    // used by BtcParserBase.parseTx.call
     // ++ remove after extract to instance class
     this.transactionModel = this.database.Transaction;
     this.utxoModel = this.database.UTXO;
@@ -127,25 +127,25 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
     return Promise.reject();
   }
 
-  // async getTransactionByTxidFromPeer(txid) {
-  //   this.logger.debug(`[${this.constructor.name}] getTransactionByTxidFromPeer(${txid})`);
-  //   const type = 'getTransaction';
-  //   const options = dvalue.clone(this.options);
-  //   options.data = this.constructor.cmd({ type, txid });
-  //   const checkId = options.data.id;
-  //   const data = await Utils.BCHRPC(options);
-  //   if (data instanceof Object) {
-  //     if (data.id !== checkId) {
-  //       this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
-  //       return Promise.reject();
-  //     }
-  //     if (data.result) {
-  //       return Promise.resolve(data.result);
-  //     }
-  //   }
-  //   this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
-  //   return Promise.reject(data.error);
-  // }
+  async getTransactionByTxidFromPeer(txid) {
+    this.logger.debug(`[${this.constructor.name}] getTransactionByTxidFromPeer(${txid})`);
+    const type = 'getTransaction';
+    const options = dvalue.clone(this.options);
+    options.data = this.constructor.cmd({ type, txid });
+    const checkId = options.data.id;
+    const data = await Utils.BCHRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
+        return Promise.reject();
+      }
+      if (data.result) {
+        return Promise.resolve(data.result);
+      }
+    }
+    this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
+    return Promise.reject(data.error);
+  }
 
   async insertBlock(blockData) {
     try {
@@ -453,186 +453,186 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   async updatePendingTransaction() {
-  //   this.logger.debug(`[${this.constructor.name}] updatePendingTransaction`);
-  //   try {
-  //     // 1. find all transaction where status is null(means pending transaction)
-  //     const transactions = await this.getTransactionsResultNull();
+    this.logger.debug(`[${this.constructor.name}] updatePendingTransaction`);
+    try {
+      // 1. find all transaction where status is null(means pending transaction)
+      const transactions = await this.getTransactionsResultNull();
 
-  //     // 2. get last pending transaction from pendingTransaction table
-  //     const pendingTxids = await this.pendingTransactionFromPeer();
-  //     const blockHeight = await this.blockNumberFromPeer();
+      // 2. get last pending transaction from pendingTransaction table
+      const pendingTxids = await this.pendingTransactionFromPeer();
+      const blockHeight = await this.blockNumberFromPeer();
 
-  //     // 3. create transaction which is not in step 1 array
-  //     const newTxids = pendingTxids.filter((pendingTxid) => transactions.every((transaction) => pendingTxid !== transaction.txid));
-  //     for (const txid of newTxids) {
-  //       try {
-  //         const tx = await this.getTransactionByTxidFromPeer(txid);
-  //         const { destination_addresses, txExist, uxtoUpdate } = await BchParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
+      // 3. create transaction which is not in step 1 array
+      const newTxids = pendingTxids.filter((pendingTxid) => transactions.every((transaction) => pendingTxid !== transaction.txid));
+      for (const txid of newTxids) {
+        try {
+          const tx = await this.getTransactionByTxidFromPeer(txid);
+          const { destination_addresses, txExist, uxtoUpdate } = await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
 
-  //         // find db account address
-  //         for (const txout of destination_addresses) {
-  //           if (txout.accountCurrency_id && txout.user_id && !txExist) {
-  //             const findAccountCurrency = await this.accountCurrencyModel.findOne({
-  //               where: {
-  //                 accountCurrency_id: txout.accountCurrency_id,
-  //               },
-  //               include: [
-  //                 {
-  //                   model: this.accountModel,
-  //                   where: {
-  //                     user_id: txout.user_id,
-  //                   },
-  //                 },
-  //               ],
-  //             });
-  //             const findAllAddress = await this.accountAddressModel.findAll({
-  //               where: { account_id: findAccountCurrency.account_id },
-  //               attributes: ['accountAddress_id'],
-  //             });
-  //             let balance = new BigNumber(0);
-  //             for (const addressItem of findAllAddress) {
-  //               const findUTXOByAddress = await this.utxoModel.findAll({
-  //                 where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
-  //                 attributes: ['amount'],
-  //               });
+          // find db account address
+          for (const txout of destination_addresses) {
+            if (txout.accountCurrency_id && txout.user_id && !txExist) {
+              const findAccountCurrency = await this.accountCurrencyModel.findOne({
+                where: {
+                  accountCurrency_id: txout.accountCurrency_id,
+                },
+                include: [
+                  {
+                    model: this.accountModel,
+                    where: {
+                      user_id: txout.user_id,
+                    },
+                  },
+                ],
+              });
+              const findAllAddress = await this.accountAddressModel.findAll({
+                where: { account_id: findAccountCurrency.account_id },
+                attributes: ['accountAddress_id'],
+              });
+              let balance = new BigNumber(0);
+              for (const addressItem of findAllAddress) {
+                const findUTXOByAddress = await this.utxoModel.findAll({
+                  where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
+                  attributes: ['amount'],
+                });
 
-  //               for (const utxoItem of findUTXOByAddress) {
-  //                 balance = balance.plus(new BigNumber(utxoItem.amount));
-  //               }
-  //             }
-  //             balance = Utils.dividedByDecimal(balance, this.currencyInfo.decimals);
+                for (const utxoItem of findUTXOByAddress) {
+                  balance = balance.plus(new BigNumber(utxoItem.amount));
+                }
+              }
+              balance = Utils.dividedByDecimal(balance, this.currencyInfo.decimals);
 
-  //             const bnAmount = new BigNumber(txout.amount, 16);
-  //             const amount = bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed();
-  //             console.log('fcm tx new!!!!!!!!!!', JSON.stringify({
-  //               blockchainId: this.bcid,
-  //               eventType: 'TRANSACTION_NEW',
-  //               currencyId: this.currencyInfo.currency_id,
-  //               accountId: txout.accountCurrency_id,
-  //               data: {
-  //                 txid: tx.hash,
-  //                 status: '',
-  //                 amount,
-  //                 symbol: this.currencyInfo.symbol,
-  //                 direction: 'receive',
-  //                 confirmations: 0,
-  //                 timestamp: txout.timestamp ? txout.timestamp : Math.floor(Date.now() / 1000),
-  //                 source_addresses: tx.from ? tx.from : '',
-  //                 destination_addresses: tx.to ? tx.to : '',
-  //                 fee: txout.fee,
-  //                 gas_price: '',
-  //                 gas_used: '',
-  //                 note: tx.input ? tx.input : '',
-  //                 balance,
-  //               },
-  //             })); // -- no console.log
-  //             await this.fcm.messageToUserTopic(txout.user_id, {
-  //               title: `receive ${amount} ${this.currencyInfo.symbol}`,
-  //             }, {
-  //               title: `receive ${amount} ${this.currencyInfo.symbol}`,
-  //               body: JSON.stringify({
-  //                 blockchainId: this.bcid,
-  //                 eventType: 'TRANSACTION_NEW',
-  //                 currencyId: this.currencyInfo.currency_id,
-  //                 accountId: txout.accountCurrency_id,
-  //                 data: {
-  //                   txid: tx.hash,
-  //                   status: '',
-  //                   amount,
-  //                   symbol: this.currencyInfo.symbol,
-  //                   direction: 'receive',
-  //                   confirmations: 0,
-  //                   timestamp: txout.timestamp ? txout.timestamp : Math.floor(Date.now() / 1000),
-  //                   source_addresses: tx.from ? tx.from : '',
-  //                   destination_addresses: tx.to ? tx.to : '',
-  //                   fee: txout.fee,
-  //                   gas_price: '',
-  //                   gas_used: '',
-  //                   note: tx.input ? tx.input : '',
-  //                   balance,
-  //                 },
-  //               }),
-  //               click_action: 'FLUTTER_NOTIFICATION_CLICK',
-  //             });
+              const bnAmount = new BigNumber(txout.amount, 16);
+              const amount = bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed();
+              console.log('fcm tx new!!!!!!!!!!', JSON.stringify({
+                blockchainId: this.bcid,
+                eventType: 'TRANSACTION_NEW',
+                currencyId: this.currencyInfo.currency_id,
+                accountId: txout.accountCurrency_id,
+                data: {
+                  txid: tx.hash,
+                  status: '',
+                  amount,
+                  symbol: this.currencyInfo.symbol,
+                  direction: 'receive',
+                  confirmations: 0,
+                  timestamp: txout.timestamp ? txout.timestamp : Math.floor(Date.now() / 1000),
+                  source_addresses: tx.from ? tx.from : '',
+                  destination_addresses: tx.to ? tx.to : '',
+                  fee: txout.fee,
+                  gas_price: '',
+                  gas_used: '',
+                  note: tx.input ? tx.input : '',
+                  balance,
+                },
+              })); // -- no console.log
+              await this.fcm.messageToUserTopic(txout.user_id, {
+                title: `receive ${amount} ${this.currencyInfo.symbol}`,
+              }, {
+                title: `receive ${amount} ${this.currencyInfo.symbol}`,
+                body: JSON.stringify({
+                  blockchainId: this.bcid,
+                  eventType: 'TRANSACTION_NEW',
+                  currencyId: this.currencyInfo.currency_id,
+                  accountId: txout.accountCurrency_id,
+                  data: {
+                    txid: tx.hash,
+                    status: '',
+                    amount,
+                    symbol: this.currencyInfo.symbol,
+                    direction: 'receive',
+                    confirmations: 0,
+                    timestamp: txout.timestamp ? txout.timestamp : Math.floor(Date.now() / 1000),
+                    source_addresses: tx.from ? tx.from : '',
+                    destination_addresses: tx.to ? tx.to : '',
+                    fee: txout.fee,
+                    gas_price: '',
+                    gas_used: '',
+                    note: tx.input ? tx.input : '',
+                    balance,
+                  },
+                }),
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+              });
 
-  //             if (uxtoUpdate) {
-  //               // find Account
-  //               const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
-  //               const payload = [];
-  //               // find external address txs
-  //               for (let i = 0; i <= number_of_external_key; i++) {
-  //                 // find all address
-  //                 await this._findAccountUTXO({
-  //                   findAccountCurrency, payload, chain_index: 0, key_index: i,
-  //                 });
-  //               }
+              if (uxtoUpdate) {
+                // find Account
+                const { number_of_external_key, number_of_internal_key } = findAccountCurrency;
+                const payload = [];
+                // find external address txs
+                for (let i = 0; i <= number_of_external_key; i++) {
+                  // find all address
+                  await this._findAccountUTXO({
+                    findAccountCurrency, payload, chain_index: 0, key_index: i,
+                  });
+                }
 
-  //               // find internal address txs
-  //               for (let i = 0; i <= number_of_internal_key; i++) {
-  //                 await this._findAccountUTXO({
-  //                   findAccountCurrency, payload, chain_index: 1, key_index: i,
-  //                 });
-  //               }
+                // find internal address txs
+                for (let i = 0; i <= number_of_internal_key; i++) {
+                  await this._findAccountUTXO({
+                    findAccountCurrency, payload, chain_index: 1, key_index: i,
+                  });
+                }
 
-  //               // sort by timestamps
-  //               payload.sort((a, b) => b.timestamp - a.timestamp);
-  //               console.log('fcm UTXO new!!!!!!!!!!', JSON.stringify({
-  //                 blockchainId: this.bcid,
-  //                 eventType: 'UTXO',
-  //                 currencyId: this.currencyInfo.currency_id,
-  //                 accountId: txout.accountCurrency_id,
-  //                 data: payload,
-  //               })); // -- no console.log
-  //               await this.fcm.messageToUserTopic(txout.user_id, {
-  //                 title: `update account(${txout.accountCurrency_id}) utxo`,
-  //               }, {
-  //                 title: `update account(${txout.accountCurrency_id}) utxo`,
-  //                 body: JSON.stringify({
-  //                   blockchainId: this.bcid,
-  //                   eventType: 'UTXO',
-  //                   currencyId: this.currencyInfo.currency_id,
-  //                   accountId: txout.accountCurrency_id,
-  //                   data: payload,
-  //                 }),
-  //                 click_action: 'FLUTTER_NOTIFICATION_CLICK',
-  //               });
-  //             }
-  //           }
-  //         }
-  //       } catch (error) {
-  //         console.log('error:', error); // -- no console.log
-  //         this.logger.error(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
-  //       }
-  //     }
+                // sort by timestamps
+                payload.sort((a, b) => b.timestamp - a.timestamp);
+                console.log('fcm UTXO new!!!!!!!!!!', JSON.stringify({
+                  blockchainId: this.bcid,
+                  eventType: 'UTXO',
+                  currencyId: this.currencyInfo.currency_id,
+                  accountId: txout.accountCurrency_id,
+                  data: payload,
+                })); // -- no console.log
+                await this.fcm.messageToUserTopic(txout.user_id, {
+                  title: `update account(${txout.accountCurrency_id}) utxo`,
+                }, {
+                  title: `update account(${txout.accountCurrency_id}) utxo`,
+                  body: JSON.stringify({
+                    blockchainId: this.bcid,
+                    eventType: 'UTXO',
+                    currencyId: this.currencyInfo.currency_id,
+                    accountId: txout.accountCurrency_id,
+                    data: payload,
+                  }),
+                  click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.log('error:', error); // -- no console.log
+          this.logger.error(`[${this.constructor.name}] parsePendingTransaction create transaction(${txid}) error: ${error}`);
+        }
+      }
 
-  //     const findPending = await this.pendingTransactionModel.findOne({
-  //       where: {
-  //         blockchain_id: this.bcid,
-  //         blockAsked: blockHeight,
-  //       },
-  //     });
-  //     if (!findPending) {
-  //       await this.pendingTransactionModel.create({
-  //         blockchain_id: this.bcid,
-  //         blockAsked: blockHeight,
-  //         transactions: JSON.stringify(pendingTxids),
-  //         timestamp: Math.floor(Date.now() / 1000),
-  //       });
-  //     } else {
-  //       await this.pendingTransactionModel.update({
-  //         transactions: JSON.stringify(pendingTxids),
-  //         timestamp: Math.floor(Date.now() / 1000),
-  //       }, {
-  //         where: {
-  //           blockchain_id: this.bcid,
-  //           blockAsked: blockHeight,
-  //         },
-  //       });
-  //     }
-  //   } catch (error) {
-  //     this.logger.error(`[${this.constructor.name}] updatePendingTransaction error: ${error}`);
-  //     return Promise.reject(error);
-  //   }
+      const findPending = await this.pendingTransactionModel.findOne({
+        where: {
+          blockchain_id: this.bcid,
+          blockAsked: blockHeight,
+        },
+      });
+      if (!findPending) {
+        await this.pendingTransactionModel.create({
+          blockchain_id: this.bcid,
+          blockAsked: blockHeight,
+          transactions: JSON.stringify(pendingTxids),
+          timestamp: Math.floor(Date.now() / 1000),
+        });
+      } else {
+        await this.pendingTransactionModel.update({
+          transactions: JSON.stringify(pendingTxids),
+          timestamp: Math.floor(Date.now() / 1000),
+        }, {
+          where: {
+            blockchain_id: this.bcid,
+            blockAsked: blockHeight,
+          },
+        });
+      }
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] updatePendingTransaction error: ${error}`);
+      return Promise.reject(error);
+    }
   }
 
   static cmd({
