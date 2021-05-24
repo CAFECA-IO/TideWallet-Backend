@@ -138,9 +138,9 @@ pending = 15000
   logging = false
   autoReconnect = true
   ormEnable = true
-    [database.bitcoin_mainnet.dialectOptions]
+    [database.bitcoin_cash_mainnet.dialectOptions]
     connectTimeout = 3000
-    [database.bitcoin_mainnet.pool]
+    [database.bitcoin_cash_mainnet.pool]
     max = 10
     
   [database.bitcoin_cash_testnet]
@@ -153,9 +153,9 @@ pending = 15000
   logging = false
   autoReconnect = true
   ormEnable = true
-    [database.bitcoin_testnet.dialectOptions]
+    [database.bitcoin_cash_testnet.dialectOptions]
     connectTimeout = 3000
-    [database.bitcoin_testnet.pool]
+    [database.bitcoin_cash_testnet.pool]
     max = 10
     
   [database.ethereum_mainnet]
