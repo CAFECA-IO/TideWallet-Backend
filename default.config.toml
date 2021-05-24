@@ -55,8 +55,8 @@ password = ''
 
 [blockchain.bitcoin_cash_mainnet]
 blockchain_id = "80000091"
-protocol = "https:"
-hostname = "bitcoincash.tidewallet.io"
+protocol = "http:"
+hostname = "127.0.0.1"
 port = 443
 path = "/"
 user = ""
@@ -64,8 +64,8 @@ password = ""
 
 [blockchain.bitcoin_cash_testnet]
 blockchain_id = "80000001"
-protocol = "https:"
-hostname = "bitcoincash-testnet.tidewallet.io"
+protocol = "http:"
+hostname = "127.0.0.1"
 port = 443
 path = "/"
 user = ""
