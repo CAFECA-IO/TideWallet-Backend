@@ -676,7 +676,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
         result = {
           jsonrpc: '1.0',
           method: 'getblockstats',
-          params: [block, ['feerate_percentiles']],
+          params: [block, ["feerate_percentiles"]],
           id: dvalue.randomID(),
         };
         break;
