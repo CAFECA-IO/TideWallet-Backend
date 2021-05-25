@@ -51,12 +51,17 @@ class HDWallet {
     const _serializedExtendPublicKey = this.serializedExtendPublicKey(coinType);
     let publicKey = '';
     let address = '';
-    if (coinType === 0 || coinType === 1) {
+    if (blockchainID === '80000000' || blockchainID === 'F0000000') {
       let _node = bitcoin.bip32.fromBase58(_serializedExtendPublicKey, bitcoin.networks[coinType === 0 ? 'bitcoin' : 'testnet']); // don't change this
       _node = _node.derive(change).derive(index);
       publicKey = _node.publicKey.toString('hex');
       address = Utils.toP2wpkhAddress(blockchainID, _node.publicKey);
-    } else {
+    } else if (blockchainID === '80000091' || blockchainID === 'F0000091') {
+      let _node = bitcoin.bip32.fromBase58(_serializedExtendPublicKey, bitcoin.networks[coinType === 0 ? 'bitcoin' : 'testnet']); // don't change this
+      _node = _node.derive(change).derive(index);
+      publicKey = _node.publicKey.toString('hex');
+      address = Utils.toP2pkhAddress(blockchainID, _node.publicKey);
+    }  else {
       const node = hdkey.fromExtendedKey(_serializedExtendPublicKey);
       this.hdWallet = node.deriveChild(change).deriveChild(index).getWallet();
       publicKey = this.hdWallet.getPublicKeyString();
