@@ -128,7 +128,7 @@ class Manager extends Bot {
 
   syncCryptoRate() {
     const BTCObj = { asset_id: '5b1ea92e584bf50020130612', symbol: 'BTC' };
-    const BCHObj = { asset_id: '5b1ea92e584bf50021130612', symbol: 'BCH' };
+    const BCHObj = { asset_id: '5b1ea92e584bf5002013061c', symbol: 'BCH' };
     const ETHObj = { asset_id: '5b755dacd5dd99000b3d92b2', symbol: 'ETH' };
     const USDID = '5b1ea92e584bf50020130615';
 
