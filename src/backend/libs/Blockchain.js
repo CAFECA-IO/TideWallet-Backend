@@ -371,7 +371,7 @@ class Blockchain extends Bot {
       if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
       let gasLimit = '0';
-      if (blockchain_id === '8000003C' || blockchain_id === '8000025B' || blockchain_id === '80000CFC' || blockchain_id === '80001F51') {
+      if (blockchain_id === '8000003C' || blockchain_id === 'F000003C' || blockchain_id === '80000CFC' || blockchain_id === '80001F51') {
         const option = { ...blockchainConfig };
         option.data = {
           jsonrpc: '2.0',
@@ -437,7 +437,7 @@ class Blockchain extends Bot {
       // TODO: support another blockchain
       switch (blockchain_id) {
         case '8000003C':
-        case '8000025B':
+        case 'F000003C':
         case '80000CFC':
         case '80001F51':
           const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
@@ -482,7 +482,7 @@ class Blockchain extends Bot {
       // TODO: support another blockchain
       switch (blockchain_id) {
         case '8000003C':
-        case '8000025B':
+        case 'F000003C':
         case '80000CFC':
         case '80001F51':
           const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
@@ -594,7 +594,7 @@ class Blockchain extends Bot {
       if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
       switch (blockchain_id) {
         case '8000003C':
-        case '8000025B':
+        case 'F000003C':
         case '80000CFC':
         case '80001F51':
           option = { ...blockchainConfig };
@@ -617,7 +617,7 @@ class Blockchain extends Bot {
           });
 
         case '80000000':
-        case '80000001':
+        case 'F0000000':
           option = { ...blockchainConfig };
           let txid = '';
           // send transaction
@@ -671,7 +671,7 @@ class Blockchain extends Bot {
           });
 
         case '80000091':
-        case '80000001': // ++ TODO change bch testnet blocId by Emily 2021.05.24
+        case 'F0000091': // ++ TODO change bch testnet blocId by Emily 2021.05.24
           option = { ...blockchainConfig };
           let txid = '';
           // send transaction
@@ -817,7 +817,7 @@ class Blockchain extends Bot {
         case '8000003C':
           options = this.config.blockchain.ethereum_mainnet;
           break;
-        case '8000025B':
+        case 'F000003C':
           options = this.config.blockchain.ethereum_ropsten;
           break;
         case '80000CFC':
@@ -973,11 +973,11 @@ class Blockchain extends Bot {
 
       const BlockHeightsFromPeer = await Promise.all([
         this.btcBlockHeight('80000000'),
-        this.btcBlockHeight('80000001'),
+        this.btcBlockHeight('F0000000'),
         this.bchBlockHeight('80000091'),
-        this.bchBlockHeight('80000001'), // ++ TODO change bch testnet blocId by Emily 2021.05.24
+        this.bchBlockHeight('F0000091'), // ++ TODO change bch testnet blocId by Emily 2021.05.24
         this.ethBlockHeight('8000003C'),
-        this.ethBlockHeight('8000025B'),
+        this.ethBlockHeight('F000003C'),
         this.ethBlockHeight('80001F51'),
       ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
       if (BlockHeightsFromPeer.code === Codes.RPC_ERROR) return BlockHeightsFromPeer;
@@ -985,25 +985,25 @@ class Blockchain extends Bot {
 
       const _dbBtcMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000000');
       const dbBtcMainnetBlockHeight = _dbBtcMainnetBlockHeight ? _dbBtcMainnetBlockHeight.block : 0;
-      const _dbBtcTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000001');
+      const _dbBtcTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === 'F0000000');
       const dbBtcTestnetBlockHeight = _dbBtcTestnetBlockHeight ? _dbBtcTestnetBlockHeight.block : 0;
       const _dbBchMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000091');
       const dbBchMainnetBlockHeight = _dbBchMainnetBlockHeight ? _dbBchMainnetBlockHeight.block : 0;
-      const _dbBchTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000001'); // ++ TODO change bch testnet blocId by Emily 2021.05.24
+      const _dbBchTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === 'F0000091'); // ++ TODO change bch testnet blocId by Emily 2021.05.24
       const dbBchTestnetBlockHeight = _dbBchTestnetBlockHeight ? _dbBchTestnetBlockHeight.block : 0;
       const _dbEthMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '8000003C');
       const dbEthMainnetBlockHeight = _dbEthMainnetBlockHeight ? _dbEthMainnetBlockHeight.block : 0;
-      const _dbEthTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '8000025B');
+      const _dbEthTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === 'F000003C');
       const dbEthTestnetBlockHeight = _dbEthTestnetBlockHeight ? _dbEthTestnetBlockHeight.block : 0;
       const _dbTTNBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80001F51');
       const dbTTNBlockHeight = _dbTTNBlockHeight ? _dbTTNBlockHeight.block : 0;
 
       const btcMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000000');
-      const btcTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000001');
+      const btcTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('F0000000');
       const bchMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000091');
-      const bchTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000001'); // ++ TODO change bch testnet blocId by Emily 2021.05.24
+      const bchTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('F0000091'); // ++ TODO change bch testnet blocId by Emily 2021.05.24
       const ethMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000003C');
-      const ethTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000025B');
+      const ethTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('F000003C');
       const ttnBlockScannedBlockHeight = await this.findBlockScannedHeight('80001F51');
 
       this.cacheBlockchainInfo = {
@@ -1140,13 +1140,14 @@ TTN_UNPARSEBLOCK ${data.payload.TTN.unParseBlock}
             let _balance = '0';
             switch (accountItem.blockchain_id) {
               case '8000003C':
-              case '8000025B':
+              case 'F000003C':
               case '80001F51':
                 _balance = await Utils.ethGetBalanceByAddress(accountItem.blockchain_id, addressItem.address, 18);
                 break;
                 case '80000000':
+                case 'F0000000':
                 case '80000091':
-                case '80000001':
+                case 'F0000091':
                 // eslint-disable-next-line no-case-declarations
                 const findAccountCurrency = await this.accountCurrencyModel.findOne({
                   where: { account_id: accountItem.account_id },

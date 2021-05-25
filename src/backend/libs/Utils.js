@@ -798,13 +798,14 @@ class Utils {
       return e;
     }
   }
+  // ++ TODO BCHAddress 2021.5.25 Emily
 
   static pubkeyToP2WPKHAddress(blockchainID, pubkey) {
     let address;
     if (blockchainID === '80000000') {
       const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.bitcoin });
       address = p2wpkh.address;
-    } else if (blockchainID === '80000001') {
+    } else if (blockchainID === 'F0000000') {
       const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.testnet });
       address = p2wpkh.address;
     }

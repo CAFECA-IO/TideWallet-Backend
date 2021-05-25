@@ -87,7 +87,7 @@ class Account extends Bot {
             case '8000003C':
               options = this.config.blockchain.ethereum_mainnet;
               break;
-            case '8000025B':
+            case 'F000003C':
               options = this.config.blockchain.ethereum_ropsten;
               break;
             case '80000CFC':
@@ -224,7 +224,7 @@ class Account extends Bot {
           });
           if (findCurrency) {
             const { publish = false, decimals } = findCurrency;
-            if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C' || account.blockchain_id === '80000CFC' || account.blockchain_id === '80001F51') {
+            if (account.blockchain_id === 'F000003C' || account.blockchain_id === '8000003C' || account.blockchain_id === '80000CFC' || account.blockchain_id === '80001F51') {
             // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
               const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: account.blockchain_id } });
               if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
@@ -341,7 +341,7 @@ class Account extends Bot {
         });
 
         let { balance = '0' } = accountCurrency;
-        if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
+        if (findAccount.blockchain_id === 'F000003C' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
           // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
           const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
           if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
@@ -536,8 +536,9 @@ class Account extends Bot {
       // only BTC Base has change address
       switch (findAccountCurrency.Account.blockchain_id) {
         case '80000000':
+        case 'F0000000':
         case '80000091':
-        case '80000001':
+        case 'F0000091':
           chain_index = 1;
           break;
         default:
