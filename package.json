@@ -12,6 +12,7 @@
   "dependencies": {
     "amqplib": "^0.7.1",
     "base58": "^2.0.1",
+    "bchaddrjs": "^0.5.2",
     "bignumber.js": "^9.0.1",
     "bip32": "^2.0.6",
     "bitcoinjs-lib": "^5.2.0",
