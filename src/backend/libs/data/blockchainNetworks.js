@@ -20,7 +20,7 @@ module.exports = {
   },
   bitcoin_testnet: {
     db_name: 'bitcoin_testnet',
-    blockchain_id: '80000001',
+    blockchain_id: 'F0000000',
     name: 'Bitcoin Testnet',
     coin_type: 1,
     network_id: 0,
@@ -58,11 +58,11 @@ module.exports = {
   },
   bitcoin_cash_testnet: {
     db_name: 'bitcoin_cash_testnet',
-    blockchain_id: '80000001',
+    blockchain_id: 'F0000091',
     name: 'Bitcoin Cash Testnet',
     coin_type: 1,
     network_id: 0,
-    publish: true,
+    publish: false,
     description: 'Bitcoin Cash Testnet description',
     block: 0,
     bip32: {
@@ -96,7 +96,7 @@ module.exports = {
   },
   ethereum_ropsten: {
     db_name: 'ethereum_ropsten',
-    blockchain_id: '8000025B',
+    blockchain_id: 'F000003C',
     name: 'Ropsten',
     coin_type: 603,
     network_id: 3,

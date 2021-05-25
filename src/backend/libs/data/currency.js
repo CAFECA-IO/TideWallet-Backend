@@ -83,7 +83,7 @@ module.exports = {
   bitcoin_testnet: [
     {
       currency_id: '8e1ea17f-38f5-42ab-a24b-82bf8abc851b',
-      blockchain_id: '80000001',
+      blockchain_id: 'F0000000',
       name: 'Bitcoin Testnet',
       symbol: 'BTC',
       type: 1,
@@ -109,7 +109,7 @@ module.exports = {
   bitcoin_cash_testnet: [
     {
       currency_id: '8e1ea17f-cd56-42ab-a24b-82bf8abc851b',
-      blockchain_id: '80000001',
+      blockchain_id: 'F0000091',
       name: 'Bitcoin Cash Testnet',
       symbol: 'BCH',
       type: 1,
@@ -200,7 +200,7 @@ module.exports = {
   ethereum_ropsten: [
     {
       currency_id: '3ab0ffc4-8cd3-4832-ab31-9d99d2691cee',
-      blockchain_id: '8000025B',
+      blockchain_id: 'F000003C',
       name: 'Ethereum Ropsten',
       symbol: 'ETH',
       type: 1,

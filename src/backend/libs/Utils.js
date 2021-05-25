@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const bitcoin = require('bitcoinjs-lib');
 const BigNumber = require('bignumber.js');
 const log4js = require('log4js');
+const bchaddr = require('bchaddrjs');
 
 const Web3 = require('web3');
 
@@ -791,23 +792,29 @@ class Utils {
       const findNetwork = Object.values(blockchainNetworks).find((value) => value.blockchain_id === blockchainID);
       const prefix = Buffer.from((findNetwork.pubKeyHash).toString(16).padStart(2, '0'), 'hex');
       const hashPubKey = Buffer.concat([prefix, fingerprint]);
-      const address = bs58check.encode(hashPubKey);
+      let address = bs58check.encode(hashPubKey);
+      if(blockchainID === '80000091'){ // ++ TODO BCHAddress 2021.5.25 Emily
+        address = bchaddr.toCashAddress(address);
+      } else if (blockchainID === 'F0000091') {
+        address = bchaddr.toCashAddress(address);
+      }
       return address;
     } catch (e) {
       console.log('e', e); // -- no console.log
       return e;
     }
   }
+ 
 
   static pubkeyToP2WPKHAddress(blockchainID, pubkey) {
     let address;
     if (blockchainID === '80000000') {
       const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.bitcoin });
       address = p2wpkh.address;
-    } else if (blockchainID === '80000001') {
+    } else if (blockchainID === 'F0000000') {
       const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.testnet });
       address = p2wpkh.address;
-    }
+    } 
     return address;
   }
 

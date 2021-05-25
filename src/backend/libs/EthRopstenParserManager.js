@@ -2,7 +2,7 @@ const EthParserManagerBase = require('./EthParserManagerBase');
 
 class EthRopstenParserManager extends EthParserManagerBase {
   constructor(config, database, logger) {
-    super('8000025B', config, database, logger);
+    super('F000003C', config, database, logger);
 
     this.options = config.blockchain.ethereum_mainnet;
   }
