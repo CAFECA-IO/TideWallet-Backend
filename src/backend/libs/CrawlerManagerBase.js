@@ -41,10 +41,8 @@ class CrawlerManagerBase {
     }, this.feeSyncInterval);
     this.syncAvgFee();
 
-    // ++ make crawler something wrong
-    // ++ temp not sync pending transaction on btc
     setInterval(async () => {
-      if (!this.isUpdatePending) {
+      if (!this.isUpdatePending && !this.isLag()) {
         this.isUpdatePending = true;
         try {
           await this.updatePendingTransaction();
@@ -315,6 +313,34 @@ class CrawlerManagerBase {
   async updatePendingTransaction() {
     // need override
     return Promise.resolve();
+  }
+
+  async isLag() {
+    const blockInfo = await this.getBlockInfo();
+    const blockScannedHeight = await this.findBlockScannedHeight();
+    return blockInfo.block - blockScannedHeight > 5;
+  }
+
+  async findBlockScannedHeight() {
+    const findUnparsedTxTimestamp = await this.unparsedTxModel.findOne({
+      where: { blockchain_id: this.bcid, retry: 0 },
+      order: [['timestamp', 'ASC']],
+      attributes: ['timestamp'],
+    });
+
+    let result = {};
+    if (findUnparsedTxTimestamp) {
+      result = await this.blockScannedModel.findOne({
+        where: { blockchain_id: this.bcid, timestamp: findUnparsedTxTimestamp.timestamp },
+      });
+      if (result) return result.block;
+    }
+    result = await this.blockScannedModel.findOne({
+      where: { blockchain_id: this.bcid },
+      order: [['timestamp', 'DESC']],
+    });
+    if (result) return result.block;
+    return 0;
   }
 }
 
