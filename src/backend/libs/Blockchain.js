@@ -130,6 +130,7 @@ class Blockchain extends Bot {
             exchange_rate: findCurrency.exchange_rate,
             icon: findCurrency.icon || `${this.config.base.domain}/icon/ERC20.png`,
             contract: findCurrency.contract,
+            blockchain_id: findCurrency.blockchain_id
           });
         }
       }
