@@ -40,109 +40,79 @@ class Account extends Bot {
       if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
       const tokenInfo = await Utils.verifyToken(token);
 
-      // find Token is exist
-      let findTokenItem = await this.DBOperator.findOne({
-        tableName: 'Currency',
-        options: {
-          where: {
-            type: 2, contract,
-          },
-        },
-      });
       const DBName = Utils.blockchainIDToDBName(blockchain_id);
       const _db = this.database.db[DBName];
 
+      // find Token is exist
+      let findTokenItem = await _db.Currency.findOne({
+        where: {
+          type: 2, contract,
+        },
+      });
+
       if (!findTokenItem) {
-        // TODO: has same logic
-        // use contract check Token is exist
-        findTokenItem = await this.DBOperator.findOne({
-          tableName: 'Currency',
-          options: {
-            where: {
-              type: 2, contract,
-            },
-          },
-        });
-        if (findTokenItem) {
-          // check account token is exist
-          const findUserAccountData = await _db.Account.findOne({
-            where: {
-              user_id: tokenInfo.userID, blockchain_id,
-            },
-          });
+        // if not found token in DB, parse token contract info from blockchain
 
-          if (!findUserAccountData) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
-          // check account currency
-          const findUserAccountToken = await _db.AccountCurrency.findOne({
-            where: {
-              account_id: findUserAccountData.account_id, currency_id: findTokenItem.currency_id,
-            },
-          });
-          if (findUserAccountToken) return new ResponseFormat({ message: 'account token exist', code: Codes.ACCOUNT_TOKEN_EXIST });
-        } else {
-          // if not found token in DB, parse token contract info from blockchain
-
-          let options = '';
-          switch (blockchain_id) {
-            case '8000003C':
-              options = this.config.blockchain.ethereum_mainnet;
-              break;
-            case 'F000003C':
-              options = this.config.blockchain.ethereum_ropsten;
-              break;
-            case '80000CFC':
-              options = this.config.blockchain.cafeca;
-              break;
-            default:
-              return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
-          }
-
-          const tokenInfoFromPeer = await Promise.all([
-            Utils.getTokenNameFromPeer(options, contract),
-            Utils.getTokenSymbolFromPeer(options, contract),
-            Utils.getTokenDecimalFromPeer(options, contract),
-            Utils.getTokenTotalSupplyFromPeer(options, contract),
-          ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
-          if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
-
-          let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
-          try {
-            const checkIcon = await ecrequest.get({
-              protocol: 'https:',
-              hostname: 'cdn.jsdelivr.net',
-              port: '',
-              path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
-              timeout: 1000,
-            });
-            if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
-          } catch (e) {
-            icon = `${this.config.base.domain}/icon/ERC20.png`;
-          }
-
-          let total_supply = tokenInfoFromPeer[3];
-          try {
-            total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
-              groupSeparator: ',', groupSize: 3,
-            });
-            // eslint-disable-next-line no-empty
-          } catch (e) {
-          }
-
-          const newCurrencyID = uuidv4();
-          if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
-          findTokenItem = await _db.Currency.create({
-            currency_id: newCurrencyID,
-            blockchain_id,
-            name: tokenInfoFromPeer[0],
-            symbol: tokenInfoFromPeer[1],
-            type: 2,
-            publish: false,
-            decimals: tokenInfoFromPeer[2],
-            total_supply,
-            contract,
-            icon,
-          });
+        let options = '';
+        switch (blockchain_id) {
+          case '8000003C':
+            options = this.config.blockchain.ethereum_mainnet;
+            break;
+          case 'F000003C':
+            options = this.config.blockchain.ethereum_ropsten;
+            break;
+          case '80000CFC':
+            options = this.config.blockchain.cafeca;
+            break;
+          default:
+            return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
         }
+
+        const tokenInfoFromPeer = await Promise.all([
+          Utils.getTokenNameFromPeer(options, contract),
+          Utils.getTokenSymbolFromPeer(options, contract),
+          Utils.getTokenDecimalFromPeer(options, contract),
+          Utils.getTokenTotalSupplyFromPeer(options, contract),
+        ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+        if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
+
+        let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
+        try {
+          const checkIcon = await ecrequest.get({
+            protocol: 'https:',
+            hostname: 'cdn.jsdelivr.net',
+            port: '',
+            path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
+            timeout: 1000,
+          });
+          if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
+        } catch (e) {
+          icon = `${this.config.base.domain}/icon/ERC20.png`;
+        }
+
+        let total_supply = tokenInfoFromPeer[3];
+        try {
+          total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
+            groupSeparator: ',', groupSize: 3,
+          });
+          // eslint-disable-next-line no-empty
+        } catch (e) {
+        }
+
+        const newCurrencyID = uuidv4();
+        if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
+        findTokenItem = await _db.Currency.create({
+          currency_id: newCurrencyID,
+          blockchain_id,
+          name: tokenInfoFromPeer[0],
+          symbol: tokenInfoFromPeer[1],
+          type: 2,
+          publish: false,
+          decimals: tokenInfoFromPeer[2],
+          total_supply,
+          contract,
+          icon,
+        });
       }
       // check account token is exist
       const findUserAccountData = await _db.Account.findOne({
