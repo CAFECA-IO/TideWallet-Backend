@@ -786,15 +786,17 @@ class Utils {
   }
 
   static toP2pkhAddress(blockchainID, pubkey) {
+    console.log(`toP2pkhAddress blockchainID: ${blockchainID}`);
     console.log(`toP2pkhAddress pubkey: ${pubkey}`);
     try {
-      const _pubkey = pubkey.replace('0x', '');
+      const _pubkey = Utils.compressedPublicKey(pubkey);
+      console.log(`toP2pkhAddress _pubkey: ${_pubkey}`);
       const fingerprint = this.ripemd160(this.sha256(_pubkey.length > 33 ? this.compressedPublicKey(_pubkey) : _pubkey));
       const findNetwork = Object.values(blockchainNetworks).find((value) => value.blockchain_id === blockchainID);
       const prefix = Buffer.from((findNetwork.pubKeyHash).toString(16).padStart(2, '0'), 'hex');
       const hashPubKey = Buffer.concat([prefix, fingerprint]);
       let address = bs58check.encode(hashPubKey);
-      if(blockchainID === '80000091'){ // ++ TODO BCHAddress 2021.5.25 Emily
+      if (blockchainID === '80000091') { // ++ TODO BCHAddress 2021.5.25 Emily
         address = bchaddr.toCashAddress(address);
       } else if (blockchainID === 'F0000091') {
         address = bchaddr.toCashAddress(address);
@@ -805,7 +807,6 @@ class Utils {
       return e;
     }
   }
- 
 
   static pubkeyToP2WPKHAddress(blockchainID, pubkey) {
     let address;
@@ -815,7 +816,7 @@ class Utils {
     } else if (blockchainID === 'F0000000') {
       const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.testnet });
       address = p2wpkh.address;
-    } 
+    }
     return address;
   }
 
