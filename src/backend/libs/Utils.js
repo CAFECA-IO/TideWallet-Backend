@@ -786,6 +786,7 @@ class Utils {
   }
 
   static toP2pkhAddress(blockchainID, pubkey) {
+    console.log(`toP2pkhAddress pubkey: ${pubkey}`);
     try {
       const _pubkey = pubkey.replace('0x', '');
       const fingerprint = this.ripemd160(this.sha256(_pubkey.length > 33 ? this.compressedPublicKey(_pubkey) : _pubkey));
