@@ -463,9 +463,9 @@ class Account extends Bot {
 
       const hdWallet = new HDWallet({ extendPublicKey: findAccountCurrency.Account.extend_public_key });
       // if index address not found
-      console.log(`findReceiveAddress: ${findReceiveAddress}`);
+      console.log(`findAccountCurrency.Account.extend_public_key: ${findAccountCurrency.Account.extend_public_key}`);
       let { address } = findReceiveAddress || {};
-      // if (!findReceiveAddress) {
+      if (!findReceiveAddress) {
         const { coin_type: coinType } = findBlockInfo;
         const wallet = hdWallet.getWalletInfo({
           change: 0,
@@ -486,7 +486,7 @@ class Account extends Bot {
         });
 
         address = wallet.address;
-      // }
+      }
 
       return new ResponseFormat({
         message: 'Get Receive Address',

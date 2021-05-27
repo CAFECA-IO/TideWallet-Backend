@@ -789,9 +789,7 @@ class Utils {
     console.log(`toP2pkhAddress blockchainID: ${blockchainID}`);
     console.log(`toP2pkhAddress pubkey: ${pubkey}`);
     try {
-      const _pubkey = Utils.compressedPublicKey(pubkey);
-      console.log(`toP2pkhAddress _pubkey: ${_pubkey}`);
-      const fingerprint = this.ripemd160(this.sha256(_pubkey.length > 33 ? this.compressedPublicKey(_pubkey) : _pubkey));
+      const fingerprint = this.ripemd160(this.sha256(pubkey.length > 33 ? this.compressedPublicKey(pubkey) : pubkey));
       const findNetwork = Object.values(blockchainNetworks).find((value) => value.blockchain_id === blockchainID);
       const prefix = Buffer.from((findNetwork.pubKeyHash).toString(16).padStart(2, '0'), 'hex');
       const hashPubKey = Buffer.concat([prefix, fingerprint]);
