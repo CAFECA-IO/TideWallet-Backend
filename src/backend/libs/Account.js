@@ -531,7 +531,8 @@ class Account extends Bot {
 
       const findBlockInfo = Utils.blockchainIDToBlockInfo(findAccountCurrency.Account.blockchain_id);
       if (!findBlockInfo) return new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
-
+      console.log(`findAccountCurrency.Account: ${findAccountCurrency.Account}`);
+      console.log(`findAccountCurrency.Account: ${findAccountCurrency.Account.blockchain_id}`);
       let chain_index = 0;
       // only BTC Base has change address
       switch (findAccountCurrency.Account.blockchain_id) {
