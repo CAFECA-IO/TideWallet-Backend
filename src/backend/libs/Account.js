@@ -303,7 +303,6 @@ class Account extends Bot {
       });
       for (let j = 0; j < findAccountCurrencies.length; j++) {
         const accountCurrency = findAccountCurrencies[j];
-        // TODO: findCurrency no not found handle
         // TODO: for sql
         const findCurrency = await _db.Currency.findOne({
           where: {
@@ -311,75 +310,76 @@ class Account extends Bot {
             [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
           },
         });
-
-        let { balance = '0' } = accountCurrency;
-        if (findAccount.blockchain_id === 'F000003C' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
-          // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
-          const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
-          if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
-            const findAddress = await _db.AccountAddress.findOne({
-              where: { account_id: accountCurrency.Account.account_id },
-              attributes: ['address'],
-            });
-            if (findAddress) {
-              if (findCurrency.type === 2) {
-                balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
+        if (!findCurrency) {
+          let { balance = '0' } = accountCurrency;
+          if (findAccount.blockchain_id === 'F000003C' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
+            // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
+            const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
+            if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
+              const findAddress = await _db.AccountAddress.findOne({
+                where: { account_id: accountCurrency.Account.account_id },
+                attributes: ['address'],
+              });
+              if (findAddress) {
+                if (findCurrency.type === 2) {
+                  balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
+                } else {
+                  balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, findCurrency.decimals);
+                }
+                await _db.AccountCurrency.update(
+                  { balance, balance_sync_block: findBlockHeight.block },
+                  { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
+                );
               } else {
-                balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, findCurrency.decimals);
+                balance = accountCurrency.balance;
               }
-              await _db.AccountCurrency.update(
-                { balance, balance_sync_block: findBlockHeight.block },
-                { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
-              );
-            } else {
-              balance = accountCurrency.balance;
             }
-          }
-        } else {
-          const findAllAddress = await _db.AccountAddress.findAll({
-            where: { account_id: findAccount.account_id },
-            attributes: ['accountAddress_id'],
-          });
-          balance = new BigNumber(0);
-          for (const addressItem of findAllAddress) {
-            const findUTXOByAddress = await _db.UTXO.findAll({
-              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
-              attributes: ['amount'],
+          } else {
+            const findAllAddress = await _db.AccountAddress.findAll({
+              where: { account_id: findAccount.account_id },
+              attributes: ['accountAddress_id'],
             });
+            balance = new BigNumber(0);
+            for (const addressItem of findAllAddress) {
+              const findUTXOByAddress = await _db.UTXO.findAll({
+                where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
+                attributes: ['amount'],
+              });
 
-            for (const utxoItem of findUTXOByAddress) {
-              balance = balance.plus(new BigNumber(utxoItem.amount));
+              for (const utxoItem of findUTXOByAddress) {
+                balance = balance.plus(new BigNumber(utxoItem.amount));
+              }
             }
+            balance = Utils.dividedByDecimal(balance, findCurrency.decimals);
           }
-          balance = Utils.dividedByDecimal(balance, findCurrency.decimals);
-        }
 
-        if (findCurrency && findCurrency.type === 1) {
-          payload.blockchain_id = findAccount.blockchain_id;
-          payload.currency_id = accountCurrency.currency_id;
-          payload.account_id = accountCurrency.accountCurrency_id;
-          payload.purpose = findAccount.purpose;
-          payload.account_index = '0';
-          payload.curve_type = findAccount.curve_type;
-          payload.number_of_external_key = findAccount.number_of_external_key;
-          payload.number_of_internal_key = findAccount.number_of_internal_key;
-          payload.balance = balance;
-          payload.symbol = findCurrency.symbol;
-          payload.icon = findCurrency.icon;
-        } else if (findCurrency && findCurrency.type === 2) {
-          tokens.push({
-            account_token_id: accountCurrency.accountCurrency_id,
-            token_id: findCurrency.currency_id,
-            blockchain_id: findAccount.blockchain_id,
-            name: findCurrency.name,
-            symbol: findCurrency.symbol,
-            type: findCurrency.type,
-            publish: findCurrency.publish,
-            decimals: findCurrency.decimals,
-            total_supply: findCurrency.total_supply,
-            contract: findCurrency.contract,
-            balance,
-          });
+          if (findCurrency && findCurrency.type === 1) {
+            payload.blockchain_id = findAccount.blockchain_id;
+            payload.currency_id = accountCurrency.currency_id;
+            payload.account_id = accountCurrency.accountCurrency_id;
+            payload.purpose = findAccount.purpose;
+            payload.account_index = '0';
+            payload.curve_type = findAccount.curve_type;
+            payload.number_of_external_key = findAccount.number_of_external_key;
+            payload.number_of_internal_key = findAccount.number_of_internal_key;
+            payload.balance = balance;
+            payload.symbol = findCurrency.symbol;
+            payload.icon = findCurrency.icon;
+          } else if (findCurrency && findCurrency.type === 2) {
+            tokens.push({
+              account_token_id: accountCurrency.accountCurrency_id,
+              token_id: findCurrency.currency_id,
+              blockchain_id: findAccount.blockchain_id,
+              name: findCurrency.name,
+              symbol: findCurrency.symbol,
+              type: findCurrency.type,
+              publish: findCurrency.publish,
+              decimals: findCurrency.decimals,
+              total_supply: findCurrency.total_supply,
+              contract: findCurrency.contract,
+              balance,
+            });
+          }
         }
       }
       payload.tokens = tokens;
