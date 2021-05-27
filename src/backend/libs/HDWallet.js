@@ -66,7 +66,7 @@ class HDWallet {
     } else if (blockchainID === '80000091' || blockchainID === 'F0000091') {
       let _node = bitcoin.bip32.fromBase58(
         _serializedExtendPublicKey,
-        bitcoin.networks[coinType === 1 ? 'bitcoin' : 'testnet'],
+        bitcoin.networks[coinType !== 1 ? 'bitcoin' : 'testnet'],
       ); // don't change this
       _node = _node.derive(change).derive(index);
       publicKey = _node.publicKey.toString('hex');
