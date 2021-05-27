@@ -786,8 +786,6 @@ class Utils {
   }
 
   static toP2pkhAddress(blockchainID, pubkey) {
-    console.log(`toP2pkhAddress blockchainID: ${blockchainID}`);
-    console.log(`toP2pkhAddress pubkey: ${pubkey}`);
     try {
       const fingerprint = this.ripemd160(this.sha256(pubkey.length > 33 ? this.compressedPublicKey(pubkey) : pubkey));
       const findNetwork = Object.values(blockchainNetworks).find((value) => value.blockchain_id === blockchainID);

@@ -463,7 +463,6 @@ class Account extends Bot {
 
       const hdWallet = new HDWallet({ extendPublicKey: findAccountCurrency.Account.extend_public_key });
       // if index address not found
-      console.log(`findAccountCurrency.Account.extend_public_key: ${findAccountCurrency.Account.extend_public_key}`);
       let { address } = findReceiveAddress || {};
       if (!findReceiveAddress) {
         const { coin_type: coinType } = findBlockInfo;
@@ -532,8 +531,7 @@ class Account extends Bot {
 
       const findBlockInfo = Utils.blockchainIDToBlockInfo(findAccountCurrency.Account.blockchain_id);
       if (!findBlockInfo) return new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
-      console.log(`findAccountCurrency.Account: ${findAccountCurrency.Account}`);
-      console.log(`findAccountCurrency.Account: ${findAccountCurrency.Account.blockchain_id}`);
+
       let chain_index = 0;
       // only BTC Base has change address
       switch (findAccountCurrency.Account.blockchain_id) {

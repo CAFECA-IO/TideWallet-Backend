@@ -48,30 +48,20 @@ class HDWallet {
   getWalletInfo({
     coinType = 0, change = 0, index = 0, blockchainID,
   }) {
-    console.log(`getWalletInfo blockchainID: ${blockchainID}`);
     const _serializedExtendPublicKey = this.serializedExtendPublicKey(coinType);
-    console.log(`getWalletInfo publicKey: ${_serializedExtendPublicKey}`);
     let publicKey = '';
     let address = '';
     if (blockchainID === '80000000' || blockchainID === 'F0000000') {
-      let _node = bitcoin.bip32.fromBase58(
-        _serializedExtendPublicKey,
-        bitcoin.networks[coinType === 0 ? 'bitcoin' : 'testnet'],
-      ); // don't change this
+      let _node = bitcoin.bip32.fromBase58(_serializedExtendPublicKey, bitcoin.networks[coinType === 1 ? 'testnet' : 'bitcoin']); // don't change this
       _node = _node.derive(change).derive(index);
       publicKey = _node.publicKey.toString('hex');
       address = Utils.toP2wpkhAddress(blockchainID, _node.publicKey);
     } else if (blockchainID === '80000091' || blockchainID === 'F0000091') {
-      let _node = bitcoin.bip32.fromBase58(
-        _serializedExtendPublicKey,
-        bitcoin.networks[coinType !== 1 ? 'bitcoin' : 'testnet'],
-      ); // don't change this
+      let _node = bitcoin.bip32.fromBase58(_serializedExtendPublicKey, bitcoin.networks[coinType === 1 ? 'testnet' : 'bitcoin']); // don't change this
       _node = _node.derive(change).derive(index);
       publicKey = _node.publicKey.toString('hex');
-      console.log(`getWalletInfo publicKey: ${publicKey}`);
       address = Utils.toP2pkhAddress(blockchainID, publicKey);
-      console.log(`getWalletInfo address: ${address}`);
-    } else {
+    }  else {
       const node = hdkey.fromExtendedKey(_serializedExtendPublicKey);
       this.hdWallet = node.deriveChild(change).deriveChild(index).getWallet();
       publicKey = this.hdWallet.getPublicKeyString();
