@@ -95,7 +95,7 @@ module.exports = {
   ],
   bitcoin_cash_mainnet: [
     {
-      currency_id: '5b1ea92e584bf50021130612',
+      currency_id: '5b1ea92e584bf5002013061c',
       blockchain_id: '80000091',
       name: 'Bitcoin Cash',
       symbol: 'BCH',

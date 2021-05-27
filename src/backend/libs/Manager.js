@@ -33,7 +33,9 @@ class Manager extends Bot {
     this.cryptoRateSyncInterval = 3600000;
   }
 
-  init({ config, database, logger, i18n }) {
+  init({
+    config, database, logger, i18n,
+  }) {
     return super
       .init({
         config,
@@ -109,7 +111,7 @@ class Manager extends Bot {
                   fiatCurrencyRate_id: findRate.fiatCurrencyRate_id,
                   currency_id: findCurrency.currency_id,
                 },
-              }
+              },
             );
           } else {
             // if not found, create
@@ -128,7 +130,7 @@ class Manager extends Bot {
 
   syncCryptoRate() {
     const BTCObj = { asset_id: '5b1ea92e584bf50020130612', symbol: 'BTC' };
-    const BCHObj = { asset_id: '5b1ea92e584bf50021130612', symbol: 'BCH' };
+    const BCHObj = { asset_id: '5b1ea92e584bf5002013061c', symbol: 'BCH' };
     const ETHObj = { asset_id: '5b755dacd5dd99000b3d92b2', symbol: 'ETH' };
     const USDID = '5b1ea92e584bf50020130615';
 
@@ -151,7 +153,7 @@ class Manager extends Bot {
           const { payload } = JSON.parse(rs.data.toString());
           await this.database.db.bitcoin_mainnet.Currency.update(
             { exchange_rate: payload.amount },
-            { where: { currency_id: crypto.asset_id } }
+            { where: { currency_id: crypto.asset_id } },
           );
         })
         .catch((e) => {
@@ -185,15 +187,15 @@ class Manager extends Bot {
             new BtcCrawlerManager(
               this.config,
               this.database.db.bitcoin_mainnet,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           result.push(
             new BtcParserManager(
               this.config,
               this.database.db.bitcoin_mainnet,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           break;
         case 'bitcoin_testnet':
@@ -201,15 +203,15 @@ class Manager extends Bot {
             new BtcTestnetCrawlerManager(
               this.config,
               this.database.db.bitcoin_testnet,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           result.push(
             new BtcTestnetParserManager(
               this.config,
               this.database.db.bitcoin_testnet,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           break;
         case 'bitcoin_cash_mainnet':
@@ -217,15 +219,15 @@ class Manager extends Bot {
             new BchCrawlerManager(
               this.config,
               this.database.db.bitcoin_cash_mainnet,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           result.push(
             new BchParserManager(
               this.config,
               this.database.db.bitcoin_cash_mainnet,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           break;
         case 'bitcoin_cash_testnet':
@@ -233,15 +235,15 @@ class Manager extends Bot {
             new BchTestnetCrawlerManager(
               this.config,
               this.database.db.bitcoin_cash_testnet,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           result.push(
             new BchTestnetParserManager(
               this.config,
               this.database.db.bitcoin_cash_testnet,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           break;
         case 'ethereum_mainnet':
@@ -249,15 +251,15 @@ class Manager extends Bot {
             new EthCrawlerManager(
               this.config,
               this.database.db.ethereum_mainnet,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           result.push(
             new EthParserManager(
               this.config,
               this.database.db.ethereum_mainnet,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           break;
         case 'ethereum_ropsten':
@@ -265,15 +267,15 @@ class Manager extends Bot {
             new EthRopstenCrawlerManager(
               this.config,
               this.database.db.ethereum_ropsten,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           result.push(
             new EthRopstenParserManager(
               this.config,
               this.database.db.ethereum_ropsten,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           break;
         case 'cafeca':
@@ -281,15 +283,15 @@ class Manager extends Bot {
             new CfcCrawlerManager(
               this.config,
               this.database.db.cafeca,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           result.push(
             new CfcParserManager(
               this.config,
               this.database.db.cafeca,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           break;
         case 'titan':
@@ -297,15 +299,15 @@ class Manager extends Bot {
             new TtnCrawlerManager(
               this.config,
               this.database.db.titan,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           result.push(
             new TtnParserManager(
               this.config,
               this.database.db.titan,
-              this.logger
-            )
+              this.logger,
+            ),
           );
           break;
         default:
