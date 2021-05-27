@@ -333,6 +333,8 @@ class Account extends Bot {
       });
       for (let j = 0; j < findAccountCurrencies.length; j++) {
         const accountCurrency = findAccountCurrencies[j];
+        // TODO: findCurrency no not found handle
+        // TODO: for sql
         const findCurrency = await _db.Currency.findOne({
           where: {
             currency_id: accountCurrency.currency_id,
