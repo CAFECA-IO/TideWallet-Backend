@@ -88,6 +88,72 @@ docker run -d \
 ### 1. Setup Your DB
 
 TideWallet based on PostgreSQL, create a PostgreSQL first
+1. install postgres
+```shell
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+```
+
+```shell
+# 查看 PostgreSQL 服務狀態
+systemctl status postgresql.service
+```
+
+2. create user
+```shell
+# 新增 PostgreSQL 使用者
+# 會要求設定密碼
+sudo -u postgres createuser tidewallet -P
+```
+
+3. 建立DB
+```
+// 可以查看 default.config.toml 共有哪些連線資訊
+createdb bitcoin_mainnet -U postgres
+createdb bitcoin_testnet -U postgres
+createdb bitcoin_cash_mainnet -U postgres
+createdb bitcoin_cash_testnet -U postgres
+createdb ethereum_mainnet -U postgres
+createdb ethereum_ropsten -U postgres
+createdb cafeca -U postgres
+createdb titan -U postgres
+```
+
+4. 對外連線設定
+
+- 切換到postgres rule
+```shell
+sudo su - postgres
+```
+
+- 備份並修改`pg_hba.conf`
+```shell
+cp /etc/postgresql/12/main/postgresql.conf /etc/postgresql/12/main/ori_postgresql.conf
+
+vim /etc/postgresql/12/main/postgresql.conf
+```
+
+- 加入 172.31網段
+```
+host    all             all             172.31.0.0/16           md5
+```
+
+- 備份並修改`postgresql.conf`來對外
+```
+cp /etc/postgresql/12/main/postgresql.conf /etc/postgresql/12/main/ori_postgresql.conf
+
+vim /etc/postgresql/12/main/postgresql.conf
+```
+
+- 找到listen_addresses，改成
+```
+listen_addresses = '*'
+```
+
+5. 重開postgres
+```shell
+/etc/init.d/postgresql restart
+```
 
 ### 2. Init Dependency
 
@@ -97,7 +163,7 @@ npm install
 
 ### 3. Set Config
 
-```shell
+```
 // copy sample config to private folder(if not exist, create it)
 cp default.config.toml ./private/config.toml
 
@@ -148,6 +214,20 @@ ansible-playbook tool/playbook.yml
 
 * according [PostgreSQL Out Of Memory](https://italux.medium.com/postgresql-out-of-memory-3fc1105446d), postgres grow 9.6G memory usage in 60 mins during 20 Parsers before catch up blocks. can use crontab and pm2 restart to release connection.
 
+* 防火牆允許port
+```
+PostgreSQL:
+- 5432
+RabbitMQ:
+- 5671
+- 5672
+- 9187
+Monitor
+- 9100 (Prometheus)
+- 9209 (??)
+- 15672 (RabbitMQ Admin)
+```
+
 ## 本地開發環境設定
 
 須先安裝：
@@ -162,6 +242,24 @@ ansible-playbook tool/playbook.yml
 
 ```
 docker run -p 5432:5432 -e "POSTGRES_PASSWORD=admin" -d -v data:/var/lib/postgresql/data --name db postgres:13.1
+```
+
+### DB 安裝 (apt)
+```shell
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+```
+
+```shell
+# 查看 PostgreSQL 服務狀態
+systemctl status postgresql.service
+```
+
+### 新增 PostgreSQL 使用者
+```shell
+# 新增 PostgreSQL 使用者
+# 會要求設定密碼
+sudo -u postgres createuser tidewallet -P
 ```
 
 ### 建立 DB 程式所需要的 db
