@@ -310,7 +310,7 @@ class Account extends Bot {
             [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
           },
         });
-        if (!findCurrency) {
+        if (findCurrency) {
           let { balance = '0' } = accountCurrency;
           if (findAccount.blockchain_id === 'F000003C' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
             // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
