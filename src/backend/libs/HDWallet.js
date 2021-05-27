@@ -49,9 +49,7 @@ class HDWallet {
     coinType = 0, change = 0, index = 0, blockchainID,
   }) {
     console.log(`getWalletInfo blockchainID: ${blockchainID}`);
-    const _serializedExtendPublicKey = this.serializedExtendPublicKey(coinType === 1 ? coinType : 0);
-    console.log(`getWalletInfo coinType: ${coinType}`);
-    console.log(`getWalletInfo coinType: ${coinType === 1 ? coinType : 0}`);
+    const _serializedExtendPublicKey = this.serializedExtendPublicKey(coinType);
     console.log(`getWalletInfo publicKey: ${_serializedExtendPublicKey}`);
     let publicKey = '';
     let address = '';
