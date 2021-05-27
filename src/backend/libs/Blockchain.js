@@ -15,7 +15,7 @@ const fiatCurrencyRate = require('./data/fiatCurrencyRate');
 const currency = require('./data/currency');
 const tokenList = require('./data/tokenList');
 const DBOperator = require('./DBOperator');
-const HDWallet = require('./HDWallet');
+// const HDWallet = require('./HDWallet');
 
 class Blockchain extends Bot {
   constructor() {
@@ -30,23 +30,35 @@ class Blockchain extends Bot {
   init({
     config, database, logger, i18n,
   }) {
-    return super.init({
-      config, database, logger, i18n,
-    }).then(() => {
-      this.DBOperator = new DBOperator(this.config, this.database, this.logger);
-      this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
+    return super
+      .init({
+        config,
+        database,
+        logger,
+        i18n,
+      })
+      .then(() => {
+        this.DBOperator = new DBOperator(
+          this.config,
+          this.database,
+          this.logger,
+        );
+        this.defaultDBInstance = this.database.db[Utils.defaultDBInstanceName];
 
-      this.sequelize = this.defaultDBInstance.sequelize;
-      this.Sequelize = this.defaultDBInstance.Sequelize;
-      return this;
-    }).then(async () => {
-      await this.initBlockchainNetworks();
-      await this.initCurrency();
-      await this.initFiatCurrencyRate();
-      await this.initTokenList();
-      if (!this.isCrawler()) { await this.initBackendHDWallet(); }
-      return this;
-    });
+        this.sequelize = this.defaultDBInstance.sequelize;
+        this.Sequelize = this.defaultDBInstance.Sequelize;
+        return this;
+      })
+      .then(async () => {
+        await this.initBlockchainNetworks();
+        await this.initCurrency();
+        await this.initFiatCurrencyRate();
+        await this.initTokenList();
+        if (!this.isCrawler()) {
+          await this.initBackendHDWallet();
+        }
+        return this;
+      });
   }
 
   async initBackendHDWallet() {
@@ -110,15 +122,23 @@ class Blockchain extends Bot {
   async initTokenList() {
     for (const dbName of Object.keys(tokenList)) {
       for (const tokenItem of tokenList[dbName]) {
-        const findCurrency = await this.database.db[dbName].Currency.findOne({ where: { contract: tokenItem.contract } });
+        const findCurrency = await this.database.db[dbName].Currency.findOne({
+          where: { contract: tokenItem.contract },
+        });
         if (findCurrency) {
-          if ((findCurrency.name !== tokenItem.name) || (findCurrency.symbol !== tokenItem.symbol)) {
-            await this.database.db[dbName].Currency.update({
-              name: tokenItem.name,
-              symbol: tokenItem.symbol,
-            }, {
-              where: { contract: tokenItem.contract },
-            });
+          if (
+            findCurrency.name !== tokenItem.name
+            || findCurrency.symbol !== tokenItem.symbol
+          ) {
+            await this.database.db[dbName].Currency.update(
+              {
+                name: tokenItem.name,
+                symbol: tokenItem.symbol,
+              },
+              {
+                where: { contract: tokenItem.contract },
+              },
+            );
           }
           this.tideWalletTokenList.push({
             currency_id: findCurrency.currency_id,
@@ -128,9 +148,10 @@ class Blockchain extends Bot {
             publish: findCurrency.publish,
             decimals: findCurrency.decimals,
             exchange_rate: findCurrency.exchange_rate,
-            icon: findCurrency.icon || `${this.config.base.domain}/icon/ERC20.png`,
+            icon:
+              findCurrency.icon || `${this.config.base.domain}/icon/ERC20.png`,
             contract: findCurrency.contract,
-            blockchain_id: findCurrency.blockchain_id
+            blockchain_id: findCurrency.blockchain_id,
           });
         }
       }
@@ -149,7 +170,10 @@ class Blockchain extends Bot {
           publish: item.publish,
         }));
       }
-      return new ResponseFormat({ message: 'List Supported Blockchains', payload });
+      return new ResponseFormat({
+        message: 'List Supported Blockchains',
+        payload,
+      });
     } catch (e) {
       this.logger.error('BlockchainList e:', e);
       if (e.code) return e;
@@ -160,15 +184,27 @@ class Blockchain extends Bot {
   async BlockchainDetail({ params }) {
     const { blockchain_id } = params;
     try {
-      const findChainNetworkIndex = Object.values(blockchainNetworks).findIndex((item) => item.blockchain_id === blockchain_id);
-      if (findChainNetworkIndex === -1) return new ResponseFormat({ message: 'blockchain_id Not Found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+      const findChainNetworkIndex = Object.values(blockchainNetworks).findIndex(
+        (item) => item.blockchain_id === blockchain_id,
+      );
+      if (findChainNetworkIndex === -1) {
+        return new ResponseFormat({
+          message: 'blockchain_id Not Found',
+          code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+        });
+      }
       const tableName = Object.keys(blockchainNetworks)[findChainNetworkIndex];
 
       const payload = await this.database.db[tableName].Blockchain.findOne({
         where: { blockchain_id },
       });
 
-      if (!payload) return new ResponseFormat({ message: 'blockchain_id Not Found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+      if (!payload) {
+        return new ResponseFormat({
+          message: 'blockchain_id Not Found',
+          code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+        });
+      }
       return new ResponseFormat({ message: 'Get Blockchain Detail', payload });
     } catch (e) {
       this.logger.error('BlockchainDetail e:', e);
@@ -200,7 +236,7 @@ class Blockchain extends Bot {
           let { exchange_rate } = item;
           if (exchange_rate === null) {
             const findRate = await this._findFiatCurrencyRate(item.currency_id);
-            if (findRate)exchange_rate = findRate.rate;
+            if (findRate) exchange_rate = findRate.rate;
           }
           payload.push({
             currency_id: item.currency_id,
@@ -214,7 +250,10 @@ class Blockchain extends Bot {
           });
         }
       }
-      return new ResponseFormat({ message: 'List Supported Currencies', payload });
+      return new ResponseFormat({
+        message: 'List Supported Currencies',
+        payload,
+      });
     } catch (e) {
       this.logger.error('CurrencyList e:', e);
       if (e.code) return e;
@@ -235,7 +274,12 @@ class Blockchain extends Bot {
         },
       });
 
-      if (!payload) return new ResponseFormat({ message: 'currency_id Not Found', code: Codes.CURRENCY_ID_NOT_FOUND });
+      if (!payload) {
+        return new ResponseFormat({
+          message: 'currency_id Not Found',
+          code: Codes.CURRENCY_ID_NOT_FOUND,
+        });
+      }
       return new ResponseFormat({ message: 'Get Currency Detail', payload });
     } catch (e) {
       this.logger.error('CurrencyDetail e:', e);
@@ -248,7 +292,12 @@ class Blockchain extends Bot {
     const { blockchain_id } = params;
     const { type } = query;
 
-    if (type && type === 'TideWallet') return new ResponseFormat({ message: 'List Supported Currencies', payload: this.tideWalletTokenList });
+    if (type && type === 'TideWallet') {
+      return new ResponseFormat({
+        message: 'List Supported Currencies',
+        payload: this.tideWalletTokenList,
+      });
+    }
     try {
       let payload = await this.DBOperator.findAll({
         tableName: 'Currency',
@@ -271,7 +320,10 @@ class Blockchain extends Bot {
       } else {
         payload = [];
       }
-      return new ResponseFormat({ message: 'List Supported Currencies', payload });
+      return new ResponseFormat({
+        message: 'List Supported Currencies',
+        payload,
+      });
     } catch (e) {
       this.logger.error('TokenList e:', e);
       if (e.code) return e;
@@ -286,13 +338,24 @@ class Blockchain extends Bot {
         tableName: 'Currency',
         options: {
           where: {
-            currency_id: token_id, type: 2,
+            currency_id: token_id,
+            type: 2,
           },
         },
       });
 
-      if (!payload) return new ResponseFormat({ message: 'currency_id Not Found', code: Codes.CURRENCY_ID_NOT_FOUND });
-      if (payload.blockchain_id !== blockchain_id) return new ResponseFormat({ message: 'currency_id Not Found', code: Codes.CURRENCY_ID_NOT_FOUND });
+      if (!payload) {
+        return new ResponseFormat({
+          message: 'currency_id Not Found',
+          code: Codes.CURRENCY_ID_NOT_FOUND,
+        });
+      }
+      if (payload.blockchain_id !== blockchain_id) {
+        return new ResponseFormat({
+          message: 'currency_id Not Found',
+          code: Codes.CURRENCY_ID_NOT_FOUND,
+        });
+      }
       return new ResponseFormat({ message: 'Get Currency Detail', payload });
     } catch (e) {
       this.logger.error('TokenDetail e:', e);
@@ -312,7 +375,12 @@ class Blockchain extends Bot {
           attributes: ['avg_fee'],
         },
       });
-      if (!findBlockchainInfo) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+      if (!findBlockchainInfo) {
+        return new ResponseFormat({
+          message: 'blockchain_id not found',
+          code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+        });
+      }
 
       const { avg_fee = '0' } = findBlockchainInfo;
 
@@ -353,10 +421,17 @@ class Blockchain extends Bot {
       fromAddress, toAddress, value, data: signatureData,
     } = body;
 
-    if (!Utils.validateString(fromAddress)
-    || !Utils.validateString(toAddress)
-    || !Utils.validateString(value)
-    || !Utils.validateString(signatureData)) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+    if (
+      !Utils.validateString(fromAddress)
+      || !Utils.validateString(toAddress)
+      || !Utils.validateString(value)
+      || !Utils.validateString(signatureData)
+    ) {
+      return new ResponseFormat({
+        message: 'invalid input',
+        code: Codes.INVALID_INPUT,
+      });
+    }
 
     try {
       const findBlockchainInfo = await this.DBOperator.findOne({
@@ -366,28 +441,55 @@ class Blockchain extends Bot {
           attributes: ['avg_fee'],
         },
       });
-      if (!findBlockchainInfo) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+      if (!findBlockchainInfo) {
+        return new ResponseFormat({
+          message: 'blockchain_id not found',
+          code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+        });
+      }
 
       const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
-      if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+      if (!blockchainConfig) {
+        return new ResponseFormat({
+          message: 'blockchain_id not found',
+          code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+        });
+      }
 
       let gasLimit = '0';
-      if (blockchain_id === '8000003C' || blockchain_id === 'F000003C' || blockchain_id === '80000CFC' || blockchain_id === '80001F51') {
+      if (
+        blockchain_id === '8000003C'
+        || blockchain_id === 'F000003C'
+        || blockchain_id === '80000CFC'
+        || blockchain_id === '80001F51'
+      ) {
         const option = { ...blockchainConfig };
         option.data = {
           jsonrpc: '2.0',
           method: 'eth_estimateGas',
-          params: [{
-            from: fromAddress,
-            nonce: value,
-            to: toAddress,
-            data: signatureData,
-          }],
+          params: [
+            {
+              from: fromAddress,
+              nonce: value,
+              to: toAddress,
+              data: signatureData,
+            },
+          ],
           id: dvalue.randomID(),
         };
         const data = await Utils.ETHRPC(option);
-        if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-        if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+        if (!data.result && data === false) {
+          return new ResponseFormat({
+            message: 'rpc error(blockchain down)',
+            code: Codes.RPC_ERROR,
+          });
+        }
+        if (!data.result) {
+          return new ResponseFormat({
+            message: `rpc error(${data.error.message})`,
+            code: Codes.RPC_ERROR,
+          });
+        }
         gasLimit = new BigNumber(data.result).toFixed();
         return new ResponseFormat({
           message: 'Get Gas Limit',
@@ -412,7 +514,12 @@ class Blockchain extends Bot {
   async GetNonce({ params, token }) {
     const { blockchain_id, address } = params;
 
-    if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
+    if (!token) {
+      return new ResponseFormat({
+        message: 'invalid token',
+        code: Codes.INVALID_ACCESS_TOKEN,
+      });
+    }
     const tokenInfo = await Utils.verifyToken(token);
 
     try {
@@ -431,7 +538,12 @@ class Blockchain extends Bot {
         },
       });
 
-      if (!findUserAddress) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+      if (!findUserAddress) {
+        return new ResponseFormat({
+          message: 'account not found',
+          code: Codes.ACCOUNT_NOT_FOUND,
+        });
+      }
 
       let option = {};
       let nonce = '0';
@@ -442,7 +554,12 @@ class Blockchain extends Bot {
         case '80000CFC':
         case '80001F51':
           const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
-          if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+          if (!blockchainConfig) {
+            return new ResponseFormat({
+              message: 'blockchain_id not found',
+              code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+            });
+          }
 
           option = { ...blockchainConfig };
           option.data = {
@@ -453,8 +570,18 @@ class Blockchain extends Bot {
           };
           const data = await Utils.ETHRPC(option);
 
-          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          if (!data.result && data === false) {
+            return new ResponseFormat({
+              message: 'rpc error(blockchain down)',
+              code: Codes.RPC_ERROR,
+            });
+          }
+          if (!data.result) {
+            return new ResponseFormat({
+              message: `rpc error(${data.error.message})`,
+              code: Codes.RPC_ERROR,
+            });
+          }
           nonce = new BigNumber(data.result).toFixed();
 
           return new ResponseFormat({
@@ -487,7 +614,12 @@ class Blockchain extends Bot {
         case '80000CFC':
         case '80001F51':
           const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
-          if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+          if (!blockchainConfig) {
+            return new ResponseFormat({
+              message: 'blockchain_id not found',
+              code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+            });
+          }
 
           option = { ...blockchainConfig };
           option.data = {
@@ -498,8 +630,18 @@ class Blockchain extends Bot {
           };
           const data = await Utils.ETHRPC(option);
 
-          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          if (!data.result && data === false) {
+            return new ResponseFormat({
+              message: 'rpc error(blockchain down)',
+              code: Codes.RPC_ERROR,
+            });
+          }
+          if (!data.result) {
+            return new ResponseFormat({
+              message: `rpc error(${data.error.message})`,
+              code: Codes.RPC_ERROR,
+            });
+          }
           nonce = new BigNumber(data.result).toFixed();
 
           return new ResponseFormat({
@@ -524,7 +666,10 @@ class Blockchain extends Bot {
     if (retryCount > 3) {
       this.logger.error('saveBTCPublishTransaction retry error');
       this.logger.error('saveBTCPublishTransaction tx', JSON.stringify(tx));
-      this.logger.error('saveBTCPublishTransaction currencyInfo', JSON.stringify(currencyInfo.toJSON()));
+      this.logger.error(
+        'saveBTCPublishTransaction currencyInfo',
+        JSON.stringify(currencyInfo.toJSON()),
+      );
       return;
     }
     try {
@@ -544,9 +689,17 @@ class Blockchain extends Bot {
 
       await BtcParserBase.parseTx.call(that, tx, currencyInfo, timestamp);
     } catch (error) {
-      this.logger.error('saveBTCPublishTransaction retry error:', error.message);
+      this.logger.error(
+        'saveBTCPublishTransaction retry error:',
+        error.message,
+      );
       setTimeout(() => {
-        this.saveBTCPublishTransaction(tx, currencyInfo, timestamp, retryCount += 1);
+        this.saveBTCPublishTransaction(
+          tx,
+          currencyInfo,
+          timestamp,
+          (retryCount += 1),
+        );
       }, 300);
     }
   }
@@ -555,7 +708,10 @@ class Blockchain extends Bot {
     if (retryCount > 3) {
       this.logger.error('saveBCHPublishTransaction retry error');
       this.logger.error('saveBCHPublishTransaction tx', JSON.stringify(tx));
-      this.logger.error('saveBCHPublishTransaction currencyInfo', JSON.stringify(currencyInfo.toJSON()));
+      this.logger.error(
+        'saveBCHPublishTransaction currencyInfo',
+        JSON.stringify(currencyInfo.toJSON()),
+      );
       return;
     }
     try {
@@ -575,24 +731,41 @@ class Blockchain extends Bot {
 
       await BchParserBase.parseTx.call(that, tx, currencyInfo, timestamp);
     } catch (error) {
-      this.logger.error('saveBCHPublishTransaction retry error:', error.message);
+      this.logger.error(
+        'saveBCHPublishTransaction retry error:',
+        error.message,
+      );
       setTimeout(() => {
-        this.saveBCHPublishTransaction(tx, currencyInfo, timestamp, retryCount += 1);
+        this.saveBCHPublishTransaction(
+          tx,
+          currencyInfo,
+          timestamp,
+          (retryCount += 1),
+        );
       }, 300);
     }
   }
 
-
   async PublishTransaction({ params, body }) {
     const { blockchain_id } = params;
     const { hex } = body;
-    if (!hex) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+    if (!hex) {
+      return new ResponseFormat({
+        message: 'invalid input',
+        code: Codes.INVALID_INPUT,
+      });
+    }
 
     try {
       let option = {};
       let data = {};
       const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
-      if (!blockchainConfig) return new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+      if (!blockchainConfig) {
+        return new ResponseFormat({
+          message: 'blockchain_id not found',
+          code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+        });
+      }
       switch (blockchain_id) {
         case '8000003C':
         case 'F000003C':
@@ -607,8 +780,18 @@ class Blockchain extends Bot {
           };
           data = await Utils.ETHRPC(option);
 
-          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          if (!data.result && data === false) {
+            return new ResponseFormat({
+              message: 'rpc error(blockchain down)',
+              code: Codes.RPC_ERROR,
+            });
+          }
+          if (!data.result) {
+            return new ResponseFormat({
+              message: `rpc error(${data.error.message})`,
+              code: Codes.RPC_ERROR,
+            });
+          }
 
           return new ResponseFormat({
             message: 'Publish Transaction',
@@ -629,8 +812,18 @@ class Blockchain extends Bot {
             id: dvalue.randomID(),
           };
           data = await Utils.BTCRPC(option);
-          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          if (!data.result && data === false) {
+            return new ResponseFormat({
+              message: 'rpc error(blockchain down)',
+              code: Codes.RPC_ERROR,
+            });
+          }
+          if (!data.result) {
+            return new ResponseFormat({
+              message: `rpc error(${data.error.message})`,
+              code: Codes.RPC_ERROR,
+            });
+          }
           txid = data.result;
 
           // if send success, insert transaction & pending utxo to db
@@ -641,17 +834,32 @@ class Blockchain extends Bot {
             id: dvalue.randomID(),
           };
           data = await Utils.BTCRPC(option);
-          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          if (!data.result && data === false) {
+            return new ResponseFormat({
+              message: 'rpc error(blockchain down)',
+              code: Codes.RPC_ERROR,
+            });
+          }
+          if (!data.result) {
+            return new ResponseFormat({
+              message: `rpc error(${data.error.message})`,
+              code: Codes.RPC_ERROR,
+            });
+          }
 
-          const DBName = Utils.blockchainIDToDBName(blockchain_id);
-          const _db = this.database.db[DBName];
-          const findCurrency = await _db.Currency.findOne({
+          let DBName = Utils.blockchainIDToDBName(blockchain_id);
+          let _db = this.database.db[DBName];
+          let findCurrency = await _db.Currency.findOne({
             where: {
               blockchain_id,
               type: 1,
             },
-            attributes: ['currency_id', 'decimals', 'blockchain_id', 'decimals'],
+            attributes: [
+              'currency_id',
+              'decimals',
+              'blockchain_id',
+              'decimals',
+            ],
             include: [
               {
                 model: _db.Blockchain,
@@ -662,9 +870,17 @@ class Blockchain extends Bot {
 
           this.bcid = blockchain_id;
           this.decimal = findCurrency.decimals;
-          const _data = { ...data.result, height: findCurrency.Blockchain.block };
+          let _data = {
+            ...data.result,
+            height: findCurrency.Blockchain.block,
+          };
 
-          await this.saveBTCPublishTransaction(_data, findCurrency, Math.floor(Date.now() / 1000), 0);
+          await this.saveBTCPublishTransaction(
+            _data,
+            findCurrency,
+            Math.floor(Date.now() / 1000),
+            0,
+          );
 
           return new ResponseFormat({
             message: 'Publish Transaction',
@@ -674,7 +890,7 @@ class Blockchain extends Bot {
         case '80000091':
         case 'F0000091': // ++ TODO change bch testnet blocId by Emily 2021.05.24
           option = { ...blockchainConfig };
-          let txid = '';
+          txid = '';
           // send transaction
           option.data = {
             jsonrpc: '1.0',
@@ -683,8 +899,18 @@ class Blockchain extends Bot {
             id: dvalue.randomID(),
           };
           data = await Utils.BCHRPC(option);
-          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          if (!data.result && data === false) {
+            return new ResponseFormat({
+              message: 'rpc error(blockchain down)',
+              code: Codes.RPC_ERROR,
+            });
+          }
+          if (!data.result) {
+            return new ResponseFormat({
+              message: `rpc error(${data.error.message})`,
+              code: Codes.RPC_ERROR,
+            });
+          }
           txid = data.result;
 
           // if send success, insert transaction & pending utxo to db
@@ -695,17 +921,32 @@ class Blockchain extends Bot {
             id: dvalue.randomID(),
           };
           data = await Utils.BCHRPC(option);
-          if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-          if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+          if (!data.result && data === false) {
+            return new ResponseFormat({
+              message: 'rpc error(blockchain down)',
+              code: Codes.RPC_ERROR,
+            });
+          }
+          if (!data.result) {
+            return new ResponseFormat({
+              message: `rpc error(${data.error.message})`,
+              code: Codes.RPC_ERROR,
+            });
+          }
 
-          const DBName = Utils.blockchainIDToDBName(blockchain_id);
-          const _db = this.database.db[DBName];
-          const findCurrency = await _db.Currency.findOne({
+          DBName = Utils.blockchainIDToDBName(blockchain_id);
+          _db = this.database.db[DBName];
+          findCurrency = await _db.Currency.findOne({
             where: {
               blockchain_id,
               type: 1,
             },
-            attributes: ['currency_id', 'decimals', 'blockchain_id', 'decimals'],
+            attributes: [
+              'currency_id',
+              'decimals',
+              'blockchain_id',
+              'decimals',
+            ],
             include: [
               {
                 model: _db.Blockchain,
@@ -716,16 +957,27 @@ class Blockchain extends Bot {
 
           this.bcid = blockchain_id;
           this.decimal = findCurrency.decimals;
-          const _data = { ...data.result, height: findCurrency.Blockchain.block };
+          _data = {
+            ...data.result,
+            height: findCurrency.Blockchain.block,
+          };
 
-          await this.saveBCHPublishTransaction(_data, findCurrency, Math.floor(Date.now() / 1000), 0);
+          await this.saveBCHPublishTransaction(
+            _data,
+            findCurrency,
+            Math.floor(Date.now() / 1000),
+            0,
+          );
 
           return new ResponseFormat({
             message: 'Publish Transaction',
             payload: { txid },
           });
         default:
-          return new ResponseFormat({ message: 'blockchain not support', code: Codes.BLOCKCHAIN_NOT_SUPPORT });
+          return new ResponseFormat({
+            message: 'blockchain not support',
+            code: Codes.BLOCKCHAIN_NOT_SUPPORT,
+          });
       }
     } catch (e) {
       this.logger.error('PublishTransaction e:', e);
@@ -752,7 +1004,10 @@ class Blockchain extends Bot {
           rate: item.rate || '0',
         });
       });
-      return new ResponseFormat({ message: 'List Fiat Currency Rate', payload });
+      return new ResponseFormat({
+        message: 'List Fiat Currency Rate',
+        payload,
+      });
     } catch (e) {
       if (e.code) return e;
       return new ResponseFormat({ message: 'DB Error', code: Codes.DB_ERROR });
@@ -779,7 +1034,10 @@ class Blockchain extends Bot {
           rate: item.exchange_rate || '0',
         });
       });
-      return new ResponseFormat({ message: 'List Crypto Currency Rate', payload });
+      return new ResponseFormat({
+        message: 'List Crypto Currency Rate',
+        payload,
+      });
     } catch (e) {
       this.logger.error('CryptoRate e:', e);
       if (e.code) return e;
@@ -807,7 +1065,8 @@ class Blockchain extends Bot {
             decimals: findTokenItem.decimals,
             total_supply: findTokenItem.total_supply,
             description: findTokenItem.description,
-            imageUrl: findTokenItem.icon || `${this.config.base.domain}/icon/ERC20.png`,
+            imageUrl:
+              findTokenItem.icon || `${this.config.base.domain}/icon/ERC20.png`,
           },
         });
       }
@@ -825,14 +1084,22 @@ class Blockchain extends Bot {
           options = this.config.blockchain.cafeca;
           break;
         default:
-          return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
+          return new ResponseFormat({
+            message: 'blockchain has not token',
+            code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN,
+          });
       }
       const tokenInfoFromPeer = await Promise.all([
         Utils.getTokenNameFromPeer(options, contract),
         Utils.getTokenSymbolFromPeer(options, contract),
         Utils.getTokenDecimalFromPeer(options, contract),
         Utils.getTokenTotalSupplyFromPeer(options, contract),
-      ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+      ]).catch(
+        (error) => new ResponseFormat({
+          message: `rpc error(${error})`,
+          code: Codes.RPC_ERROR,
+        }),
+      );
       if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
 
       let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
@@ -844,22 +1111,35 @@ class Blockchain extends Bot {
           path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
           timeout: 1000,
         });
-        if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
+        if (checkIcon.data.toString().indexOf("Couldn't find") !== -1) throw Error("Couldn't find");
       } catch (e) {
         icon = `${this.config.base.domain}/icon/ERC20.png`;
       }
 
       const newCurrencyID = uuidv4();
-      if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
+      if (
+        !Array.isArray(tokenInfoFromPeer)
+        || !tokenInfoFromPeer[0]
+        || !tokenInfoFromPeer[1]
+        || !(tokenInfoFromPeer[2] >= 0)
+        || !tokenInfoFromPeer[3]
+      ) {
+        return new ResponseFormat({
+          message: 'contract not found',
+          code: Codes.CONTRACT_CONT_FOUND,
+        });
+      }
       this.logger.debug('tokenInfoFromPeer:', tokenInfoFromPeer);
       let total_supply = tokenInfoFromPeer[3];
       try {
-        total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
-          groupSeparator: ',', groupSize: 3,
-        });
-      // eslint-disable-next-line no-empty
-      } catch (e) {
-      }
+        total_supply = new BigNumber(tokenInfoFromPeer[3])
+          .dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2]))
+          .toFixed({
+            groupSeparator: ',',
+            groupSize: 3,
+          });
+        // eslint-disable-next-line no-empty
+      } catch (e) {}
       await _db.Currency.create({
         currency_id: newCurrencyID,
         blockchain_id,
@@ -903,8 +1183,18 @@ class Blockchain extends Bot {
       id: dvalue.randomID(),
     };
     const data = await Utils.ETHRPC(option);
-    if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-    if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+    if (!data.result && data === false) {
+      return new ResponseFormat({
+        message: 'rpc error(blockchain down)',
+        code: Codes.RPC_ERROR,
+      });
+    }
+    if (!data.result) {
+      return new ResponseFormat({
+        message: `rpc error(${data.error.message})`,
+        code: Codes.RPC_ERROR,
+      });
+    }
     return new BigNumber(data.result).toNumber();
   }
 
@@ -920,8 +1210,18 @@ class Blockchain extends Bot {
     };
 
     const data = await Utils.BTCRPC(option);
-    if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-    if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+    if (!data.result && data === false) {
+      return new ResponseFormat({
+        message: 'rpc error(blockchain down)',
+        code: Codes.RPC_ERROR,
+      });
+    }
+    if (!data.result) {
+      return new ResponseFormat({
+        message: `rpc error(${data.error.message})`,
+        code: Codes.RPC_ERROR,
+      });
+    }
     return new BigNumber(data.result).toNumber();
   }
 
@@ -937,8 +1237,18 @@ class Blockchain extends Bot {
     };
 
     const data = await Utils.BCHRPC(option);
-    if (!data.result && data === false) return new ResponseFormat({ message: 'rpc error(blockchain down)', code: Codes.RPC_ERROR });
-    if (!data.result) return new ResponseFormat({ message: `rpc error(${data.error.message})`, code: Codes.RPC_ERROR });
+    if (!data.result && data === false) {
+      return new ResponseFormat({
+        message: 'rpc error(blockchain down)',
+        code: Codes.RPC_ERROR,
+      });
+    }
+    if (!data.result) {
+      return new ResponseFormat({
+        message: `rpc error(${data.error.message})`,
+        code: Codes.RPC_ERROR,
+      });
+    }
     return new BigNumber(data.result).toNumber();
   }
 
@@ -954,7 +1264,10 @@ class Blockchain extends Bot {
     let result = {};
     if (findBtcMainnetUnparsedTxTimestamp) {
       result = await _db.BlockScanned.findOne({
-        where: { blockchain_id, timestamp: findBtcMainnetUnparsedTxTimestamp.timestamp },
+        where: {
+          blockchain_id,
+          timestamp: findBtcMainnetUnparsedTxTimestamp.timestamp,
+        },
       });
       if (result) return result.block;
     }
@@ -969,8 +1282,18 @@ class Blockchain extends Bot {
   async BlockHeight() {
     try {
       const now = Math.floor(Date.now() / 1000);
-      if (this.cacheBlockchainInfo && (now - this.cacheBlockchainInfo.timestamp) < 30) return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo.data });
-      const findBlockchain = await this.DBOperator.findAll({ tableName: 'Blockchain' });
+      if (
+        this.cacheBlockchainInfo
+        && now - this.cacheBlockchainInfo.timestamp < 30
+      ) {
+        return new ResponseFormat({
+          message: 'Block Height',
+          payload: this.cacheBlockchainInfo.data,
+        });
+      }
+      const findBlockchain = await this.DBOperator.findAll({
+        tableName: 'Blockchain',
+      });
 
       const BlockHeightsFromPeer = await Promise.all([
         this.btcBlockHeight('80000000'),
@@ -980,23 +1303,62 @@ class Blockchain extends Bot {
         this.ethBlockHeight('8000003C'),
         this.ethBlockHeight('F000003C'),
         this.ethBlockHeight('80001F51'),
-      ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+      ]).catch(
+        (error) => new ResponseFormat({
+          message: `rpc error(${error})`,
+          code: Codes.RPC_ERROR,
+        }),
+      );
       if (BlockHeightsFromPeer.code === Codes.RPC_ERROR) return BlockHeightsFromPeer;
-      const [btcMainnetBlockHeight, btcTestnetBlockHeight,bchMainnetBlockHeight, bchTestnetBlockHeight, ethMainnetBlockHeight, ethTestnetBlockHeight, ttnBlockHeight] = BlockHeightsFromPeer;
+      const [
+        btcMainnetBlockHeight,
+        btcTestnetBlockHeight,
+        bchMainnetBlockHeight,
+        bchTestnetBlockHeight,
+        ethMainnetBlockHeight,
+        ethTestnetBlockHeight,
+        ttnBlockHeight,
+      ] = BlockHeightsFromPeer;
 
-      const _dbBtcMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000000');
-      const dbBtcMainnetBlockHeight = _dbBtcMainnetBlockHeight ? _dbBtcMainnetBlockHeight.block : 0;
-      const _dbBtcTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === 'F0000000');
-      const dbBtcTestnetBlockHeight = _dbBtcTestnetBlockHeight ? _dbBtcTestnetBlockHeight.block : 0;
-      const _dbBchMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80000091');
-      const dbBchMainnetBlockHeight = _dbBchMainnetBlockHeight ? _dbBchMainnetBlockHeight.block : 0;
-      const _dbBchTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === 'F0000091'); // ++ TODO change bch testnet blocId by Emily 2021.05.24
-      const dbBchTestnetBlockHeight = _dbBchTestnetBlockHeight ? _dbBchTestnetBlockHeight.block : 0;
-      const _dbEthMainnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === '8000003C');
-      const dbEthMainnetBlockHeight = _dbEthMainnetBlockHeight ? _dbEthMainnetBlockHeight.block : 0;
-      const _dbEthTestnetBlockHeight = findBlockchain.find((item) => item.blockchain_id === 'F000003C');
-      const dbEthTestnetBlockHeight = _dbEthTestnetBlockHeight ? _dbEthTestnetBlockHeight.block : 0;
-      const _dbTTNBlockHeight = findBlockchain.find((item) => item.blockchain_id === '80001F51');
+      const _dbBtcMainnetBlockHeight = findBlockchain.find(
+        (item) => item.blockchain_id === '80000000',
+      );
+      const dbBtcMainnetBlockHeight = _dbBtcMainnetBlockHeight
+        ? _dbBtcMainnetBlockHeight.block
+        : 0;
+      const _dbBtcTestnetBlockHeight = findBlockchain.find(
+        (item) => item.blockchain_id === 'F0000000',
+      );
+      const dbBtcTestnetBlockHeight = _dbBtcTestnetBlockHeight
+        ? _dbBtcTestnetBlockHeight.block
+        : 0;
+      const _dbBchMainnetBlockHeight = findBlockchain.find(
+        (item) => item.blockchain_id === '80000091',
+      );
+      const dbBchMainnetBlockHeight = _dbBchMainnetBlockHeight
+        ? _dbBchMainnetBlockHeight.block
+        : 0;
+      const _dbBchTestnetBlockHeight = findBlockchain.find(
+        (item) => item.blockchain_id === 'F0000091',
+      ); // ++ TODO change bch testnet blocId by Emily 2021.05.24
+      const dbBchTestnetBlockHeight = _dbBchTestnetBlockHeight
+        ? _dbBchTestnetBlockHeight.block
+        : 0;
+      const _dbEthMainnetBlockHeight = findBlockchain.find(
+        (item) => item.blockchain_id === '8000003C',
+      );
+      const dbEthMainnetBlockHeight = _dbEthMainnetBlockHeight
+        ? _dbEthMainnetBlockHeight.block
+        : 0;
+      const _dbEthTestnetBlockHeight = findBlockchain.find(
+        (item) => item.blockchain_id === 'F000003C',
+      );
+      const dbEthTestnetBlockHeight = _dbEthTestnetBlockHeight
+        ? _dbEthTestnetBlockHeight.block
+        : 0;
+      const _dbTTNBlockHeight = findBlockchain.find(
+        (item) => item.blockchain_id === '80001F51',
+      );
       const dbTTNBlockHeight = _dbTTNBlockHeight ? _dbTTNBlockHeight.block : 0;
 
       const btcMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000000');
@@ -1005,7 +1367,9 @@ class Blockchain extends Bot {
       const bchTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('F0000091'); // ++ TODO change bch testnet blocId by Emily 2021.05.24
       const ethMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000003C');
       const ethTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('F000003C');
-      const ttnBlockScannedBlockHeight = await this.findBlockScannedHeight('80001F51');
+      const ttnBlockScannedBlockHeight = await this.findBlockScannedHeight(
+        '80001F51',
+      );
 
       this.cacheBlockchainInfo = {
         timestamp: Math.floor(Date.now() / 1000),
@@ -1015,42 +1379,48 @@ class Blockchain extends Bot {
             db_blockHeight: dbBtcMainnetBlockHeight,
             blockScanned_blockHeight: btcMainnetBlockScannedBlockHeight,
             unCrawlerBlock: btcMainnetBlockHeight - dbBtcMainnetBlockHeight,
-            unParseBlock: btcMainnetBlockHeight - btcMainnetBlockScannedBlockHeight,
+            unParseBlock:
+              btcMainnetBlockHeight - btcMainnetBlockScannedBlockHeight,
           },
           BTC_TESTNET: {
             blockHeight: btcTestnetBlockHeight,
             db_blockHeight: dbBtcTestnetBlockHeight,
             blockScanned_blockHeight: btcTestnetBlockScannedBlockHeight,
             unCrawlerBlock: btcTestnetBlockHeight - dbBtcTestnetBlockHeight,
-            unParseBlock: btcTestnetBlockHeight - btcTestnetBlockScannedBlockHeight,
+            unParseBlock:
+              btcTestnetBlockHeight - btcTestnetBlockScannedBlockHeight,
           },
           BCH_MAINNET: {
             blockHeight: bchMainnetBlockHeight,
             db_blockHeight: dbBchMainnetBlockHeight,
             blockScanned_blockHeight: bchMainnetBlockScannedBlockHeight,
             unCrawlerBlock: bchMainnetBlockHeight - dbBchMainnetBlockHeight,
-            unParseBlock: bchMainnetBlockHeight - bchMainnetBlockScannedBlockHeight,
+            unParseBlock:
+              bchMainnetBlockHeight - bchMainnetBlockScannedBlockHeight,
           },
           BCH_TESTNET: {
             blockHeight: bchTestnetBlockHeight,
             db_blockHeight: dbBchTestnetBlockHeight,
             blockScanned_blockHeight: bchTestnetBlockScannedBlockHeight,
             unCrawlerBlock: bchTestnetBlockHeight - dbBchTestnetBlockHeight,
-            unParseBlock: bchTestnetBlockHeight - bchTestnetBlockScannedBlockHeight,
+            unParseBlock:
+              bchTestnetBlockHeight - bchTestnetBlockScannedBlockHeight,
           },
           ETH_MAINNET: {
             blockHeight: ethMainnetBlockHeight,
             db_blockHeight: dbEthMainnetBlockHeight,
             blockScanned_blockHeight: ethMainnetBlockScannedBlockHeight,
             unCrawlerBlock: ethMainnetBlockHeight - dbEthMainnetBlockHeight,
-            unParseBlock: ethMainnetBlockHeight - ethMainnetBlockScannedBlockHeight,
+            unParseBlock:
+              ethMainnetBlockHeight - ethMainnetBlockScannedBlockHeight,
           },
           ETH_TESTNET: {
             blockHeight: ethTestnetBlockHeight,
             db_blockHeight: dbEthTestnetBlockHeight,
             blockScanned_blockHeight: ethTestnetBlockScannedBlockHeight,
             unCrawlerBlock: ethTestnetBlockHeight - dbEthTestnetBlockHeight,
-            unParseBlock: ethTestnetBlockHeight - ethTestnetBlockScannedBlockHeight,
+            unParseBlock:
+              ethTestnetBlockHeight - ethTestnetBlockScannedBlockHeight,
           },
           TTN: {
             blockHeight: ttnBlockHeight,
@@ -1062,11 +1432,17 @@ class Blockchain extends Bot {
         },
       };
 
-      return new ResponseFormat({ message: 'Block Height', payload: this.cacheBlockchainInfo.data });
+      return new ResponseFormat({
+        message: 'Block Height',
+        payload: this.cacheBlockchainInfo.data,
+      });
     } catch (e) {
       console.log(e); // -- no console.log
       this.logger.error('BlockHeight error:', JSON.stringify(e));
-      return new ResponseFormat({ code: Codes.UNKNOWN_ERROR, message: e.message });
+      return new ResponseFormat({
+        code: Codes.UNKNOWN_ERROR,
+        message: e.message,
+      });
     }
   }
 
@@ -1125,7 +1501,12 @@ TTN_UNPARSEBLOCK ${data.payload.TTN.unParseBlock}
         attributes: ['account_id', 'blockchain_id'],
       });
 
-      if (!findAccount || findAccount.length === 0) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+      if (!findAccount || findAccount.length === 0) {
+        return new ResponseFormat({
+          message: 'account not found',
+          code: Codes.ACCOUNT_NOT_FOUND,
+        });
+      }
 
       const payload = [];
       for (let i = 0; i < findAccount.length; i++) {
@@ -1143,12 +1524,16 @@ TTN_UNPARSEBLOCK ${data.payload.TTN.unParseBlock}
               case '8000003C':
               case 'F000003C':
               case '80001F51':
-                _balance = await Utils.ethGetBalanceByAddress(accountItem.blockchain_id, addressItem.address, 18);
+                _balance = await Utils.ethGetBalanceByAddress(
+                  accountItem.blockchain_id,
+                  addressItem.address,
+                  18,
+                );
                 break;
-                case '80000000':
-                case 'F0000000':
-                case '80000091':
-                case 'F0000091':
+              case '80000000':
+              case 'F0000000':
+              case '80000091':
+              case 'F0000091':
                 // eslint-disable-next-line no-case-declarations
                 const findAccountCurrency = await this.accountCurrencyModel.findOne({
                   where: { account_id: accountItem.account_id },
@@ -1158,7 +1543,9 @@ TTN_UNPARSEBLOCK ${data.payload.TTN.unParseBlock}
               default:
                 break;
             }
-            const blockchainInfo = Object.values(blockchainNetworks).find((item) => item.blockchain_id === accountItem.blockchain_id);
+            const blockchainInfo = Object.values(blockchainNetworks).find(
+              (item) => item.blockchain_id === accountItem.blockchain_id,
+            );
             payload.push({
               blockchainId: accountItem.blockchain_id,
               name: blockchainInfo.name,
@@ -1174,7 +1561,10 @@ TTN_UNPARSEBLOCK ${data.payload.TTN.unParseBlock}
       console.log(e); // -- no console.log
       this.logger.error('NodeInfo e:', e);
       if (e.code) return e;
-      return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
+      return new ResponseFormat({
+        message: `DB Error(${e.message})`,
+        code: Codes.DB_ERROR,
+      });
     }
   }
 
