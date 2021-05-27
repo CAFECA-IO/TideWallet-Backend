@@ -566,7 +566,7 @@ class Account extends Bot {
           change: chain_index,
           index: findAccountCurrency.number_of_internal_key,
           coinType,
-          blockchainID: findAccountCurrency.Account.Blockchain.blockchain_id,
+          blockchainID: findAccountCurrency.Account.blockchain_id,
         });
 
         const DBName = Utils.blockchainIDToDBName(findAccountCurrency.Account.blockchain_id);
