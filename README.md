@@ -128,9 +128,9 @@ sudo su - postgres
 
 - 備份並修改`pg_hba.conf`
 ```shell
-cp /etc/postgresql/12/main/postgresql.conf /etc/postgresql/12/main/ori_postgresql.conf
+cp /etc/postgresql/12/main/pg_hba.conf /etc/postgresql/12/main/ori_pg_hba.conf
 
-vim /etc/postgresql/12/main/postgresql.conf
+vim /etc/postgresql/12/main/pg_hba.conf
 ```
 
 - 加入 172.31網段
@@ -150,9 +150,14 @@ vim /etc/postgresql/12/main/postgresql.conf
 listen_addresses = '*'
 ```
 
+- 找到max_connections，改成
+```
+max_connections = 600
+```
+
 5. 重開postgres
 ```shell
-/etc/init.d/postgresql restart
+sudo /etc/init.d/postgresql restart
 ```
 
 ### 2. Init Dependency
@@ -169,6 +174,15 @@ cp default.config.toml ./private/config.toml
 
 // set your env
 vi ./private/config.toml
+```
+
+* if used for crawler
+```
+// if you want to use eth mainnet crawler
+[syncSwitch]
+ethereum_mainnet = true
+cryptoRate = true
+rate = true
 ```
 
 ### 4. Run Project
