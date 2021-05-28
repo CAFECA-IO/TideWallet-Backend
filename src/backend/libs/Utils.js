@@ -785,11 +785,18 @@ class Utils {
     return compressed;
   }
 
-  static toP2pkhAddress(blockchainID, pubkey) {
+  static toP2pkhAddress = (blockchainID, pubkey) => {
+    console.log(blockchainID, pubkey);
     try {
-      const fingerprint = this.ripemd160(this.sha256(pubkey.length > 33 ? this.compressedPublicKey(pubkey) : pubkey));
-      const findNetwork = Object.values(blockchainNetworks).find((value) => value.blockchain_id === blockchainID);
-      const prefix = Buffer.from((findNetwork.pubKeyHash).toString(16).padStart(2, '0'), 'hex');
+      const _pubkey = Buffer.from(pubkey, "hex");
+      const fingerprint = this.hash160(_pubkey);
+      const findNetwork = Object.values(blockchainNetworks).find(
+        (value) => value.blockchain_id === blockchainID
+      );
+      const prefix = Buffer.from(
+        findNetwork.pubKeyHash.toString(16).padStart(2, "0"),
+        "hex"
+      );
       const hashPubKey = Buffer.concat([prefix, fingerprint]);
       let address = bs58check.encode(hashPubKey);
       address = bchaddr.toCashAddress(address);
