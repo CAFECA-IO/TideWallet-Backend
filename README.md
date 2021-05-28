@@ -201,12 +201,13 @@ rabbitmq:3-management
 
 ### 設定設定檔
 
-將範例的設定檔複製到 private/config.toml 後，修改成符合該環境的設定
+1. 將範例的設定檔複製到 private/config.toml 後，修改成符合該環境的設定
 
 ```
 cp ./default.config.toml private/config.toml
 vim private/config.toml
 ```
+2. 新增 private/service-account-file.json(參考👆Init FC )
 
 ### start
 
