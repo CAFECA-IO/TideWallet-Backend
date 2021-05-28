@@ -1,3 +1,5 @@
+/* eslint-disable no-shadow */
+/* eslint-disable func-names */
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
@@ -34,26 +36,35 @@ class Utils {
   }
 
   static waterfallPromise(jobs) {
-    return jobs.reduce((prev, curr) => prev.then(() => curr()), Promise.resolve());
+    return jobs.reduce(
+      (prev, curr) => prev.then(() => curr()),
+      Promise.resolve(),
+    );
   }
 
   static retryPromise(promise, args, maxTries, context = null, timeout) {
-    return promise.apply(context, args)
-      .then((d) => Promise.resolve(d),
-        (e) => {
-          if (maxTries <= 0) return Promise.reject(e);
+    return promise.apply(context, args).then(
+      (d) => Promise.resolve(d),
+      (e) => {
+        if (maxTries <= 0) return Promise.reject(e);
 
-          return new Promise((resolve, reject) => {
-            setTimeout(() => {
-              this.retryPromise(promise, args, maxTries - 1, context, timeout)
-                .then(resolve, reject);
-            }, timeout || 0);
-          });
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            this.retryPromise(
+              promise,
+              args,
+              maxTries - 1,
+              context,
+              timeout,
+            ).then(resolve, reject);
+          }, timeout || 0);
         });
+      },
+    );
   }
 
   static toHex(n) {
-    return `0x${(n).toString(16)}`;
+    return `0x${n.toString(16)}`;
   }
 
   static zeroFill(i, l) {
@@ -65,9 +76,7 @@ class Utils {
   }
 
   static parseBoolean(bool) {
-    return typeof (bool) === 'string'
-      ? bool.toLowerCase() !== 'false'
-      : !!bool;
+    return typeof bool === 'string' ? bool.toLowerCase() !== 'false' : !!bool;
   }
 
   static parseTime(timestamp) {
@@ -84,7 +93,7 @@ class Utils {
     } else if (uptime > 60 * 1000) {
       result = `${(uptime / (60 * 1000)).toFixed(2)} Min`;
     } else {
-      result = `${(uptime / (1000)).toFixed(2)} Sec`;
+      result = `${(uptime / 1000).toFixed(2)} Sec`;
     }
     return result;
   }
@@ -93,25 +102,29 @@ class Utils {
     if (typeof opts === 'function') opts = { cmp: opts };
     let space = opts.space || '';
     if (typeof space === 'number') space = Array(space + 1).join(' ');
-    const cycles = (typeof opts.cycles === 'boolean') ? opts.cycles : false;
+    const cycles = typeof opts.cycles === 'boolean' ? opts.cycles : false;
     // eslint-disable-next-line func-names
-    const replacer = opts.replacer || function (key, value) { return value; };
+    const replacer = opts.replacer
+      || function (key, value) {
+        return value;
+      };
 
     // eslint-disable-next-line func-names
-    const cmp = opts.cmp && (function (f) {
-      return (node) => {
-        // eslint-disable-next-line no-unused-expressions
-        (a, b) => {
-          const aobj = { key: a, value: node[a] };
-          const bobj = { key: b, value: node[b] };
-          return f(aobj, bobj);
+    const cmp = opts.cmp
+      && (function (f) {
+        return (node) => {
+          // eslint-disable-next-line no-unused-expressions
+          (a, b) => {
+            const aobj = { key: a, value: node[a] };
+            const bobj = { key: b, value: node[b] };
+            return f(aobj, bobj);
+          };
         };
-      };
-    }(opts.cmp));
+      }(opts.cmp));
 
     const seen = [];
     return (function stringify(parent, key, node, levelDB) {
-      const indent = space ? (`\n${new Array(levelDB + 1).join(space)}`) : '';
+      const indent = space ? `\n${new Array(levelDB + 1).join(space)}` : '';
       const colonSeparator = space ? ': ' : ':';
 
       if (node && node.toJSON && typeof node.toJSON === 'function') {
@@ -163,11 +176,13 @@ class Utils {
         .map((v) => {
           if (data[v] instanceof Object || typeof data[v] === 'object') {
             return `[${v}]\r\n${this.toToml(data[v], true)}\r\n`;
-          } if (typeof (data[v]) === 'string') {
+          }
+          if (typeof data[v] === 'string') {
             return `${v} = "${data[v]}"${!notRoot ? '\r\n' : ''}`;
           }
           return `${v} = ${data[v]}${!notRoot ? '\r\n' : ''}`;
-        }).join('\r\n');
+        })
+        .join('\r\n');
     } else {
       result = String(data).toString();
     }
@@ -177,7 +192,13 @@ class Utils {
 
   static BCHRPC({
     // eslint-disable-next-line no-shadow
-    protocol, port, hostname, path, data, user, password,
+    protocol,
+    port,
+    hostname,
+    path,
+    data,
+    user,
+    password,
   }) {
     const basicAuth = this.base64Encode(`${user}:${password}`);
     const opt = {
@@ -185,33 +206,57 @@ class Utils {
       port,
       hostname,
       path,
-      headers: { 'content-type': 'application/json', Authorization: `Basic ${basicAuth}` },
+      headers: {
+        'content-type': 'application/json',
+        Authorization: `Basic ${basicAuth}`,
+      },
       data,
       timeout: 30000,
     };
     const start = new Date();
-    return ecRequest.post(opt)
+    return ecRequest
+      .post(opt)
       .then((rs) => {
         let response = '';
         try {
           response = JSON.parse(rs.data);
         } catch (e) {
-          this.logger.error(`BCHRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
-          this.logger.error(`BCHRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+          this.logger.error(
+            `BCHRPC(host: ${hostname} method:${data.method}), error: ${e.message}`,
+          );
+          this.logger.error(
+            `BCHRPC(host: ${hostname} method:${
+              data.method
+            }), rs.data.toString(): ${rs.data.toString()}`,
+          );
           return false;
         }
-        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        this.logger.log(
+          `RPC ${opt.hostname} method: ${opt.data.method} response time: ${
+            new Date() - start
+          }ms`,
+        );
         return Promise.resolve(response);
       })
       .catch((e) => {
-        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        this.logger.log(
+          `RPC ${opt.hostname} method: ${opt.data.method} response time: ${
+            new Date() - start
+          }ms`,
+        );
         throw e;
       });
   }
 
   static BTCRPC({
     // eslint-disable-next-line no-shadow
-    protocol, port, hostname, path, data, user, password,
+    protocol,
+    port,
+    hostname,
+    path,
+    data,
+    user,
+    password,
   }) {
     const basicAuth = this.base64Encode(`${user}:${password}`);
     const opt = {
@@ -219,33 +264,55 @@ class Utils {
       port,
       hostname,
       path,
-      headers: { 'content-type': 'application/json', Authorization: `Basic ${basicAuth}` },
+      headers: {
+        'content-type': 'application/json',
+        Authorization: `Basic ${basicAuth}`,
+      },
       data,
       timeout: 30000,
     };
     const start = new Date();
-    return ecRequest.post(opt)
+    return ecRequest
+      .post(opt)
       .then((rs) => {
         let response = '';
         try {
           response = JSON.parse(rs.data);
         } catch (e) {
-          this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
-          this.logger.error(`BTCRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+          this.logger.error(
+            `BTCRPC(host: ${hostname} method:${data.method}), error: ${e.message}`,
+          );
+          this.logger.error(
+            `BTCRPC(host: ${hostname} method:${
+              data.method
+            }), rs.data.toString(): ${rs.data.toString()}`,
+          );
           return false;
         }
-        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        this.logger.log(
+          `RPC ${opt.hostname} method: ${opt.data.method} response time: ${
+            new Date() - start
+          }ms`,
+        );
         return Promise.resolve(response);
       })
       .catch((e) => {
-        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        this.logger.log(
+          `RPC ${opt.hostname} method: ${opt.data.method} response time: ${
+            new Date() - start
+          }ms`,
+        );
         throw e;
       });
   }
 
   static ETHRPC({
     // eslint-disable-next-line no-shadow
-    protocol, port, hostname, path, data,
+    protocol,
+    port,
+    hostname,
+    path,
+    data,
   }) {
     const opt = {
       protocol,
@@ -257,21 +324,36 @@ class Utils {
       timeout: 3000,
     };
     const start = new Date();
-    return ecRequest.post(opt)
+    return ecRequest
+      .post(opt)
       .then((rs) => {
         let response = '';
         try {
           response = JSON.parse(rs.data);
         } catch (e) {
-          this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), error: ${e.message}`);
-          this.logger.error(`ETHRPC(host: ${hostname} method:${data.method}), rs.data.toString(): ${rs.data.toString()}`);
+          this.logger.error(
+            `ETHRPC(host: ${hostname} method:${data.method}), error: ${e.message}`,
+          );
+          this.logger.error(
+            `ETHRPC(host: ${hostname} method:${
+              data.method
+            }), rs.data.toString(): ${rs.data.toString()}`,
+          );
           return e;
         }
-        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        this.logger.log(
+          `RPC ${opt.hostname} method: ${opt.data.method} response time: ${
+            new Date() - start
+          }ms`,
+        );
         return Promise.resolve(response);
       })
       .catch((e) => {
-        this.logger.log(`RPC ${opt.hostname} method: ${opt.data.method} response time: ${new Date() - start}ms`);
+        this.logger.log(
+          `RPC ${opt.hostname} method: ${opt.data.method} response time: ${
+            new Date() - start
+          }ms`,
+        );
         throw e;
       });
   }
@@ -283,8 +365,7 @@ class Utils {
         const rsConfig = config;
         // eslint-disable-next-line prefer-destructuring, prefer-rest-params
         rsConfig.argv = arguments[0];
-        return this.initialFolder(config)
-          .then(() => rsConfig);
+        return this.initialFolder(config).then(() => rsConfig);
       })
       .then((config) => Promise.all([
         config,
@@ -303,8 +384,7 @@ class Utils {
   }
 
   static readJSON({ filePath }) {
-    return this.readFile({ filePath })
-      .then((data) => JSON.parse(data));
+    return this.readFile({ filePath }).then((data) => JSON.parse(data));
   }
 
   static readFile({ filePath }) {
@@ -328,8 +408,9 @@ class Utils {
   }
 
   static async readConfig({ filePath }) {
-    let config; let defaultCFG; let
-      currentCFG;
+    let config;
+    let defaultCFG;
+    let currentCFG;
 
     const packageInfo = await this.readPackageInfo();
     const basePath = path.resolve(os.homedir(), packageInfo.name);
@@ -371,38 +452,32 @@ class Utils {
 
   static readPackageInfo() {
     const filePath = path.resolve(__dirname, '../../../package.json');
-    return this.readJSON({ filePath })
-      .then((pkg) => {
-        const packageInfo = {
-          name: pkg.name,
-          version: pkg.version,
-          powerby: `${pkg.name} v${pkg.version}`,
-        };
-        return Promise.resolve(packageInfo);
-      });
+    return this.readJSON({ filePath }).then((pkg) => {
+      const packageInfo = {
+        name: pkg.name,
+        version: pkg.version,
+        powerby: `${pkg.name} v${pkg.version}`,
+      };
+      return Promise.resolve(packageInfo);
+    });
   }
 
   static listProcess() {
-    return this.readPackageInfo()
-      .then((packageInfo) => {
-        const PIDFolder = path.resolve(os.homedir(), packageInfo.name, 'PIDs');
-        this.scanFolder({ folder: PIDFolder })
-          .then((list) => {
-            const jobs = list
-              .map((v) => parseInt(path.parse(v).name, 10))
-              .filter((v) => v > -1)
-              .sort((a, b) => (a > b
-                ? 1
-                : -1))
-              .map((PID) => this.readProcess({ PID, PIDFolder }));
+    return this.readPackageInfo().then((packageInfo) => {
+      const PIDFolder = path.resolve(os.homedir(), packageInfo.name, 'PIDs');
+      this.scanFolder({ folder: PIDFolder }).then((list) => {
+        const jobs = list
+          .map((v) => parseInt(path.parse(v).name, 10))
+          .filter((v) => v > -1)
+          .sort((a, b) => (a > b ? 1 : -1))
+          .map((PID) => this.readProcess({ PID, PIDFolder }));
 
-            return Promise.all(jobs)
-              .then((d) => {
-                const bar = new Array(20).fill('-').join('');
-                console.log(`${bar}\r\n${d.join('\r\n')}\r\n${bar}`);
-              });
-          });
+        return Promise.all(jobs).then((d) => {
+          const bar = new Array(20).fill('-').join('');
+          console.log(`${bar}\r\n${d.join('\r\n')}\r\n${bar}`);
+        });
       });
+    });
   }
 
   static readProcess({ PID, PIDFolder = '' }) {
@@ -412,27 +487,29 @@ class Utils {
         const PFile = path.resolve(PIDFolder, `${PID}.toml`);
         return Promise.resolve(PFile);
       })
-      .then((PFile) => new Promise((resolve, reject) => {
-        fs.readFile(PFile, (e, d) => {
-          if (e) {
-            reject(e);
-          } else {
-            let status;
-            let uptime = '';
-            const pInfo = toml.parse(d);
-            const cPath = pInfo.runtime.configPath;
-            if (this.testProcess({ PID })) {
-              status = '\x1b[42m  on  \x1b[0m';
-              uptime = this.parseTime(pInfo.runtime.startTime);
+      .then(
+        (PFile) => new Promise((resolve, reject) => {
+          fs.readFile(PFile, (e, d) => {
+            if (e) {
+              reject(e);
             } else {
-              status = '\x1b[41m off  \x1b[0m';
-              PID = `\x1b[90m${PID}\x1b[0m`;
-              uptime = '\t';
+              let status;
+              let uptime = '';
+              const pInfo = toml.parse(d);
+              const cPath = pInfo.runtime.configPath;
+              if (this.testProcess({ PID })) {
+                status = '\x1b[42m  on  \x1b[0m';
+                uptime = this.parseTime(pInfo.runtime.startTime);
+              } else {
+                status = '\x1b[41m off  \x1b[0m';
+                PID = `\x1b[90m${PID}\x1b[0m`;
+                uptime = '\t';
+              }
+              resolve([PID, status, uptime, cPath].join('\t'));
             }
-            resolve([PID, status, uptime, cPath].join('\t'));
-          }
-        });
-      }));
+          });
+        }),
+      );
   }
 
   static testProcess({ PID }) {
@@ -448,32 +525,40 @@ class Utils {
     if (PID === 0) {
       return this.readPackageInfo()
         .then((packageInfo) => {
-          const PIDFolder = path.resolve(os.homedir(), packageInfo.name, 'PIDs');
+          const PIDFolder = path.resolve(
+            os.homedir(),
+            packageInfo.name,
+            'PIDs',
+          );
           return this.scanFolder({ folder: PIDFolder });
         })
         .then((list) => {
           const PIDs = list.map((PFile) => path.parse(PFile).name);
-          return Promise.all(PIDs.map((pid) => this.killProcess({ PID: pid, pause })));
+          return Promise.all(
+            PIDs.map((pid) => this.killProcess({ PID: pid, pause })),
+          );
         });
     }
 
     try {
       process.kill(PID);
-    // eslint-disable-next-line no-empty
-    } catch (e) {
-
-    }
-    return this.readPackageInfo()
-      .then((packageInfo) => {
-        const fPID = path.resolve(os.homedir(), packageInfo.name, 'PIDs', `${PID}.toml`);
-        return new Promise((resolve) => {
-          if (pause) {
-            resolve(true);
-          } else {
-            fs.unlink(fPID, resolve);
-          }
-        });
+      // eslint-disable-next-line no-empty
+    } catch (e) {}
+    return this.readPackageInfo().then((packageInfo) => {
+      const fPID = path.resolve(
+        os.homedir(),
+        packageInfo.name,
+        'PIDs',
+        `${PID}.toml`,
+      );
+      return new Promise((resolve) => {
+        if (pause) {
+          resolve(true);
+        } else {
+          fs.unlink(fPID, resolve);
+        }
       });
+    });
   }
 
   static scanFolder({ folder }) {
@@ -529,8 +614,7 @@ class Utils {
 
   static initialLevel({ homeFolder }) {
     const dbPath = path.resolve(homeFolder, 'dataset');
-    return this.initialFolder({ homeFolder: dbPath })
-      .then(() => level(dbPath, { valueEncoding: 'json' }));
+    return this.initialFolder({ homeFolder: dbPath }).then(() => level(dbPath, { valueEncoding: 'json' }));
   }
 
   static initialLogger({ base }) {
@@ -563,7 +647,10 @@ class Utils {
 
   static initialBots({
     // eslint-disable-next-line no-shadow
-    config, database, logger, i18n,
+    config,
+    database,
+    logger,
+    i18n,
   }) {
     const interfaceFN = 'Bot.js';
     this.config = config;
@@ -576,19 +663,30 @@ class Utils {
       this.databaseInstanceName.push(item);
     });
 
-    this.defaultDBInstanceName = this.databaseInstanceName.findIndex((element) => element === 'cafeca') !== -1 ? 'cafeca' : this.databaseInstanceName[0];
-    return this.scanFolder({ folder: __dirname })
-      .then((list) => list.filter((v) => (path.parse(v).name !== path.parse(interfaceFN).name) && v.indexOf('.js') !== -1))
-      // eslint-disable-next-line import/no-dynamic-require, global-require
-      .then((list) => list.map((v) => require(v)))
-      .then((list) => list.filter((v) => v.isBot))
-      // eslint-disable-next-line new-cap
-      .then((list) => list.map((v) => new v()))
-      .then((list) => Promise.all(
-        list.map((v) => v.init({
-          config, database, logger, i18n,
-        })),
-      ));
+    this.defaultDBInstanceName = this.databaseInstanceName.findIndex((element) => element === 'cafeca')
+      !== -1
+      ? 'cafeca'
+      : this.databaseInstanceName[0];
+    return (
+      this.scanFolder({ folder: __dirname })
+        .then((list) => list.filter(
+          (v) => path.parse(v).name !== path.parse(interfaceFN).name
+              && v.indexOf('.js') !== -1,
+        ))
+        // eslint-disable-next-line import/no-dynamic-require, global-require
+        .then((list) => list.map((v) => require(v)))
+        .then((list) => list.filter((v) => v.isBot))
+        // eslint-disable-next-line new-cap
+        .then((list) => list.map((v) => new v()))
+        .then((list) => Promise.all(
+          list.map((v) => v.init({
+            config,
+            database,
+            logger,
+            i18n,
+          })),
+        ))
+    );
   }
 
   static startBots({ Bots }) {
@@ -605,7 +703,15 @@ class Utils {
 
   static crossOrigin(options = {}) {
     const defaultOptions = {
-      allowMethods: ['GET', 'PUT', 'POST', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+      allowMethods: [
+        'GET',
+        'PUT',
+        'POST',
+        'PATCH',
+        'DELETE',
+        'HEAD',
+        'OPTIONS',
+      ],
     };
 
     // set defaultOptions to options
@@ -650,14 +756,23 @@ class Utils {
 
         // Access-Control-Allow-Methods
         if (options.allowMethods) {
-          ctx.set('Access-Control-Allow-Methods', options.allowMethods.join(','));
+          ctx.set(
+            'Access-Control-Allow-Methods',
+            options.allowMethods.join(','),
+          );
         }
 
         // Access-Control-Allow-Headers
         if (options.allowHeaders) {
-          ctx.set('Access-Control-Allow-Headers', options.allowHeaders.join(','));
+          ctx.set(
+            'Access-Control-Allow-Headers',
+            options.allowHeaders.join(','),
+          );
         } else {
-          ctx.set('Access-Control-Allow-Headers', ctx.get('Access-Control-Request-Headers'));
+          ctx.set(
+            'Access-Control-Allow-Headers',
+            ctx.get('Access-Control-Request-Headers'),
+          );
         }
 
         ctx.status = 204; // No Content
@@ -675,7 +790,10 @@ class Utils {
 
         // Access-Control-Expose-Headers
         if (options.exposeHeaders) {
-          ctx.set('Access-Control-Expose-Headers', options.exposeHeaders.join(','));
+          ctx.set(
+            'Access-Control-Expose-Headers',
+            options.exposeHeaders.join(','),
+          );
         }
 
         await next();
@@ -688,7 +806,7 @@ class Utils {
   }
 
   static validateNumber(num) {
-    if (!(/^(([\d]{1,18}(\.\d*)*)|(10{18}))$/.test(num)) || num < 0) {
+    if (!/^(([\d]{1,18}(\.\d*)*)|(10{18}))$/.test(num) || num < 0) {
       return false;
     }
     return true;
@@ -696,23 +814,34 @@ class Utils {
 
   static async generateToken({ userID, data = {} }) {
     const tokenSecret = randToken.uid(256);
-    const expireTime = new Date(new Date().getTime() + (Number(this.config.base.token_secret_expire_time) * 1000));
+    const expireTime = new Date(
+      new Date().getTime()
+        + Number(this.config.base.token_secret_expire_time) * 1000,
+    );
 
-    const findOne = await this.database.db[this.defaultDBInstanceName].TokenSecret.findOrCreate({
+    const findOne = await this.database.db[
+      this.defaultDBInstanceName
+    ].TokenSecret.findOrCreate({
       where: { user_id: userID },
       defaults: {
-        tokenSecret, user_id: userID, expire_time: expireTime,
+        tokenSecret,
+        user_id: userID,
+        expire_time: expireTime,
       },
     });
 
     if (!findOne[1]) {
       // update
-      await this.database.db[this.defaultDBInstanceName].TokenSecret.update({
-        tokenSecret, user_id: userID, expire_time: expireTime,
-      },
-      {
-        where: { user_id: userID },
-      });
+      await this.database.db[this.defaultDBInstanceName].TokenSecret.update(
+        {
+          tokenSecret,
+          user_id: userID,
+          expire_time: expireTime,
+        },
+        {
+          where: { user_id: userID },
+        },
+      );
     }
 
     return {
@@ -735,18 +864,38 @@ class Utils {
       const data = JWT.verify(token, this.config.jwt.secret, option);
 
       const { userID } = data;
-      const findUser = await this.database.db[this.defaultDBInstanceName].User.findOne({
+      const findUser = await this.database.db[
+        this.defaultDBInstanceName
+      ].User.findOne({
         where: { user_id: userID },
       });
 
-      if (!findUser) throw new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
+      if (!findUser) {
+        throw new ResponseFormat({
+          message: 'user not found',
+          code: Codes.USER_NOT_FOUND,
+        });
+      }
 
       data.user = findUser;
       return data;
     } catch (err) {
-      if (err.code === Codes.USER_NOT_FOUND) throw new ResponseFormat({ message: 'user not found', code: Codes.USER_NOT_FOUND });
-      if (err.message === 'jwt expired') throw new ResponseFormat({ message: 'expired access token', code: Codes.EXPIRED_ACCESS_TOKEN });
-      throw new ResponseFormat({ message: `server error(${err.message})`, code: Codes.SERVER_ERROR });
+      if (err.code === Codes.USER_NOT_FOUND) {
+        throw new ResponseFormat({
+          message: 'user not found',
+          code: Codes.USER_NOT_FOUND,
+        });
+      }
+      if (err.message === 'jwt expired') {
+        throw new ResponseFormat({
+          message: 'expired access token',
+          code: Codes.EXPIRED_ACCESS_TOKEN,
+        });
+      }
+      throw new ResponseFormat({
+        message: `server error(${err.message})`,
+        code: Codes.SERVER_ERROR,
+      });
     }
   }
 
@@ -765,18 +914,28 @@ class Utils {
   static compressedPublicKey(uncomperedPublicKey) {
     if (typeof uncomperedPublicKey === 'string') uncomperedPublicKey = Buffer.from(uncomperedPublicKey, 'hex');
     if (uncomperedPublicKey.length % 2 === 1) {
-      uncomperedPublicKey = uncomperedPublicKey.slice(1, uncomperedPublicKey.length);
+      uncomperedPublicKey = uncomperedPublicKey.slice(
+        1,
+        uncomperedPublicKey.length,
+      );
     }
 
     const x = uncomperedPublicKey.slice(0, 32);
     const y = uncomperedPublicKey.slice(32, 64);
 
-    const bnP = new BN('fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f', 16);
+    const bnP = new BN(
+      'fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f',
+      16,
+    );
 
     const bnX = new BN(x.toString('hex'), 16);
     const bnY = new BN(y.toString('hex'), 16);
 
-    const check = bnX.pow(new BN(3)).add(new BN(7)).sub((bnY.pow(new BN(2)))).mod(bnP);
+    const check = bnX
+      .pow(new BN(3))
+      .add(new BN(7))
+      .sub(bnY.pow(new BN(2)))
+      .mod(bnP);
 
     if (!check.isZero()) return 'Error';
     const prefix = bnY.isEven() ? '02' : '03';
@@ -785,17 +944,17 @@ class Utils {
     return compressed;
   }
 
-  static toP2pkhAddress = (blockchainID, pubkey) => {
+  static toP2pkhAddress(blockchainID, pubkey) {
     console.log(blockchainID, pubkey);
     try {
-      const _pubkey = Buffer.from(pubkey, "hex");
+      const _pubkey = Buffer.from(pubkey, 'hex');
       const fingerprint = this.hash160(_pubkey);
       const findNetwork = Object.values(blockchainNetworks).find(
-        (value) => value.blockchain_id === blockchainID
+        (value) => value.blockchain_id === blockchainID,
       );
       const prefix = Buffer.from(
-        findNetwork.pubKeyHash.toString(16).padStart(2, "0"),
-        "hex"
+        findNetwork.pubKeyHash.toString(16).padStart(2, '0'),
+        'hex',
       );
       const hashPubKey = Buffer.concat([prefix, fingerprint]);
       let address = bs58check.encode(hashPubKey);
@@ -810,10 +969,16 @@ class Utils {
   static pubkeyToP2WPKHAddress(blockchainID, pubkey) {
     let address;
     if (blockchainID === '80000000') {
-      const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.bitcoin });
+      const p2wpkh = bitcoin.payments.p2wpkh({
+        pubkey,
+        network: bitcoin.networks.bitcoin,
+      });
       address = p2wpkh.address;
     } else if (blockchainID === 'F0000000') {
-      const p2wpkh = bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.testnet });
+      const p2wpkh = bitcoin.payments.p2wpkh({
+        pubkey,
+        network: bitcoin.networks.testnet,
+      });
       address = p2wpkh.address;
     }
     return address;
@@ -840,7 +1005,12 @@ class Utils {
 
   static async ethGetBalanceByAddress(blockchain_id, address, decimals = 18) {
     const blockchainConfig = this.getBlockchainConfig(blockchain_id);
-    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    if (!blockchainConfig) {
+      throw new ResponseFormat({
+        message: 'blockchain_id not found',
+        code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+      });
+    }
 
     const option = { ...blockchainConfig };
     option.data = {
@@ -857,7 +1027,9 @@ class Utils {
         // use address find account
         try {
           if (!data.result) return '0';
-          return new BigNumber(data.result).dividedBy(new BigNumber(10 ** decimals)).toFixed();
+          return new BigNumber(data.result)
+            .dividedBy(new BigNumber(10 ** decimals))
+            .toFixed();
 
           // eslint-disable-next-line no-empty
         } catch (e) {
@@ -872,16 +1044,23 @@ class Utils {
     const command = `0x70a08231${_address}`;
 
     const blockchainConfig = this.getBlockchainConfig(blockchain_id);
-    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    if (!blockchainConfig) {
+      throw new ResponseFormat({
+        message: 'blockchain_id not found',
+        code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+      });
+    }
     const option = { ...blockchainConfig };
     option.data = {
       jsonrpc: '2.0',
       method: 'eth_call',
-      params: [{
-        to: contract,
-        data: command,
-      },
-      'latest'],
+      params: [
+        {
+          to: contract,
+          data: command,
+        },
+        'latest',
+      ],
       id: dvalue.randomID(),
     };
 
@@ -891,7 +1070,9 @@ class Utils {
       if (data.id === checkId) {
         // use address find account
         try {
-          return new BigNumber(data.result).dividedBy(new BigNumber(10 ** decimals)).toFixed();
+          return new BigNumber(data.result)
+            .dividedBy(new BigNumber(10 ** decimals))
+            .toFixed();
 
           // eslint-disable-next-line no-empty
         } catch (e) {
@@ -903,20 +1084,24 @@ class Utils {
 
   static dividedByDecimal(amount, decimal) {
     if (typeof decimal === 'undefined' || decimal === null) return '0';
-    let _amount = (amount instanceof BigNumber) ? amount : new BigNumber(amount);
-    if (typeof amount === 'string' && (amount).indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
+    let _amount = amount instanceof BigNumber ? amount : new BigNumber(amount);
+    if (typeof amount === 'string' && amount.indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
     return _amount.dividedBy(new BigNumber(10 ** decimal)).toFixed();
   }
 
   static multipliedByDecimal(amount, decimal) {
     if (typeof decimal === 'undefined' || decimal === null) return '8';
-    let _amount = (amount instanceof BigNumber) ? amount : new BigNumber(amount);
-    if (typeof amount === 'string' && (amount).indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
+    let _amount = amount instanceof BigNumber ? amount : new BigNumber(amount);
+    if (typeof amount === 'string' && amount.indexOf('0x') !== -1) _amount = new BigNumber(amount, 16);
     return _amount.multipliedBy(new BigNumber(10 ** decimal)).toFixed();
   }
 
   static getBlockchainConfig(blockchain_id) {
-    return Object.values(this.config.blockchain).find((info) => info.blockchain_id === blockchain_id) || false;
+    return (
+      Object.values(this.config.blockchain).find(
+        (info) => info.blockchain_id === blockchain_id,
+      ) || false
+    );
   }
 
   static hash160(data) {
@@ -934,7 +1119,9 @@ class Utils {
     const fingerprint = this.hash160(redeemScript);
     // List<int> checksum = sha256(sha256(fingerprint)).sublist(0, 4);
     // bs58check library 會幫加checksum
-    const address = bs58check.encode(Uint8Array.from([type.p2shAddressPrefix, ...fingerprint]));
+    const address = bs58check.encode(
+      Uint8Array.from([type.p2shAddressPrefix, ...fingerprint]),
+    );
     return address;
   }
 
@@ -962,7 +1149,9 @@ class Utils {
   static randomStr(length) {
     let key = '';
     const charset = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    for (let i = 0; i < length; i++) { key += charset.charAt(Math.floor(Math.random() * charset.length)); }
+    for (let i = 0; i < length; i++) {
+      key += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
     return key;
   }
 
@@ -972,10 +1161,13 @@ class Utils {
       options.data = {
         jsonrpc: '2.0',
         method: 'eth_call',
-        params: [{
-          to: address,
-          data: command,
-        }, 'latest'],
+        params: [
+          {
+            to: address,
+            data: command,
+          },
+          'latest',
+        ],
         id: dvalue.randomID(),
       };
       const checkId = options.data.id;
@@ -992,7 +1184,9 @@ class Utils {
           return Promise.resolve(name);
         }
       }
-      this.logger.error(`getTokenNameFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      this.logger.error(
+        `getTokenNameFromPeer(${address}) fail, ${JSON.stringify(data.error)}`,
+      );
       return null;
     } catch (error) {
       console.log(error); // -- no console.log
@@ -1007,10 +1201,13 @@ class Utils {
       options.data = {
         jsonrpc: '2.0',
         method: 'eth_call',
-        params: [{
-          to: address,
-          data: command,
-        }, 'latest'],
+        params: [
+          {
+            to: address,
+            data: command,
+          },
+          'latest',
+        ],
         id: dvalue.randomID(),
       };
       const checkId = options.data.id;
@@ -1023,11 +1220,16 @@ class Utils {
         if (data.result) {
           const symbolEncode = data.result;
           if (symbolEncode.length !== 194) return symbolEncode;
-          const symbol = this.web3.eth.abi.decodeParameter('string', symbolEncode);
+          const symbol = this.web3.eth.abi.decodeParameter(
+            'string',
+            symbolEncode,
+          );
           return Promise.resolve(symbol);
         }
       }
-      this.logger.error(`getTokenSymbolFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      this.logger.error(
+        `getTokenSymbolFromPeer(${address}) fail, ${JSON.stringify(data.error)}`,
+      );
       return null;
     } catch (error) {
       this.logger.error(`getTokenSymbolFromPeer(${address}) error: ${error}`);
@@ -1041,10 +1243,13 @@ class Utils {
       options.data = {
         jsonrpc: '2.0',
         method: 'eth_call',
-        params: [{
-          to: address,
-          data: command,
-        }, 'latest'],
+        params: [
+          {
+            to: address,
+            data: command,
+          },
+          'latest',
+        ],
         id: dvalue.randomID(),
       };
       const checkId = options.data.id;
@@ -1055,9 +1260,15 @@ class Utils {
           return null;
         }
         const decimals = data.result;
-        if (data.result) { return Promise.resolve(parseInt(decimals, 16)); }
+        if (data.result) {
+          return Promise.resolve(parseInt(decimals, 16));
+        }
       }
-      this.logger.error(`getTokenDecimalFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      this.logger.error(
+        `getTokenDecimalFromPeer(${address}) fail, ${JSON.stringify(
+          data.error,
+        )}`,
+      );
       return null;
     } catch (error) {
       this.logger.error(`getTokenDecimalFromPeer(${address}) error: ${error}`);
@@ -1071,10 +1282,13 @@ class Utils {
       options.data = {
         jsonrpc: '2.0',
         method: 'eth_call',
-        params: [{
-          to: address,
-          data: command,
-        }, 'latest'],
+        params: [
+          {
+            to: address,
+            data: command,
+          },
+          'latest',
+        ],
         id: dvalue.randomID(),
       };
       const checkId = options.data.id;
@@ -1089,10 +1303,16 @@ class Utils {
           return Promise.resolve(bnTotalSupply.toFixed());
         }
       }
-      this.logger.error(`getTokenTotalSupplyFromPeer(${address}) fail, ${JSON.stringify(data.error)}`);
+      this.logger.error(
+        `getTokenTotalSupplyFromPeer(${address}) fail, ${JSON.stringify(
+          data.error,
+        )}`,
+      );
       return null;
     } catch (error) {
-      this.logger.error(`getTokenTotalSupplyFromPeer(${address}) error: ${error}`);
+      this.logger.error(
+        `getTokenTotalSupplyFromPeer(${address}) error: ${error}`,
+      );
       return null;
     }
   }
@@ -1101,7 +1321,7 @@ class Utils {
     option.data = {
       jsonrpc: '2.0',
       method: 'eth_getBlockByNumber',
-      params: [`0x${(blockHeight).toString(16)}`, false],
+      params: [`0x${blockHeight.toString(16)}`, false],
       id: dvalue.randomID(),
     };
     const rs = await this.ETHRPC(option);
@@ -1111,21 +1331,36 @@ class Utils {
 
   static async getETHTps(blockchain_id, blockHeight) {
     const blockchainConfig = this.getBlockchainConfig(blockchain_id);
-    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    if (!blockchainConfig) {
+      throw new ResponseFormat({
+        message: 'blockchain_id not found',
+        code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+      });
+    }
     const option = { ...blockchainConfig };
 
     const findAllTxs = await Promise.all([
       this.ethGetBlockByNumber(option, blockHeight),
       this.ethGetBlockByNumber(option, blockHeight - 1),
       this.ethGetBlockByNumber(option, blockHeight - 2),
-    ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+    ]).catch(
+      (error) => new ResponseFormat({
+        message: `rpc error(${error})`,
+        code: Codes.RPC_ERROR,
+      }),
+    );
     if (findAllTxs.code === Codes.RPC_ERROR) return 0;
 
     const timeTaken = findAllTxs[0].result.timestamp - findAllTxs[2].result.timestamp;
-    const transactionCount = findAllTxs.reduce((prev, curr) => {
-      const prevLen = (prev.result) ? prev.result.transactions.length : prev.len;
-      return { len: prevLen + curr.result.transactions.length };
-    }, { len: 0 });
+    const transactionCount = findAllTxs.reduce(
+      (prev, curr) => {
+        const prevLen = prev.result
+          ? prev.result.transactions.length
+          : prev.len;
+        return { len: prevLen + curr.result.transactions.length };
+      },
+      { len: 0 },
+    );
     const tps = transactionCount.len / timeTaken;
     return tps.toFixed(2);
   }
@@ -1144,22 +1379,35 @@ class Utils {
 
   static async getBTCTps(blockchain_id, blockHeight) {
     const blockchainConfig = this.getBlockchainConfig(blockchain_id);
-    if (!blockchainConfig) throw new ResponseFormat({ message: 'blockchain_id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    if (!blockchainConfig) {
+      throw new ResponseFormat({
+        message: 'blockchain_id not found',
+        code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+      });
+    }
     const option = { ...blockchainConfig };
 
     const findAllTxs = await Promise.all([
       this.btcGetBlockByNumber(option, blockHeight),
       this.btcGetBlockByNumber(option, blockHeight - 1),
       this.btcGetBlockByNumber(option, blockHeight - 2),
-    ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+    ]).catch(
+      (error) => new ResponseFormat({
+        message: `rpc error(${error})`,
+        code: Codes.RPC_ERROR,
+      }),
+    );
     if (findAllTxs.code === Codes.RPC_ERROR) return 0;
 
     const timeTaken = findAllTxs[0].result.time - findAllTxs[2].result.time;
-    const transactionCount = findAllTxs.reduce((prev, curr) => {
-      if (prev.result)console.log(prev.result.txs);
-      const prevLen = (prev.result) ? prev.result.txs : prev.len;
-      return { len: prevLen + curr.result.txs };
-    }, { len: 0 });
+    const transactionCount = findAllTxs.reduce(
+      (prev, curr) => {
+        if (prev.result) console.log(prev.result.txs);
+        const prevLen = prev.result ? prev.result.txs : prev.len;
+        return { len: prevLen + curr.result.txs };
+      },
+      { len: 0 },
+    );
     const tps = transactionCount.len / timeTaken;
     return tps.toFixed(2);
   }
@@ -1176,8 +1424,15 @@ class Utils {
 
   static blockchainIDToBlockInfo(blockchainID) {
     const networks = Object.values(blockchainNetworks);
-    const findIndex = networks.findIndex((item) => item.blockchain_id === blockchainID);
-    if (findIndex === -1) throw new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
+    const findIndex = networks.findIndex(
+      (item) => item.blockchain_id === blockchainID,
+    );
+    if (findIndex === -1) {
+      throw new ResponseFormat({
+        message: 'blockchain id not found',
+        code: Codes.BLOCKCHAIN_ID_NOT_FOUND,
+      });
+    }
     return networks[findIndex];
   }
 

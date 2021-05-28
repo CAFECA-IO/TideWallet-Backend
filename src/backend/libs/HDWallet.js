@@ -61,7 +61,7 @@ class HDWallet {
       _node = _node.derive(change).derive(index);
       publicKey = _node.publicKey.toString('hex');
       address = Utils.toP2pkhAddress(blockchainID, publicKey);
-    }  else {
+    } else {
       const node = hdkey.fromExtendedKey(_serializedExtendPublicKey);
       this.hdWallet = node.deriveChild(change).deriveChild(index).getWallet();
       publicKey = this.hdWallet.getPublicKeyString();
