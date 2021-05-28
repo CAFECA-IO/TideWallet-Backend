@@ -166,7 +166,11 @@ docker run -p 5432:5432 -e "POSTGRES_PASSWORD=admin" -d -v data:/var/lib/postgre
 ```
 
 ### 建立 DB 程式所需要的 db
-
+先連線進DB
+```shell=
+docker exec -ti db bash
+```
+run下面的code建DB
 ```
 // 可以查看 default.config.toml 共有哪些連線資訊
 createdb bitcoin_mainnet -U postgres
