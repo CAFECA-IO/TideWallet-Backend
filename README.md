@@ -251,6 +251,21 @@ Monitor
 - PostgreSQL(範例使用 docker 方法安裝)
 - RabbitMQ(範例使用 docker 方法安裝)
 
+### Node.js
+
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+source ~/.bashrc
+nvm install v10.16.3
+nvm alias default v10.16.3
+```
+
+### Docker
+
+```
+sudo apt update
+sudo apt  install docker.io
+```
 
 ### DB 安裝（docker）
 
@@ -293,7 +308,7 @@ createdb titan -U postgres
 ### 安裝 RabbitMQ （docker）
 
 ```
-docker run -d \
+sudo docker run -d \
 --hostname my-rabbit \
 --name rabbitmq \
 -p 4369:4369 \
