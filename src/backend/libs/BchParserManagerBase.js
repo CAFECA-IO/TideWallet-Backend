@@ -338,7 +338,7 @@ class BchParserManagerBase extends ParserManagerBase {
               },
             );
           } else {
-            const peerTx = await this.getTransactionByTxidFromPeer(tx.txid).catch((error) => error); ('peerTx.blockhash:', peerTx.blockhash);
+            const peerTx = await this.getTransactionByTxidFromPeer(tx.txid).catch((error) => error);
             if (peerTx.blockhash) {
               const blockData = await this.blockDataFromDB(peerTx.blockhash);
               if (blockData) {
