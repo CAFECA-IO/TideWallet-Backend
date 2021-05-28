@@ -24,7 +24,7 @@ class Blockchain extends Bot {
     this.tags = {};
     this.cacheBlockchainInfo = {};
     this.updateBalanceAccounts = {};
-    this.tideWalletTokenList = [];
+    this.tideWalletTokenList = {};
   }
 
   init({
@@ -140,7 +140,8 @@ class Blockchain extends Bot {
               },
             );
           }
-          this.tideWalletTokenList.push({
+          if (!this.tideWalletTokenList[dbName]) this.tideWalletTokenList[dbName] = [];
+          this.tideWalletTokenList[dbName].push({
             currency_id: findCurrency.currency_id,
             name: findCurrency.name,
             symbol: findCurrency.symbol,
@@ -293,10 +294,10 @@ class Blockchain extends Bot {
     const { type } = query;
 
     if (type && type === 'TideWallet') {
-      return new ResponseFormat({
-        message: 'List Supported Currencies',
-        payload: this.tideWalletTokenList,
-      });
+      const DBName = Utils.blockchainIDToDBName(blockchain_id);
+      const payload = this.tideWalletTokenList[DBName] || [];
+
+      return new ResponseFormat({ message: 'List Supported Currencies', payload });
     }
     try {
       let payload = await this.DBOperator.findAll({

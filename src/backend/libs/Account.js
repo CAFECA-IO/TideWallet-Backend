@@ -40,109 +40,79 @@ class Account extends Bot {
       if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
       const tokenInfo = await Utils.verifyToken(token);
 
-      // find Token is exist
-      let findTokenItem = await this.DBOperator.findOne({
-        tableName: 'Currency',
-        options: {
-          where: {
-            type: 2, contract,
-          },
-        },
-      });
       const DBName = Utils.blockchainIDToDBName(blockchain_id);
       const _db = this.database.db[DBName];
 
+      // find Token is exist
+      let findTokenItem = await _db.Currency.findOne({
+        where: {
+          type: 2, contract,
+        },
+      });
+
       if (!findTokenItem) {
-        // TODO: has same logic
-        // use contract check Token is exist
-        findTokenItem = await this.DBOperator.findOne({
-          tableName: 'Currency',
-          options: {
-            where: {
-              type: 2, contract,
-            },
-          },
-        });
-        if (findTokenItem) {
-          // check account token is exist
-          const findUserAccountData = await _db.Account.findOne({
-            where: {
-              user_id: tokenInfo.userID, blockchain_id,
-            },
-          });
+        // if not found token in DB, parse token contract info from blockchain
 
-          if (!findUserAccountData) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
-          // check account currency
-          const findUserAccountToken = await _db.AccountCurrency.findOne({
-            where: {
-              account_id: findUserAccountData.account_id, currency_id: findTokenItem.currency_id,
-            },
-          });
-          if (findUserAccountToken) return new ResponseFormat({ message: 'account token exist', code: Codes.ACCOUNT_TOKEN_EXIST });
-        } else {
-          // if not found token in DB, parse token contract info from blockchain
-
-          let options = '';
-          switch (blockchain_id) {
-            case '8000003C':
-              options = this.config.blockchain.ethereum_mainnet;
-              break;
-            case 'F000003C':
-              options = this.config.blockchain.ethereum_ropsten;
-              break;
-            case '80000CFC':
-              options = this.config.blockchain.cafeca;
-              break;
-            default:
-              return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
-          }
-
-          const tokenInfoFromPeer = await Promise.all([
-            Utils.getTokenNameFromPeer(options, contract),
-            Utils.getTokenSymbolFromPeer(options, contract),
-            Utils.getTokenDecimalFromPeer(options, contract),
-            Utils.getTokenTotalSupplyFromPeer(options, contract),
-          ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
-          if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
-
-          let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
-          try {
-            const checkIcon = await ecrequest.get({
-              protocol: 'https:',
-              hostname: 'cdn.jsdelivr.net',
-              port: '',
-              path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
-              timeout: 1000,
-            });
-            if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
-          } catch (e) {
-            icon = `${this.config.base.domain}/icon/ERC20.png`;
-          }
-
-          let total_supply = tokenInfoFromPeer[3];
-          try {
-            total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
-              groupSeparator: ',', groupSize: 3,
-            });
-            // eslint-disable-next-line no-empty
-          } catch (e) {
-          }
-
-          const newCurrencyID = uuidv4();
-          if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
-          findTokenItem = await _db.Currency.create({
-            currency_id: newCurrencyID,
-            blockchain_id,
-            name: tokenInfoFromPeer[0],
-            symbol: tokenInfoFromPeer[1],
-            type: 2,
-            publish: false,
-            decimals: tokenInfoFromPeer[2],
-            total_supply,
-            contract,
-            icon,
-          });
+        let options = '';
+        switch (blockchain_id) {
+          case '8000003C':
+            options = this.config.blockchain.ethereum_mainnet;
+            break;
+          case 'F000003C':
+            options = this.config.blockchain.ethereum_ropsten;
+            break;
+          case '80000CFC':
+            options = this.config.blockchain.cafeca;
+            break;
+          default:
+            return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
         }
+
+        const tokenInfoFromPeer = await Promise.all([
+          Utils.getTokenNameFromPeer(options, contract),
+          Utils.getTokenSymbolFromPeer(options, contract),
+          Utils.getTokenDecimalFromPeer(options, contract),
+          Utils.getTokenTotalSupplyFromPeer(options, contract),
+        ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+        if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
+
+        let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
+        try {
+          const checkIcon = await ecrequest.get({
+            protocol: 'https:',
+            hostname: 'cdn.jsdelivr.net',
+            port: '',
+            path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
+            timeout: 1000,
+          });
+          if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
+        } catch (e) {
+          icon = `${this.config.base.domain}/icon/ERC20.png`;
+        }
+
+        let total_supply = tokenInfoFromPeer[3];
+        try {
+          total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
+            groupSeparator: ',', groupSize: 3,
+          });
+          // eslint-disable-next-line no-empty
+        } catch (e) {
+        }
+
+        const newCurrencyID = uuidv4();
+        if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
+        findTokenItem = await _db.Currency.create({
+          currency_id: newCurrencyID,
+          blockchain_id,
+          name: tokenInfoFromPeer[0],
+          symbol: tokenInfoFromPeer[1],
+          type: 2,
+          publish: false,
+          decimals: tokenInfoFromPeer[2],
+          total_supply,
+          contract,
+          icon,
+        });
       }
       // check account token is exist
       const findUserAccountData = await _db.Account.findOne({
@@ -333,81 +303,83 @@ class Account extends Bot {
       });
       for (let j = 0; j < findAccountCurrencies.length; j++) {
         const accountCurrency = findAccountCurrencies[j];
+        // TODO: for sql
         const findCurrency = await _db.Currency.findOne({
           where: {
             currency_id: accountCurrency.currency_id,
             [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
           },
         });
-
-        let { balance = '0' } = accountCurrency;
-        if (findAccount.blockchain_id === 'F000003C' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
-          // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
-          const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
-          if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
-            const findAddress = await _db.AccountAddress.findOne({
-              where: { account_id: accountCurrency.Account.account_id },
-              attributes: ['address'],
-            });
-            if (findAddress) {
-              if (findCurrency.type === 2) {
-                balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
+        if (findCurrency) {
+          let { balance = '0' } = accountCurrency;
+          if (findAccount.blockchain_id === 'F000003C' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
+            // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
+            const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
+            if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
+              const findAddress = await _db.AccountAddress.findOne({
+                where: { account_id: accountCurrency.Account.account_id },
+                attributes: ['address'],
+              });
+              if (findAddress) {
+                if (findCurrency.type === 2) {
+                  balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
+                } else {
+                  balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, findCurrency.decimals);
+                }
+                await _db.AccountCurrency.update(
+                  { balance, balance_sync_block: findBlockHeight.block },
+                  { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
+                );
               } else {
-                balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, findCurrency.decimals);
+                balance = accountCurrency.balance;
               }
-              await _db.AccountCurrency.update(
-                { balance, balance_sync_block: findBlockHeight.block },
-                { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
-              );
-            } else {
-              balance = accountCurrency.balance;
             }
-          }
-        } else {
-          const findAllAddress = await _db.AccountAddress.findAll({
-            where: { account_id: findAccount.account_id },
-            attributes: ['accountAddress_id'],
-          });
-          balance = new BigNumber(0);
-          for (const addressItem of findAllAddress) {
-            const findUTXOByAddress = await _db.UTXO.findAll({
-              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
-              attributes: ['amount'],
+          } else {
+            const findAllAddress = await _db.AccountAddress.findAll({
+              where: { account_id: findAccount.account_id },
+              attributes: ['accountAddress_id'],
             });
+            balance = new BigNumber(0);
+            for (const addressItem of findAllAddress) {
+              const findUTXOByAddress = await _db.UTXO.findAll({
+                where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
+                attributes: ['amount'],
+              });
 
-            for (const utxoItem of findUTXOByAddress) {
-              balance = balance.plus(new BigNumber(utxoItem.amount));
+              for (const utxoItem of findUTXOByAddress) {
+                balance = balance.plus(new BigNumber(utxoItem.amount));
+              }
             }
+            balance = Utils.dividedByDecimal(balance, findCurrency.decimals);
           }
-          balance = Utils.dividedByDecimal(balance, findCurrency.decimals);
-        }
 
-        if (findCurrency && findCurrency.type === 1) {
-          payload.blockchain_id = findAccount.blockchain_id;
-          payload.currency_id = accountCurrency.currency_id;
-          payload.account_id = accountCurrency.accountCurrency_id;
-          payload.purpose = findAccount.purpose;
-          payload.account_index = '0';
-          payload.curve_type = findAccount.curve_type;
-          payload.number_of_external_key = findAccount.number_of_external_key;
-          payload.number_of_internal_key = findAccount.number_of_internal_key;
-          payload.balance = balance;
-          payload.symbol = findCurrency.symbol;
-          payload.icon = findCurrency.icon;
-        } else if (findCurrency && findCurrency.type === 2) {
-          tokens.push({
-            account_token_id: accountCurrency.accountCurrency_id,
-            token_id: findCurrency.currency_id,
-            blockchain_id: findAccount.blockchain_id,
-            name: findCurrency.name,
-            symbol: findCurrency.symbol,
-            type: findCurrency.type,
-            publish: findCurrency.publish,
-            decimals: findCurrency.decimals,
-            total_supply: findCurrency.total_supply,
-            contract: findCurrency.contract,
-            balance,
-          });
+          if (findCurrency && findCurrency.type === 1) {
+            payload.blockchain_id = findAccount.blockchain_id;
+            payload.currency_id = accountCurrency.currency_id;
+            payload.account_id = accountCurrency.accountCurrency_id;
+            payload.purpose = findAccount.purpose;
+            payload.account_index = '0';
+            payload.curve_type = findAccount.curve_type;
+            payload.number_of_external_key = findAccount.number_of_external_key;
+            payload.number_of_internal_key = findAccount.number_of_internal_key;
+            payload.balance = balance;
+            payload.symbol = findCurrency.symbol;
+            payload.icon = findCurrency.icon;
+          } else if (findCurrency && findCurrency.type === 2) {
+            tokens.push({
+              account_token_id: accountCurrency.accountCurrency_id,
+              token_id: findCurrency.currency_id,
+              blockchain_id: findAccount.blockchain_id,
+              name: findCurrency.name,
+              symbol: findCurrency.symbol,
+              type: findCurrency.type,
+              publish: findCurrency.publish,
+              decimals: findCurrency.decimals,
+              total_supply: findCurrency.total_supply,
+              contract: findCurrency.contract,
+              balance,
+            });
+          }
         }
       }
       payload.tokens = tokens;
