@@ -91,9 +91,11 @@ class Fcm {
       .send(messageObj)
       .then((test) => {
         console.log('messageToUserTopic:', test); // -- no console.log
+        this.logger.fcm('messageToUserTopic init:', test);
       })
       .catch((error) => {
         console.log('Error sending message:', error); // -- no console.log
+        this.logger.fcm('messageToUserTopic error:', error);
       });
   }
 }

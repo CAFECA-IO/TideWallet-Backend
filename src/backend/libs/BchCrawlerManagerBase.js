@@ -504,7 +504,7 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
 
               const bnAmount = new BigNumber(txout.amount, 16);
               const amount = bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed();
-              console.log('fcm tx new!!!!!!!!!!', JSON.stringify({
+              this.logger.fcm('fcm tx new!!!!!!!!!!', JSON.stringify({
                 blockchainId: this.bcid,
                 eventType: 'TRANSACTION_NEW',
                 currencyId: this.currencyInfo.currency_id,
@@ -576,7 +576,7 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
 
                 // sort by timestamps
                 payload.sort((a, b) => b.timestamp - a.timestamp);
-                console.log('fcm UTXO new!!!!!!!!!!', JSON.stringify({
+                this.logger.fcm('fcm UTXO new!!!!!!!!!!', JSON.stringify({
                   blockchainId: this.bcid,
                   eventType: 'UTXO',
                   currencyId: this.currencyInfo.currency_id,
