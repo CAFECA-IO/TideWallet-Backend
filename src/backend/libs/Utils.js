@@ -368,6 +368,10 @@ class Utils {
         rsConfig.argv = arguments[0];
         return this.initialFolder(config).then(() => rsConfig);
       })
+      .then(async (item) => {
+        await this.initialFolder({ homeFolder: `${__dirname}/../../../logs` });
+        return item;
+      })
       .then((config) => Promise.all([
         config,
         initialORM(config),
@@ -643,7 +647,7 @@ class Utils {
       // ++ tmp for fcm debug
       fcm: (...data) => {
         const log_stdout = process.stdout;
-        const log_file = fs.createWriteStream(`${__dirname}/../../../logs/fcm.log`, { flags: 'w' });
+        const log_file = fs.createWriteStream(`${__dirname}/../../../logs/fcm.log`, { flags: 'a' });
 
         const _date = new Date();
 

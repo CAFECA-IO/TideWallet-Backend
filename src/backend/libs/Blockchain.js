@@ -4,6 +4,7 @@ const dvalue = require('dvalue');
 const { v4: uuidv4 } = require('uuid');
 const ecrequest = require('ecrequest');
 // ++ remove after extract to instance class
+const fs = require('fs');
 const BtcParserBase = require('./BtcParserBase');
 const BchParserBase = require('./BchParserBase');
 const ResponseFormat = require('./ResponseFormat');
@@ -1580,6 +1581,18 @@ TTN_UNPARSEBLOCK ${data.payload.TTN.unParseBlock}
       }
     }
     return result;
+  }
+
+  async FcmLogs() {
+    try {
+      // this.logger.fcm('test', { test: 'test123' });
+      const logs = fs.readFileSync(`${__dirname}/../../../logs/fcm.log`, 'utf8');
+      console.log('logs:', logs);
+      return logs;
+    } catch (error) {
+      console.log('error', error);
+      throw error;
+    }
   }
 }
 
