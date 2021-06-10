@@ -293,7 +293,7 @@ class EthParserManagerBase extends ParserManagerBase {
 
               const DBName = Utils.blockchainIDToDBName(this.bcid);
               if (findAccountCurrency) {
-                console.log('fcm tx confirmations!!!!!!!!!!', {
+                this.logger.fcm('fcm tx confirmations!!!!!!!!!!', {
                   title: `tx (${tx.txid}) is confirmations`,
                   body: JSON.stringify({
                     blockchainId: findAddressTransaction.AccountAddress.Account.blockchain_id,

@@ -21,6 +21,7 @@ const JWT = require('jsonwebtoken');
 const i18n = require('i18n');
 const dvalue = require('dvalue');
 const ecRequest = require('ecrequest');
+const util = require('util');
 const blockchainNetworks = require('./data/blockchainNetworks');
 
 const Codes = require('./Codes');
@@ -367,6 +368,10 @@ class Utils {
         rsConfig.argv = arguments[0];
         return this.initialFolder(config).then(() => rsConfig);
       })
+      .then(async (item) => {
+        await this.initialFolder({ homeFolder: `${__dirname}/../../../logs` });
+        return item;
+      })
       .then((config) => Promise.all([
         config,
         initialORM(config),
@@ -632,11 +637,25 @@ class Utils {
       },
     });
     this.loggerAdapter = log4js.getLogger('TideWallet');
+
     return Promise.resolve({
       log: (...data) => this.loggerAdapter.info('%s', data),
       error: (...data) => this.loggerAdapter.error('%s', data),
       debug: (...data) => this.loggerAdapter.debug('%s', data),
       trace: (...data) => this.loggerAdapter.trace('%s', data),
+
+      // ++ tmp for fcm debug
+      fcm: (...data) => {
+        const log_stdout = process.stdout;
+        const log_file = fs.createWriteStream(`${__dirname}/../../../logs/fcm.log`, { flags: 'a' });
+
+        const _date = new Date();
+
+        const dateString = `${_date.getFullYear()}-${_date.getMonth() + 1}-${_date.getDate()} ${_date.getHours()}:${_date.getMinutes()}`;
+
+        log_file.write(`${dateString} ${util.format(data)}\n`);
+        log_stdout.write(`${dateString} ${util.format(data)}\n`);
+      },
     });
   }
 
