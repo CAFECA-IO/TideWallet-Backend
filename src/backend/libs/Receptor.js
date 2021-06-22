@@ -127,7 +127,11 @@ class Receptor extends Bot {
         })
         .catch((e) => {
           // unhandled error
-          ctx.body = new ResponseFormat({ message: `unknown error(${e.message})`, code: Codes.UNKNOWN_ERROR });
+          if (e.code && e.code === Codes.EXPIRED_ACCESS_TOKEN) {
+            ctx.body = new ResponseFormat({ message: e.message, code: Codes.EXPIRED_ACCESS_TOKEN });
+          } else {
+            ctx.body = new ResponseFormat({ message: `unknown error(${e.message})`, code: Codes.UNKNOWN_ERROR });
+          }
           let rsString = JSON.stringify(ctx.body);
           if ((ctx.method === 'GET')) rsString = rsString.slice(0, 4000);
           this.logger.log(`[${requestID}][API] ${ctx.method} ${ctx.url} response body: ${rsString}`);

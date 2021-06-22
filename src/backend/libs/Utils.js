@@ -833,7 +833,7 @@ class Utils {
 
   static async generateToken({ userID, data = {} }) {
     const tokenSecret = randToken.uid(256);
-    const expireTime = new Date(
+    const tokenSecretExpireTime = new Date(
       new Date().getTime()
         + Number(this.config.base.token_secret_expire_time) * 1000,
     );
@@ -845,7 +845,7 @@ class Utils {
       defaults: {
         tokenSecret,
         user_id: userID,
-        expire_time: expireTime,
+        expire_time: tokenSecretExpireTime,
       },
     });
 
@@ -855,7 +855,7 @@ class Utils {
         {
           tokenSecret,
           user_id: userID,
-          expire_time: expireTime,
+          expire_time: tokenSecretExpireTime,
         },
         {
           where: { user_id: userID },
@@ -865,7 +865,7 @@ class Utils {
 
     return {
       token: JWT.sign({ userID, ...data }, this.config.jwt.secret, {
-        expiresIn: this.config.base.token_secret_expire_time,
+        expiresIn: this.config.base.token_expire_time,
       }),
       tokenSecret,
       user_id: userID,
