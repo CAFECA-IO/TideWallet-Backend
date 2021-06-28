@@ -372,6 +372,7 @@ class Account extends Bot {
               blockchain_id: findAccount.blockchain_id,
               name: findCurrency.name,
               symbol: findCurrency.symbol,
+              icon: findCurrency.icon,
               type: findCurrency.type,
               publish: findCurrency.publish,
               decimals: findCurrency.decimals,
