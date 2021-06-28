@@ -19,4 +19,10 @@ module.exports = (sequelize, DataTypes) => sequelize.define('FiatCurrencyRate', 
   tableName: 'FiatCurrencyRate',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
+  indexes: [
+    {
+      unique: true,
+      fields: ['currency_id'],
+    },
+  ],
 });
