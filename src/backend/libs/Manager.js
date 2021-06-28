@@ -117,10 +117,13 @@ class Manager extends Bot {
             // if not found, create
             await this.database.db[
               Utils.defaultDBInstanceName
-            ].FiatCurrencyRate.create({
-              fiatCurrencyRate_id: uuidv4(),
-              currency_id: findCurrency.currency_id,
-              rate: new BigNumber(item[3]).toFixed(),
+            ].FiatCurrencyRate.findOrCreate({
+              where: { currency_id: findCurrency.currency_id },
+              defaults: {
+                fiatCurrencyRate_id: uuidv4(),
+                currency_id: findCurrency.currency_id,
+                rate: new BigNumber(item[3]).toFixed(),
+              },
             });
           }
         }
