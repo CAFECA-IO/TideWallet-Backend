@@ -72,7 +72,7 @@
     "url": "git+https://github.com:BOLT-Protocol/TideWallet-Backend.git"
   },
   "scripts": {
-    "start": "sh tool/scripts/migrateDB.sh && bin/main.js",
+    "start": "bin/main.js",
     "deploy": "ansible-playbook tool/playbook.yml",
     "migrateDB": "sh tool/scripts/migrateDB.sh",
     "deleteDB": "sh tool/scripts/deleteDB.sh",

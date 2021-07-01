@@ -11,6 +11,7 @@ const bitcoin = require('bitcoinjs-lib');
 const BigNumber = require('bignumber.js');
 const log4js = require('log4js');
 const bchaddr = require('bchaddrjs');
+const { exec } = require('child_process');
 
 const Web3 = require('web3');
 
@@ -359,6 +360,22 @@ class Utils {
       });
   }
 
+  static async migrationDB() {
+    await new Promise((resolve, reject) => {
+      const migrate = exec(
+        'sh tool/scripts/migrateDB.sh',
+        (err, stdout, stderr) => {
+          if (err != null) reject(Object.assign(err, { stderr }));
+          else resolve(stdout);
+        },
+      );
+
+      // Forward stdout+stderr to this process
+      migrate.stdout.pipe(process.stdout);
+      migrate.stderr.pipe(process.stderr);
+    });
+  }
+
   static initialAll({ configPath }) {
     const filePath = configPath || path.resolve(__dirname, '../../../private/config.toml');
     return this.readConfig({ filePath })
@@ -385,6 +402,10 @@ class Utils {
         },
         logger: rs[2],
       }))
+      .then(async (rs) => {
+        await this.migrationDB();
+        return rs;
+      })
       .catch(console.trace);
   }
 
