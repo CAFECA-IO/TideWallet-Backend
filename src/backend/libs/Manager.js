@@ -155,7 +155,7 @@ class Manager extends Bot {
         .then(async (rs) => {
           const { payload } = JSON.parse(rs.data.toString());
           await this.database.db.bitcoin_mainnet.Currency.update(
-            { exchange_rate: payload.amount },
+            { exchange_rate: payload.weightedAveragePrice },
             { where: { currency_id: crypto.asset_id } },
           );
         })
