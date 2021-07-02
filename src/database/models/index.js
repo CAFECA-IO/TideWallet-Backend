@@ -14,7 +14,20 @@ const initialORM = async ({ database, logger = console }) => {
       return dbInstance;
     }
 
+    // initial all database
+    const initDB = database.cafeca;
+    initDB.dialect = initDB.protocol;
+    initDB.username = initDB.user;
+    initDB.database = initDB.dbName;
+    const initDBSequelize = new Sequelize(initDB.dbName, initDB.user, initDB.password, initDB);
+    // await initDBSequelize.query('CREATE DATABASE test123;');
+
     for (const dbConfig of Object.values(database)) {
+      // create database first
+      try {
+        await initDBSequelize.query(`CREATE DATABASE ${dbConfig.dbName};`);
+      } catch (e) {}
+
       dbConfig.dialect = dbConfig.protocol;
       dbConfig.username = dbConfig.user;
       dbConfig.database = dbConfig.dbName;
@@ -125,6 +138,7 @@ module.exports = env;
       });
     }
 
+    await initDBSequelize.close();
     return dbInstance;
   } catch (e) {
     // eslint-disable-next-line no-console
