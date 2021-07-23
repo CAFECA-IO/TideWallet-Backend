@@ -132,9 +132,15 @@ class Manager extends Bot {
   }
 
   syncCryptoRate() {
-    const BTCObj = { asset_id: '5b1ea92e584bf50020130612', symbol: 'BTC' };
-    const BCHObj = { asset_id: '5b1ea92e584bf5002013061c', symbol: 'BCH' };
-    const ETHObj = { asset_id: '5b755dacd5dd99000b3d92b2', symbol: 'ETH' };
+    const BTCObj = {
+      asset_id: '5b1ea92e584bf50020130612', symbol: 'BTC', dbOp: 'bitcoin_mainnet',
+    };
+    const BCHObj = {
+      asset_id: '5b1ea92e584bf5002013061c', symbol: 'BCH', dbOp: 'bitcoin_cash_mainnet',
+    };
+    const ETHObj = {
+      asset_id: '5b755dacd5dd99000b3d92b2', symbol: 'ETH', dbOp: 'ethereum_mainnet',
+    };
     const USDID = '5b1ea92e584bf50020130615';
 
     for (const crypto of [BTCObj, BCHObj, ETHObj]) {
@@ -154,7 +160,7 @@ class Manager extends Bot {
         .get(opt)
         .then(async (rs) => {
           const { payload } = JSON.parse(rs.data.toString());
-          await this.database.db.bitcoin_mainnet.Currency.update(
+          await this.database.db[crypto.dbOp].Currency.update(
             { exchange_rate: payload.weightedAveragePrice },
             { where: { currency_id: crypto.asset_id } },
           );
