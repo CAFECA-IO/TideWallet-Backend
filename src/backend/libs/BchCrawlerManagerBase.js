@@ -418,10 +418,10 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
   }
 
   async _findAccountUTXO({
-    findAccountCurrency, payload, chain_index, key_index,
+    findAccountCurrency, payload, change_index, key_index,
   }) {
     // find AccountAddress
-    const findAccountAddress = await this.accountAddressModel.findOne({ where: { account_id: findAccountCurrency.Account.account_id, chain_index, key_index } });
+    const findAccountAddress = await this.accountAddressModel.findOne({ where: { account_id: findAccountCurrency.Account.account_id, change_index, key_index } });
     if (!findAccountAddress) return;
 
     // find all UTXO
@@ -445,7 +445,7 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
         amount: utxo.amount,
         script: utxo.script,
         timestamp: utxo.on_block_timestamp,
-        chain_index,
+        change_index,
         key_index,
         address: utxo.AccountAddress.address,
       });
@@ -563,14 +563,14 @@ class BchCrawlerManagerBase extends CrawlerManagerBase {
                 for (let i = 0; i <= number_of_external_key; i++) {
                   // find all address
                   await this._findAccountUTXO({
-                    findAccountCurrency, payload, chain_index: 0, key_index: i,
+                    findAccountCurrency, payload, change_index: 0, key_index: i,
                   });
                 }
 
                 // find internal address txs
                 for (let i = 0; i <= number_of_internal_key; i++) {
                   await this._findAccountUTXO({
-                    findAccountCurrency, payload, chain_index: 1, key_index: i,
+                    findAccountCurrency, payload, change_index: 1, key_index: i,
                   });
                 }
 

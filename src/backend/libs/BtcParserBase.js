@@ -385,7 +385,7 @@ class BtcParserBase extends ParserBase {
               transaction,
             },
           );
-          if (accountAddressTo.chain_index === 1 && accountCurrency && (accountCurrency.number_of_internal_key === accountAddressTo.key_index)) {
+          if (accountAddressTo.change_index === 1 && accountCurrency && (accountCurrency.number_of_internal_key === accountAddressTo.key_index)) {
             const newAccountCurrency = await this.accountCurrencyModel.increment(
               { number_of_internal_key: 1 },
               {
@@ -410,14 +410,14 @@ class BtcParserBase extends ParserBase {
               await this.accountAddressModel.create({
                 accountAddress_id: uuidv4(),
                 account_id: accountAddressTo.Account.account_id,
-                chain_index: 1,
+                change_index: 1,
                 key_index: newAccountCurrency[0][0][0].number_of_internal_key,
                 public_key: wallet.publicKey,
                 address: wallet.address,
               });
             }
           }
-          if (accountAddressTo.chain_index === 0 && accountCurrency && (accountCurrency.number_of_external_key === accountAddressTo.key_index)) {
+          if (accountAddressTo.change_index === 0 && accountCurrency && (accountCurrency.number_of_external_key === accountAddressTo.key_index)) {
             const newAccountCurrency = await this.accountCurrencyModel.increment(
               { number_of_external_key: 1 },
               {
@@ -442,7 +442,7 @@ class BtcParserBase extends ParserBase {
               await this.accountAddressModel.create({
                 accountAddress_id: uuidv4(),
                 account_id: accountAddressTo.Account.account_id,
-                chain_index: 0,
+                change_index: 0,
                 key_index: newAccountCurrency[0][0][0].number_of_external_key,
                 public_key: wallet.publicKey,
                 address: wallet.address,
