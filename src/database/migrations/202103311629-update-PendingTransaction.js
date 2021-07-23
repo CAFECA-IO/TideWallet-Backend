@@ -1,47 +1,37 @@
 module.exports = {
-  up: (queryInterface, Sequelize) => new Promise((resolve, reject) => {
+  async up(queryInterface, Sequelize) {
     try {
-      queryInterface.addColumn(
+      await queryInterface.addColumn(
         'PendingTransaction',
         'blockAsked',
         {
           type: Sequelize.INTEGER,
         },
       );
-    } catch (e) {
-      reject(e);
-    }
-    resolve();
-  }).then(() => new Promise((resolve, reject) => {
-    try {
-      queryInterface.addIndex(
+      await queryInterface.addIndex(
         'PendingTransaction',
         ['blockchain_id', 'blockAsked'],
         {
           unique: false,
         },
       );
+      return Promise.resolve();
     } catch (e) {
-      reject(e);
+      console.log(e);
+      return Promise.resolve();
     }
-    resolve();
-  })),
-  down: (queryInterface, Sequelize) => new Promise((resolve, reject) => {
+  },
+  async down(queryInterface, Sequelize) {
     try {
-      queryInterface.removeIndex(
+      await queryInterface.removeIndex(
         'PendingTransaction',
         ['blockchain_id', 'blockAsked'],
       );
+      await queryInterface.removeColumn('PendingTransaction', 'blockAsked');
+      return Promise.resolve();
     } catch (e) {
-      reject(e);
+      console.log(e);
+      return Promise.resolve();
     }
-    resolve();
-  }).then(() => new Promise((resolve, reject) => {
-    try {
-      queryInterface.removeColumn('PendingTransaction', 'blockAsked');
-    } catch (e) {
-      reject(e);
-    }
-    resolve();
-  })),
+  },
 };

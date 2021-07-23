@@ -7,6 +7,9 @@ fi
 if [ -f ./env.cafeca.js ]; then
   ./node_modules/.bin/sequelize db:migrate:undo:all --env development --config ./env.cafeca.js --migrations-path ./src/database/migrations --models-path ./src/database/models
 fi
+if [ -f ./env.cafeca.js ]; then
+  ./node_modules/.bin/sequelize db:migrate:undo:all --env development --config ./env.titan.js --migrations-path ./src/database/migrations --models-path ./src/database/models
+fi
 if [ -f ./env.ethereum_mainnet.js ]; then
   ./node_modules/.bin/sequelize db:migrate:undo:all --env development --config ./env.ethereum_mainnet.js --migrations-path ./src/database/migrations --models-path ./src/database/models
 fi

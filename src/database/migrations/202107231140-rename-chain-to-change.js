@@ -1,26 +1,28 @@
 module.exports = {
-  up: (queryInterface, Sequelize) => new Promise((resolve, reject) => {
+  async up(queryInterface, Sequelize) {
     try {
-      queryInterface.renameColumn(
+      await queryInterface.renameColumn(
         'AccountAddress',
         'chain_index',
         'change_index',
       );
+      return Promise.resolve();
     } catch (e) {
-      reject(e);
+      console.log(e);
+      return Promise.resolve();
     }
-    resolve();
-  }),
-  down: async (queryInterface, Sequelize) => new Promise((resolve, reject) => {
+  },
+  async down(queryInterface, Sequelize) {
     try {
-      queryInterface.renameColumn(
+      await queryInterface.renameColumn(
         'AccountAddress',
         'change_index',
         'chain_index',
       );
+      return Promise.resolve();
     } catch (e) {
-      reject(e);
+      console.log(e);
+      return Promise.resolve();
     }
-    resolve();
-  }),
+  },
 };
