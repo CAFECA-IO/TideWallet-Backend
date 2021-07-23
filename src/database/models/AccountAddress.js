@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('AccountAddress', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  chain_index: {
+  change_index: {
     type: DataTypes.SMALLINT,
     allowNull: false,
     defaultValue: 0,

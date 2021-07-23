@@ -425,7 +425,7 @@ class Account extends Bot {
         options: {
           where: {
             account_id: findAccountCurrency.Account.account_id,
-            chain_index: 0,
+            change_index: 0,
             key_index: findAccountCurrency.number_of_external_key,
           },
         },
@@ -451,7 +451,7 @@ class Account extends Bot {
         await _db.AccountAddress.create({
           accountAddress_id: uuidv4(),
           account_id: findAccountCurrency.Account.account_id,
-          chain_index: 0,
+          change_index: 0,
           key_index: 0,
           public_key: wallet.publicKey,
           address: wallet.address,
@@ -505,14 +505,14 @@ class Account extends Bot {
       const findBlockInfo = Utils.blockchainIDToBlockInfo(findAccountCurrency.Account.blockchain_id);
       if (!findBlockInfo) return new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
-      let chain_index = 0;
+      let change_index = 0;
       // only BTC Base has change address
       switch (findAccountCurrency.Account.blockchain_id) {
         case '80000000':
         case 'F0000000':
         case '80000091':
         case 'F0000091':
-          chain_index = 1;
+          change_index = 1;
           break;
         default:
           break;
@@ -523,7 +523,7 @@ class Account extends Bot {
         options: {
           where: {
             account_id: findAccountCurrency.Account.account_id,
-            chain_index,
+            change_index,
             key_index: findAccountCurrency.number_of_internal_key,
           },
         },
@@ -535,7 +535,7 @@ class Account extends Bot {
       if (!findChangeAddress) {
         const { coin_type: coinType } = findBlockInfo;
         const wallet = hdWallet.getWalletInfo({
-          change: chain_index,
+          change: change_index,
           index: findAccountCurrency.number_of_internal_key,
           coinType,
           blockchainID: findAccountCurrency.Account.blockchain_id,
@@ -546,7 +546,7 @@ class Account extends Bot {
         await _db.AccountAddress.create({
           accountAddress_id: uuidv4(),
           account_id: findAccountCurrency.Account.account_id,
-          chain_index: 1,
+          change_index: 1,
           key_index: 0,
           public_key: wallet.publicKey,
           address: wallet.address,
@@ -571,7 +571,7 @@ class Account extends Bot {
   }
 
   async _findAccountTXs({
-    findAccountCurrency, txs, chain_index, key_index, timestamp, limit, meta,
+    findAccountCurrency, txs, change_index, key_index, timestamp, limit, meta,
   }) {
     // find blockchain info
     const findBlockchainInfo = await this.DBOperator.findOne({
@@ -590,7 +590,7 @@ class Account extends Bot {
 
     const isToken = findCurrency.type === 2;
     const findAccountAddress = await _db.AccountAddress.findOne({
-      where: { account_id: findAccountCurrency.account_id, chain_index, key_index },
+      where: { account_id: findAccountCurrency.account_id, change_index, key_index },
     });
     // find all tx by address
     if (findAccountAddress) {
@@ -779,14 +779,14 @@ class Account extends Bot {
       for (let i = 0; i <= number_of_external_key; i++) {
         // find all address
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, chain_index: 0, key_index: i, timestamp, limit, meta,
+          findAccountCurrency, txs: result, change_index: 0, key_index: i, timestamp, limit, meta,
         });
       }
 
       // find internal address txs
       for (let i = 0; i <= number_of_internal_key; i++) {
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, chain_index: 1, key_index: i, timestamp, limit, meta,
+          findAccountCurrency, txs: result, change_index: 1, key_index: i, timestamp, limit, meta,
         });
       }
 
@@ -885,14 +885,14 @@ class Account extends Bot {
   }
 
   async _findAccountUTXO({
-    findAccountCurrency, payload, chain_index, key_index,
+    findAccountCurrency, payload, change_index, key_index,
   }) {
     // find blockchain info
     const DBName = Utils.blockchainIDToDBName(findAccountCurrency.Account.blockchain_id);
     const _db = this.database.db[DBName];
 
     // find AccountAddress
-    const findAccountAddress = await _db.AccountAddress.findOne({ where: { account_id: findAccountCurrency.Account.account_id, chain_index, key_index } });
+    const findAccountAddress = await _db.AccountAddress.findOne({ where: { account_id: findAccountCurrency.Account.account_id, change_index, key_index } });
     if (!findAccountAddress) return new ResponseFormat({ message: 'account not found(address not found)', code: Codes.ACCOUNT_NOT_FOUND });
 
     // find all UTXO
@@ -916,7 +916,7 @@ class Account extends Bot {
         amount: utxo.amount,
         script: utxo.script,
         timestamp: utxo.on_block_timestamp,
-        chain_index,
+        change_index,
         key_index,
         address: utxo.AccountAddress.address,
       });
@@ -956,14 +956,14 @@ class Account extends Bot {
       for (let i = 0; i <= number_of_external_key; i++) {
         // find all address
         await this._findAccountUTXO({
-          findAccountCurrency, payload, chain_index: 0, key_index: i,
+          findAccountCurrency, payload, change_index: 0, key_index: i,
         });
       }
 
       // find internal address txs
       for (let i = 0; i <= number_of_internal_key; i++) {
         await this._findAccountUTXO({
-          findAccountCurrency, payload, chain_index: 1, key_index: i,
+          findAccountCurrency, payload, change_index: 1, key_index: i,
         });
       }
 

@@ -165,7 +165,7 @@ class User extends Bot {
         await _db.AccountAddress.create({
           accountAddress_id: uuidv4(),
           account_id: insertAccount.account_id,
-          chain_index: 0,
+          change_index: 0,
           key_index: 0,
           public_key: wallet.publicKey,
           address: wallet.address,
@@ -176,7 +176,7 @@ class User extends Bot {
           await _db.AccountAddress.create({
             accountAddress_id: uuidv4(),
             account_id: insertAccount.account_id,
-            chain_index: 1,
+            change_index: 1,
             key_index: 0,
             public_key: changeWallet.publicKey,
             address: changeWallet.address,
