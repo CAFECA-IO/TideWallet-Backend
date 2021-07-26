@@ -87,48 +87,56 @@ class Manager extends Bot {
         .split('\n')
         .map((item) => item.split(/[ ]+/));
 
+      const usdItem = parseObject.find((item) => item[0] === 'USD');
+      const usdRate = new BigNumber(usdItem[3]);
       for (const item of parseObject) {
-        const findCurrency = await this.database.db[
-          Utils.defaultDBInstanceName
-        ].Currency.findOne({
-          where: { symbol: item[0], type: 0 },
-        });
-        if (findCurrency) {
-          const findRate = await this.database.db[
-            Utils.defaultDBInstanceName
-          ].FiatCurrencyRate.findOne({
-            where: { currency_id: findCurrency.currency_id },
-          });
-
-          if (findRate) {
-            // if found, update it
-            await this.database.db[
-              Utils.defaultDBInstanceName
-            ].FiatCurrencyRate.update(
-              { rate: new BigNumber(item[3]).toFixed() },
-              {
-                where: {
-                  fiatCurrencyRate_id: findRate.fiatCurrencyRate_id,
-                  currency_id: findCurrency.currency_id,
-                },
-              },
-            );
-          } else {
-            // if not found, create
-            await this.database.db[
-              Utils.defaultDBInstanceName
-            ].FiatCurrencyRate.findOrCreate({
-              where: { currency_id: findCurrency.currency_id },
-              defaults: {
-                fiatCurrencyRate_id: uuidv4(),
-                currency_id: findCurrency.currency_id,
-                rate: new BigNumber(item[3]).toFixed(),
-              },
-            });
-          }
-        }
+        await this._updateFiatRate(item[0], new BigNumber(item[3]).dividedBy(usdRate).toFixed());
       }
+      // update TWD
+      await this._updateFiatRate('TWD', new BigNumber(1).dividedBy(usdRate).toFixed());
     });
+  }
+
+  async _updateFiatRate(symbol, rate) {
+    const findCurrency = await this.database.db[
+      Utils.defaultDBInstanceName
+    ].Currency.findOne({
+      where: { symbol, type: 0 },
+    });
+    if (findCurrency) {
+      const findRate = await this.database.db[
+        Utils.defaultDBInstanceName
+      ].FiatCurrencyRate.findOne({
+        where: { currency_id: findCurrency.currency_id },
+      });
+
+      if (findRate) {
+        // if found, update it
+        await this.database.db[
+          Utils.defaultDBInstanceName
+        ].FiatCurrencyRate.update(
+          { rate },
+          {
+            where: {
+              fiatCurrencyRate_id: findRate.fiatCurrencyRate_id,
+              currency_id: findCurrency.currency_id,
+            },
+          },
+        );
+      } else {
+        // if not found, create
+        await this.database.db[
+          Utils.defaultDBInstanceName
+        ].FiatCurrencyRate.findOrCreate({
+          where: { currency_id: findCurrency.currency_id },
+          defaults: {
+            fiatCurrencyRate_id: uuidv4(),
+            currency_id: findCurrency.currency_id,
+            rate,
+          },
+        });
+      }
+    }
   }
 
   syncCryptoRate() {
