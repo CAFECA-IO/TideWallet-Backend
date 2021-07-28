@@ -37,7 +37,17 @@ class ParserManagerBase {
     this.maxRetry = 3;
 
     // message queue
-    this.queueChannel = await amqp.connect(this.amqpHost).then((conn) => conn.createChannel());
+    try {
+      this.queueConnect = await amqp.connect(this.amqpHost);
+      this.queueChannel = await this.queueConnect.createChannel();
+    } catch (error) {
+      this.logger.error(`[${this.constructor.name}] init amqp error: ${error}`);
+      process.exit(1);
+    }
+    this.queueConnect.on('error', (err) => { throw err; });
+    this.queueConnect.on('close', () => { throw new Error(`[${this.constructor.name}] amqp channel close`); });
+    this.queueChannel.on('error', (err) => { throw err; });
+    this.queueChannel.on('close', () => { throw new Error(`[${this.constructor.name}] amqp channel close`); });
     this.queueChannel.prefetch(1);
     this.jobQueue = `${this.bcid}ParseJob`;
     this.jobCallback = `${this.bcid}ParseJobCallback`;
