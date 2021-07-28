@@ -472,7 +472,7 @@ class Blockchain extends Bot {
           params: [
             {
               from: fromAddress,
-              nonce: value,
+              value,
               to: toAddress,
               data: signatureData,
             },
