@@ -360,8 +360,8 @@ class Account extends Bot {
             payload.purpose = findAccount.purpose;
             payload.account_index = '0';
             payload.curve_type = findAccount.curve_type;
-            payload.number_of_external_key = findAccount.number_of_external_key;
-            payload.number_of_internal_key = findAccount.number_of_internal_key;
+            payload.number_of_external_key = accountCurrency.number_of_external_key;
+            payload.number_of_internal_key = accountCurrency.number_of_internal_key;
             payload.balance = balance;
             payload.symbol = findCurrency.symbol;
             payload.icon = findCurrency.icon;
