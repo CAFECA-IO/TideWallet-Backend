@@ -152,12 +152,102 @@ class Account extends Bot {
     }
   }
 
+  async _addNewAccountForOldUser(userID) {
+    try {
+      const findAccounts = await this.DBOperator.findAll({
+        tableName: 'Account',
+        options: {
+          where: {
+            user_id: userID,
+          },
+        },
+      });
+      const extendPublicKey = findAccounts[0].extend_public_key;
+      const findAllChainCoin = await this.DBOperator.findAll({
+        tableName: 'Currency',
+        options: {
+          where: { type: 1 },
+          include: [
+            {
+              _model: 'Blockchain',
+              attributes: ['blockchain_id', 'block', 'coin_type'],
+            },
+          ],
+        },
+      });
+
+      if (findAllChainCoin.length !== findAccounts.length) {
+        const hdWallet = new HDWallet({ extendPublicKey });
+
+        // find chain id that user not own
+        for (const chainCoinDetail of findAllChainCoin) {
+          console.log('chainCoinDetail:', chainCoinDetail); // --
+          const { blockchain_id } = chainCoinDetail;
+          const res = findAccounts.find((account) => account.blockchain_id === blockchain_id);
+          if (!res) {
+            // create account
+            // code from user regist
+            const DBName = Utils.blockchainIDToDBName(blockchain_id);
+            const _db = this.database.db[DBName];
+
+            const insertAccount = await _db.Account.create({
+              account_id: uuidv4(),
+              user_id: userID,
+              blockchain_id: chainCoinDetail.blockchain_id,
+              purpose: 3324,
+              curve_type: 0,
+              extend_public_key: extendPublicKey,
+              regist_block_num: chainCoinDetail.Blockchain.block,
+            });
+
+            await _db.AccountCurrency.create({
+              accountCurrency_id: uuidv4(),
+              account_id: insertAccount.account_id,
+              currency_id: chainCoinDetail.currency_id,
+              balance: '0',
+              number_of_external_key: '0',
+              number_of_internal_key: '0',
+            });
+
+            const coinType = chainCoinDetail.Blockchain.coin_type;
+            const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: chainCoinDetail.Blockchain.blockchain_id });
+
+            await _db.AccountAddress.create({
+              accountAddress_id: uuidv4(),
+              account_id: insertAccount.account_id,
+              change_index: 0,
+              key_index: 0,
+              public_key: wallet.publicKey,
+              address: wallet.address,
+            });
+
+            if (chainCoinDetail.blockchain_id === '80000000' || chainCoinDetail.blockchain_id === 'F0000000' || chainCoinDetail.blockchain_id === '80000091' || chainCoinDetail.blockchain_id === 'F0000091') {
+              const changeWallet = hdWallet.getWalletInfo({ coinType, blockchainID: chainCoinDetail.Blockchain.blockchain_id, change: 1 });
+              await _db.AccountAddress.create({
+                accountAddress_id: uuidv4(),
+                account_id: insertAccount.account_id,
+                change_index: 1,
+                key_index: 0,
+                public_key: changeWallet.publicKey,
+                address: changeWallet.address,
+              });
+            }
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.error('_addNewAccountForOldUser', error);
+    }
+  }
+
   async AccountList({ token }) {
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
     const tokenInfo = await Utils.verifyToken(token);
     const payload = [];
 
     try {
+      await this._addNewAccountForOldUser(tokenInfo.userID);
+
       const findAccounts = await this.DBOperator.findAll({
         tableName: 'Account',
         options: {
