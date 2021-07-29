@@ -12,6 +12,7 @@ const BigNumber = require('bignumber.js');
 const log4js = require('log4js');
 const bchaddr = require('bchaddrjs');
 const { exec } = require('child_process');
+const { v4: uuidv4 } = require('uuid');
 
 const Web3 = require('web3');
 
@@ -1479,6 +1480,62 @@ class Utils {
   static formatIconUrl(iconUrl) {
     const host = this.config.base.domain ? this.config.base.domain : '';
     return iconUrl.replace('undefined', host);
+  }
+
+  static async newAccount(currency, userID, extendPublicKey, hdWallet) {
+    const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
+    const _db = this.database.db[DBName];
+    const insertAccount = await _db.Account.create({
+      account_id: uuidv4(),
+      user_id: userID,
+      blockchain_id: currency.blockchain_id,
+      purpose: 3324,
+      curve_type: 0,
+      extend_public_key: extendPublicKey,
+      regist_block_num: currency.Blockchain.block,
+    });
+
+    await _db.AccountCurrency.create({
+      accountCurrency_id: uuidv4(),
+      account_id: insertAccount.account_id,
+      currency_id: currency.currency_id,
+      balance: '0',
+      number_of_external_key: '0',
+      number_of_internal_key: '0',
+    });
+
+    const coinType = currency.Blockchain.coin_type;
+    const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: currency.Blockchain.blockchain_id });
+
+    await _db.AccountAddress.create({
+      accountAddress_id: uuidv4(),
+      account_id: insertAccount.account_id,
+      change_index: 0,
+      key_index: 0,
+      public_key: wallet.publicKey,
+      address: wallet.address,
+    });
+
+    if (Utils.isBtcLike(currency.blockchain_id)) {
+      const changeWallet = hdWallet.getWalletInfo({ coinType, blockchainID: currency.Blockchain.blockchain_id, change: 1 });
+      await _db.AccountAddress.create({
+        accountAddress_id: uuidv4(),
+        account_id: insertAccount.account_id,
+        change_index: 1,
+        key_index: 0,
+        public_key: changeWallet.publicKey,
+        address: changeWallet.address,
+      });
+    }
+  }
+
+  static isBtcLike(blockchainID) {
+    return (
+      blockchainID === '80000000'
+      || blockchainID === 'F0000000'
+      || blockchainID === '80000091'
+      || blockchainID === 'F0000091'
+    );
   }
 }
 
