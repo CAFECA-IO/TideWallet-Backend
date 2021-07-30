@@ -678,6 +678,13 @@ class Account extends Bot {
       where: { currency_id: findAccountCurrency.currency_id },
     });
 
+    const findChainCurrency = await this.DBOperator.findOne({
+      tableName: 'Currency',
+      options: {
+        where: { type: 1, blockchain_id: findAccountCurrency.Account.blockchain_id },
+      },
+    });
+
     const isToken = findCurrency.type === 2;
     const findAccountAddress = await _db.AccountAddress.findOne({
       where: { account_id: findAccountCurrency.account_id, change_index, key_index },
@@ -690,7 +697,7 @@ class Account extends Bot {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
           },
-          // limit: Number(limit) + 1,
+          limit: Number(limit) + 1,
           include: [
             {
               model: _db.TokenTransaction,
@@ -700,6 +707,7 @@ class Account extends Bot {
                   where: {
                     timestamp: { [this.Sequelize.Op.lt]: timestamp },
                   },
+                  order: '"timestamp" DESC',
                 },
               ],
             },
@@ -721,7 +729,7 @@ class Account extends Bot {
               ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.gas_price, findCurrency.decimals)
               : null;
             const fee = txInfo.TokenTransaction.Transaction.fee
-              ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.fee, findCurrency.decimals)
+              ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.fee, findChainCurrency.decimals)
               : null;
             txs.push({
               txid: txInfo.TokenTransaction.Transaction.txid,
@@ -754,6 +762,7 @@ class Account extends Bot {
               where: {
                 timestamp: { [this.Sequelize.Op.lt]: timestamp },
               },
+              order: '"timestamp" DESC',
             },
           ],
         });
@@ -772,7 +781,7 @@ class Account extends Bot {
               ? Utils.dividedByDecimal(txInfo.Transaction.gas_price, findCurrency.decimals)
               : null;
             const fee = txInfo.Transaction.fee
-              ? Utils.dividedByDecimal(txInfo.Transaction.fee, findCurrency.decimals)
+              ? Utils.dividedByDecimal(txInfo.Transaction.fee, findChainCurrency.decimals)
               : null;
 
             txs.push({
@@ -929,9 +938,19 @@ class Account extends Bot {
       });
 
       if (findTX) {
+        const findChainCurrency = await this.DBOperator.findOne({
+          tableName: 'Currency',
+          options: {
+            where: { type: 1, blockchain_id: findTX.Currency.Blockchain.blockchain_id },
+          },
+        });
+
         const amount = Utils.dividedByDecimal(findTX.amount, findTX.Currency.decimals);
         const gas_price = findTX.gas_price
           ? Utils.dividedByDecimal(findTX.gas_price, findTX.Currency.decimals)
+          : null;
+        const fee = findTX.fee
+          ? Utils.dividedByDecimal(findTX.fee, findChainCurrency.decimals)
           : null;
         return new ResponseFormat({
           message: 'Get Transaction Detail',
@@ -946,7 +965,7 @@ class Account extends Bot {
             timestamp: findTX.timestamp,
             source_addresses: Utils.formatAddressArray(findTX.source_addresses),
             destination_addresses: Utils.formatAddressArray(findTX.destination_addresses),
-            fee: findTX.fee,
+            fee,
             gas_price,
             gas_used: findTX.gas_used,
           },
