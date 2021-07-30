@@ -697,7 +697,7 @@ class Account extends Bot {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
           },
-          // limit: Number(limit) + 1,
+          limit: Number(limit) + 1,
           include: [
             {
               model: _db.TokenTransaction,
@@ -707,6 +707,7 @@ class Account extends Bot {
                   where: {
                     timestamp: { [this.Sequelize.Op.lt]: timestamp },
                   },
+                  order: '"timestamp" DESC',
                 },
               ],
             },
@@ -761,6 +762,7 @@ class Account extends Bot {
               where: {
                 timestamp: { [this.Sequelize.Op.lt]: timestamp },
               },
+              order: '"timestamp" DESC',
             },
           ],
         });
