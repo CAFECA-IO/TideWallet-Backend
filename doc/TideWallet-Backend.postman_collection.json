@@ -320,7 +320,7 @@
 							"variable": [
 								{
 									"key": "currency_id",
-									"value": "9d67d076-b6cc-41f7-9698-5c27fc59dccd"
+									"value": "5b1ea92e584bf50020130612"
 								}
 							]
 						}
@@ -1365,7 +1365,7 @@
 							"variable": [
 								{
 									"key": "account_id",
-									"value": "b0970621-b4b5-488e-a4e5-84cc1a57fbfa"
+									"value": "0f0d7360-c87e-406e-8468-18857b8a5ce2"
 								}
 							]
 						}
@@ -1488,7 +1488,7 @@
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "b0970621-b4b5-488e-a4e5-84cc1a57fbfa"
+									"value": "0f0d7360-c87e-406e-8468-18857b8a5ce2"
 								}
 							]
 						}
@@ -1613,7 +1613,7 @@
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "b0970621-b4b5-488e-a4e5-84cc1a57fbfa"
+									"value": "c17cd53e-038f-4de2-ae7c-6cd7ad44eed6"
 								}
 							]
 						}
@@ -1722,7 +1722,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=3&page=0",
+							"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=3&startID=125&isGetOlder=true",
 							"host": [
 								"{{domain}}"
 							],
@@ -1740,8 +1740,12 @@
 									"value": "3"
 								},
 								{
-									"key": "page",
-									"value": "0"
+									"key": "startID",
+									"value": "125"
+								},
+								{
+									"key": "isGetOlder",
+									"value": "true"
 								}
 							],
 							"variable": [
@@ -1765,7 +1769,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=20&page=0",
+									"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=20&startID=0&isGetOlder=true",
 									"host": [
 										"{{domain}}"
 									],
@@ -1783,8 +1787,12 @@
 											"value": "20"
 										},
 										{
-											"key": "page",
+											"key": "startID",
 											"value": "0"
+										},
+										{
+											"key": "isGetOlder",
+											"value": "true"
 										}
 									],
 									"variable": [
@@ -1880,7 +1888,7 @@
 							"variable": [
 								{
 									"key": "txid",
-									"value": "fe166931-2d07-4735-bafb-40942612070a"
+									"value": ""
 								}
 							]
 						}
@@ -1998,7 +2006,7 @@
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "b0970621-b4b5-488e-a4e5-84cc1a57fbfa"
+									"value": "cb955812-37df-476a-95a8-d69295b28347"
 								}
 							]
 						}
@@ -2115,7 +2123,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "80000CFC"
+									"value": "80000000"
 								}
 							]
 						}
