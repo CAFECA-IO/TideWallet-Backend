@@ -181,7 +181,6 @@ class Account extends Bot {
 
         // find chain id that user not own
         for (const chainCoinDetail of findAllChainCoin) {
-          console.log('chainCoinDetail:', chainCoinDetail); // --
           const { blockchain_id } = chainCoinDetail;
           const res = findAccounts.find((account) => account.blockchain_id === blockchain_id);
           if (!res) {
