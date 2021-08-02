@@ -691,14 +691,23 @@ class Account extends Bot {
     // find all tx by address
     if (findAccountAddress) {
       if (isToken) {
-        const findTxByAddress = await _db.AddressTokenTransaction.findAll({
-          where: {
+        let where = {
+          currency_id: findAccountCurrency.currency_id,
+          accountAddress_id: findAccountAddress.accountAddress_id,
+        };
+        let order = [['addressTokenTransaction_id', 'DESC']];
+        if (startID) {
+          where = {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
             addressTokenTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lte]: startID } : { [this.Sequelize.Op.gt]: startID },
-          },
+          };
+          order = isGetOlder === 'true' ? [['addressTokenTransaction_id', 'DESC']] : [['addressTokenTransaction_id', 'ASC']];
+        }
+        const findTxByAddress = await _db.AddressTokenTransaction.findAll({
+          where,
           limit: Number(limit),
-          order: isGetOlder === 'true' ? [['addressTokenTransaction_id', 'DESC']] : [['addressTokenTransaction_id', 'ASC']],
+          order,
           include: [
             {
               model: _db.TokenTransaction,
@@ -751,14 +760,23 @@ class Account extends Bot {
           }
         }
       } else {
-        const findTxByAddress = await _db.AddressTransaction.findAll({
-          where: {
+        let where = {
+          currency_id: findAccountCurrency.currency_id,
+          accountAddress_id: findAccountAddress.accountAddress_id,
+        };
+        let order = [['addressTransaction_id', 'DESC']];
+        if (startID) {
+          where = {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
             addressTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lte]: startID } : { [this.Sequelize.Op.gt]: startID },
-          },
+          };
+          order = isGetOlder === 'true' ? [['addressTransaction_id', 'DESC']] : [['addressTransaction_id', 'ASC']];
+        }
+        const findTxByAddress = await _db.AddressTransaction.findAll({
+          where,
           limit: Number(limit),
-          order: isGetOlder === 'true' ? [['addressTransaction_id', 'DESC']] : [['addressTransaction_id', 'ASC']],
+          order,
           include: [
             {
               model: _db.Transaction,
@@ -848,7 +866,7 @@ class Account extends Bot {
     // account_id -> accountCurrency_id
     const { account_id } = params;
     const {
-      timestamp = Math.floor(Date.now() / 1000), limit = 20, startID = 0, isGetOlder = true,
+      timestamp = Math.floor(Date.now() / 1000), limit = 20, startID, isGetOlder = 'false',
     } = query;
 
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
