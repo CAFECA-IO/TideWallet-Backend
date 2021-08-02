@@ -616,7 +616,7 @@ class Account extends Bot {
   }
 
   async _findAccountTXs({
-    findAccountCurrency, txs, change_index, key_index, timestamp, limit, meta,
+    findAccountCurrency, txs, change_index, key_index, timestamp, limit, meta, startID, isGetOlder,
   }) {
     // find blockchain info
     const findBlockchainInfo = await this.DBOperator.findOne({
@@ -651,8 +651,10 @@ class Account extends Bot {
           where: {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
+            addressTokenTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lte]: startID } : { [this.Sequelize.Op.gt]: startID },
           },
-          limit: Number(limit) + 1,
+          limit: Number(limit),
+          order: isGetOlder === 'true' ? [['addressTokenTransaction_id', 'DESC']] : [['addressTokenTransaction_id', 'ASC']],
           include: [
             {
               model: _db.TokenTransaction,
@@ -662,7 +664,6 @@ class Account extends Bot {
                   where: {
                     timestamp: { [this.Sequelize.Op.lt]: timestamp },
                   },
-                  order: '"timestamp" DESC',
                 },
               ],
             },
@@ -687,6 +688,7 @@ class Account extends Bot {
               ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.fee, findChainCurrency.decimals)
               : null;
             txs.push({
+              id: txInfo.addressTokenTransaction_id,
               txid: txInfo.TokenTransaction.Transaction.txid,
               // eslint-disable-next-line no-nested-ternary
               status: (isToken) ? (txInfo.TokenTransaction.result ? 'success' : 'failed') : 'success',
@@ -709,15 +711,16 @@ class Account extends Bot {
           where: {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
+            addressTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lte]: startID } : { [this.Sequelize.Op.gt]: startID },
           },
-          limit: Number(limit) + 1,
+          limit: Number(limit),
+          order: isGetOlder === 'true' ? [['addressTransaction_id', 'DESC']] : [['addressTransaction_id', 'ASC']],
           include: [
             {
               model: _db.Transaction,
               where: {
                 timestamp: { [this.Sequelize.Op.lt]: timestamp },
               },
-              order: '"timestamp" DESC',
             },
           ],
         });
@@ -740,6 +743,7 @@ class Account extends Bot {
               : null;
 
             txs.push({
+              id: txInfo.addressTransaction_id,
               txid: txInfo.Transaction.txid,
               // eslint-disable-next-line no-nested-ternary
               status: (isToken) ? findTxByAddress.result ? 'success' : 'failed' : 'success',
@@ -799,7 +803,9 @@ class Account extends Bot {
   async ListTransactions({ params, token, query }) {
     // account_id -> accountCurrency_id
     const { account_id } = params;
-    const { timestamp = Math.floor(Date.now() / 1000), limit = 20 } = query;
+    const {
+      timestamp = Math.floor(Date.now() / 1000), limit = 20, startID = 0, isGetOlder = true,
+    } = query;
 
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
     const tokenInfo = await Utils.verifyToken(token);
@@ -833,14 +839,14 @@ class Account extends Bot {
       for (let i = 0; i <= number_of_external_key; i++) {
         // find all address
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, change_index: 0, key_index: i, timestamp, limit, meta,
+          findAccountCurrency, txs: result, change_index: 0, key_index: i, timestamp, limit, meta, startID, isGetOlder,
         });
       }
 
       // find internal address txs
       for (let i = 0; i <= number_of_internal_key; i++) {
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, change_index: 1, key_index: i, timestamp, limit, meta,
+          findAccountCurrency, txs: result, change_index: 1, key_index: i, timestamp, limit, meta, startID, isGetOlder,
         });
       }
 
@@ -848,7 +854,7 @@ class Account extends Bot {
       const items = this._mergeInternalTxs({ txs: result });
 
       // sort by timestamps
-      items.sort((a, b) => b.timestamp - a.timestamp);
+      items.sort((a, b) => b.timestamp - a.timestamp >= 0);
 
       if (items.length > limit) {
         meta.hasNext = true;
