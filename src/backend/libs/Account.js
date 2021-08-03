@@ -918,9 +918,10 @@ class Account extends Bot {
       // sort by timestamps
       items.sort((a, b) => b.timestamp - a.timestamp >= 0);
 
-      if (items.length > limit) {
+      if (items.length > Number(limit)) {
         meta.hasNext = true;
-        meta.timestamp = items[limit].timestamp;
+        meta.timestamp = items[Number(limit)].timestamp;
+        items.splice(Number(limit));
       }
 
       return new ResponseFormat({
