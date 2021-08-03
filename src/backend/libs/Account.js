@@ -700,7 +700,7 @@ class Account extends Bot {
           where = {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
-            addressTokenTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lte]: startID } : { [this.Sequelize.Op.gt]: startID },
+            addressTokenTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lt]: startID } : { [this.Sequelize.Op.gt]: startID },
           };
           order = isGetOlder === 'true' ? [['addressTokenTransaction_id', 'DESC']] : [['addressTokenTransaction_id', 'ASC']];
         }
@@ -769,7 +769,7 @@ class Account extends Bot {
           where = {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
-            addressTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lte]: startID } : { [this.Sequelize.Op.gt]: startID },
+            addressTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lt]: startID } : { [this.Sequelize.Op.gt]: startID },
           };
           order = isGetOlder === 'true' ? [['addressTransaction_id', 'DESC']] : [['addressTransaction_id', 'ASC']];
         }
