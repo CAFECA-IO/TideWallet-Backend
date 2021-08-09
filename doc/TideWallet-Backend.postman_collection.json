@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "7efa1833-2baa-4d79-b766-5af37269cebe",
+		"_postman_id": "d881b5dd-4bcd-47aa-8f1c-87ea8d4a2644",
 		"name": "TideWallet-Backend",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -120,8 +120,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "80000000",
-									"type": "string"
+									"value": "80000000"
 								}
 							]
 						}
@@ -321,8 +320,7 @@
 							"variable": [
 								{
 									"key": "currency_id",
-									"value": "9d67d076-b6cc-41f7-9698-5c27fc59dccd",
-									"type": "string"
+									"value": "5b1ea92e584bf50020130612"
 								}
 							]
 						}
@@ -416,7 +414,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/token",
+							"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/token?type=TideWallet",
 							"host": [
 								"{{domain}}"
 							],
@@ -427,11 +425,16 @@
 								":blockchain_id",
 								"token"
 							],
+							"query": [
+								{
+									"key": "type",
+									"value": "TideWallet"
+								}
+							],
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "8000025B",
-									"type": "string"
+									"value": "8000003C"
 								}
 							]
 						}
@@ -541,13 +544,11 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "8000003C",
-									"type": "string"
+									"value": "8000003C"
 								},
 								{
 									"key": "currency_id",
-									"value": "5b1ea92e584bf50020130685",
-									"type": "string"
+									"value": "5b1ea92e584bf50020130685"
 								}
 							]
 						}
@@ -648,7 +649,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"wallet_name\": \"測試錢包\",\n    \"extend_public_key\": \"xpub6AJwqHAf4v7gdLpcTUSwjapx7D3DSUg3ciw19n4Mgpaouk33umD6R3X4RDch2B8vvkjoPnBfWz6zwRcYLYRNutMAFpbY4mXErz56B9KuiZD\",\n    \"install_id\": \"xxxxxxxxxxxxx...xxxxx\",\n    \"app_uuid\": \"xxxxxxxxxxxxx...xxxxx\"\n}",
+							"raw": "{\n    \"wallet_name\": \"TideWallet3\",\n    \"extend_public_key\": \"xpub6CYxexXGcK4c8L8yxMyvRmwsdfScJAo8DKKSqmZ5yzLL9MVBwSBX5tqC9VB8N3osR2BmajXm19oJitGMHu2Jc46yrCey1Lg3ZvSMy1sqdQm\",\n    \"install_id\": \"83da67\",\n    \"app_uuid\": \"114bc570\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1111,8 +1112,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "8000025B",
-									"type": "string"
+									"value": "F000003C"
 								},
 								{
 									"key": "contract",
@@ -1165,7 +1165,7 @@
 									"variable": [
 										{
 											"key": "blockchain_id",
-											"value": "80000060"
+											"value": "F000003C"
 										},
 										{
 											"key": "contract",
@@ -1365,7 +1365,7 @@
 							"variable": [
 								{
 									"key": "account_id",
-									"value": "9adfa44f-c2cf-444b-a457-4b5b9c984e2f"
+									"value": "0f0d7360-c87e-406e-8468-18857b8a5ce2"
 								}
 							]
 						}
@@ -1456,7 +1456,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"powerby\": \"TideWallet API v1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Account Detail\",\n    \"payload\": [\n        {\n            \"blockchain_id\": \"80000000\",\n            \"currency_id\": \"5b1ea92e584bf50020130615\",\n            \"purpose\": 44,\n            \"account_index\": \"0\",\n            \"curve_type\": 0,\n            \"number_of_external_key\": 0,\n            \"number_of_internal_key\": 0,\n            \"balance\": \"1000\",\n            \"tokens\": [\n                {\n                    \"token_id\": \"5c0009411e24e600214f0eb1\",\n                    \"blockchain_id\": \"80000060\",\n                    \"name\": \"USD Coin\",\n                    \"symbol\": \"USDC\",\n                    \"type\": 2,\n                    \"publish\": true,\n                    \"decimals\": 2,\n                    \"total_supply\": \"5,767,712,364\",\n                    \"contract\": \"0x123456789...\",\n                    \"balance\": \"1000\"\n                },\n                {\n                    \"token_id\": \"5b1ea92e584bf50020130b28\",\n                    \"blockchain_id\": \"80000060\",\n                    \"name\": \"Dai\",\n                    \"symbol\": \"DAI\",\n                    \"type\": 2,\n                    \"publish\": true,\n                    \"decimals\": 2,\n                    \"total_supply\": \"1,619,686,135\",\n                    \"contract\": \"0x123456789...\",\n                    \"balance\": \"1000\"\n                }\n            ]\n        }\n    ]\n}"
+							"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Account List\",\n    \"payload\": {\n        \"blockchain_id\": \"80001F51\",\n        \"currency_id\": \"7a55ef8a-a668-11eb-bcbc-0242ac130002\",\n        \"account_id\": \"0f0d7360-c87e-406e-8468-18857b8a5ce2\",\n        \"purpose\": 3324,\n        \"account_index\": \"0\",\n        \"curve_type\": 0,\n        \"number_of_external_key\": 0,\n        \"number_of_internal_key\": 0,\n        \"balance\": \"0\",\n        \"symbol\": \"TTN\",\n        \"icon\": \"https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png\",\n        \"tokens\": [\n            {\n                \"account_token_id\": \"testTokenCurrencyID\",\n                \"token_id\": \"testTokenID\",\n                \"blockchain_id\": \"80001F51\",\n                \"name\": \"testToken\",\n                \"symbol\": \"TT\",\n                \"icon\": \"https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png\",\n                \"type\": 2,\n                \"publish\": false,\n                \"decimals\": 2,\n                \"total_supply\": null,\n                \"contract\": null,\n                \"balance\": \"0\"\n            }\n        ]\n    }\n}"
 						}
 					]
 				},
@@ -1488,8 +1488,7 @@
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "fe166931-2d07-4735-bafb-40942612070a",
-									"type": "string"
+									"value": "0f0d7360-c87e-406e-8468-18857b8a5ce2"
 								}
 							]
 						}
@@ -1614,8 +1613,7 @@
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "41083015-d937-484b-a882-c6afb9e6e117",
-									"type": "string"
+									"value": "c17cd53e-038f-4de2-ae7c-6cd7ad44eed6"
 								}
 							]
 						}
@@ -1724,7 +1722,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id",
+							"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=3&startID=125&isGetOlder=true",
 							"host": [
 								"{{domain}}"
 							],
@@ -1736,11 +1734,24 @@
 								"txs",
 								":account_id or token_account_id"
 							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "3"
+								},
+								{
+									"key": "startID",
+									"value": "125"
+								},
+								{
+									"key": "isGetOlder",
+									"value": "true"
+								}
+							],
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "9adfa44f-c2cf-444b-a457-4b5b9c984e2f",
-									"type": "string"
+									"value": "0f0d7360-c87e-406e-8468-18857b8a5ce2"
 								}
 							]
 						}
@@ -1758,7 +1769,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id",
+									"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=20&startID=0&isGetOlder=true",
 									"host": [
 										"{{domain}}"
 									],
@@ -1769,6 +1780,20 @@
 										"account",
 										"txs",
 										":account_id or token_account_id"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "20"
+										},
+										{
+											"key": "startID",
+											"value": "0"
+										},
+										{
+											"key": "isGetOlder",
+											"value": "true"
+										}
 									],
 									"variable": [
 										{
@@ -1863,8 +1888,7 @@
 							"variable": [
 								{
 									"key": "txid",
-									"value": "fe166931-2d07-4735-bafb-40942612070a",
-									"type": "string"
+									"value": ""
 								}
 							]
 						}
@@ -1982,8 +2006,7 @@
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "33c3670b-0e5d-4934-8f9f-978fdd25f1cf",
-									"type": "string"
+									"value": "cb955812-37df-476a-95a8-d69295b28347"
 								}
 							]
 						}
@@ -2100,8 +2123,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "80000CFC",
-									"type": "string"
+									"value": "80000000"
 								}
 							]
 						}
@@ -2127,8 +2149,7 @@
 									"variable": [
 										{
 											"key": "blockchain_id",
-											"value": "80000000",
-											"type": "string"
+											"value": "80000000"
 										}
 									]
 								}
@@ -2198,7 +2219,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"fromAddress\" : \"0x7857af2143cb06ddc1dab5d7844c9402e89717cb\",\n    \"toAddress\" : \"0xc595B20EEC3d35E8f993d79262669F3ADb6328f7\",\n    \"value\" : \"0\",\n    \"data\" : \"0x\"\n}",
+							"raw": "{\n    \"fromAddress\" : \"0x7857af2143cb06ddc1dab5d7844c9402e89717cb\",\n    \"toAddress\" : \"0xc595B20EEC3d35E8f993d79262669F3ADb6328f7\",\n    \"value\" : \"0x2386f26fc10000\",\n    \"data\" : \"0x4b7c2b110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000016345785d8a0000000000000000000000000000ca78a735d4e045ea057ebceed0a94e02eadfc096000000000000000000000000000000000000000000000a968163f0a57b400000\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -2220,8 +2241,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "8000025B",
-									"type": "string"
+									"value": "8000003C"
 								}
 							]
 						}
@@ -2234,7 +2254,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"hex\": \"01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff2d03a58605204d696e656420627920416e74506f6f6c20757361311f10b53620558903d80272a70c0000724c0600ffffffff010f9e5096000000001976a9142ef12bd2ac1416406d0e132e5bc8d0b02df3861b88ac00000000\"\n}",
+									"raw": "{\n    \"fromAddress\" : \"0x7857af2143cb06ddc1dab5d7844c9402e89717cb\",\n    \"toAddress\" : \"0xc595B20EEC3d35E8f993d79262669F3ADb6328f7\",\n    \"value\" : \"0x2386f26fc10000\",\n    \"data\" : \"0x4b7c2b110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000016345785d8a0000000000000000000000000000ca78a735d4e045ea057ebceed0a94e02eadfc096000000000000000000000000000000000000000000000a968163f0a57b400000\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -2347,12 +2367,11 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "8000025B",
-									"type": "string"
+									"value": "8000003C"
 								},
 								{
 									"key": "address",
-									"value": "0x21168002076e8c2259463d36196fb1281a267635"
+									"value": "0x072253f4716a5b3bafc199dd3b2152f56bea60c6"
 								}
 							]
 						}
@@ -2362,7 +2381,13 @@
 							"name": "21. Get Nonce",
 							"originalRequest": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
 								"url": {
 									"raw": "{{domain}}/api/v1/blockchain/:blockchain_id/nonce",
 									"host": [
@@ -2378,8 +2403,7 @@
 									"variable": [
 										{
 											"key": "blockchain_id",
-											"value": "80000000",
-											"type": "string"
+											"value": "80000000"
 										}
 									]
 								}
@@ -2477,8 +2501,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "80000001",
-									"type": "string"
+									"value": "80000001"
 								}
 							]
 						}
@@ -2766,7 +2789,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "8000025B"
+									"value": "8000003C"
 								},
 								{
 									"key": "contract",
@@ -2797,7 +2820,7 @@
 									"variable": [
 										{
 											"key": "blockchain_id",
-											"value": "8000025B"
+											"value": "8000003C"
 										},
 										{
 											"key": "contract",

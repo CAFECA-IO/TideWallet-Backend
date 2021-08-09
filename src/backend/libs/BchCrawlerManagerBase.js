@@ -6,9 +6,9 @@ const dvalue = require('dvalue');
 const { default: BigNumber } = require('bignumber.js');
 const CrawlerManagerBase = require('./CrawlerManagerBase');
 const Utils = require('./Utils');
-const BtcParserBase = require('./BtcParserBase');
+const BchParserBase = require('./BchParserBase');
 
-class BtcCrawlerManagerBase extends CrawlerManagerBase {
+class BchCrawlerManagerBase extends CrawlerManagerBase {
   constructor(blockchainId, database, logger) {
     super(blockchainId, database, logger);
     this.options = {};
@@ -21,7 +21,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     await super.init();
     this.peerBlock = 0;
 
-    // used by BtcParserBase.parseTx.call
+    // used by BchParserBase.parseTx.call
     // ++ remove after extract to instance class
     this.transactionModel = this.database.Transaction;
     this.utxoModel = this.database.UTXO;
@@ -52,7 +52,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, block });
     const checkId = options.data.id;
-    const data = await Utils.BTCRPC(options);
+    const data = await Utils.BCHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
         this.logger.error(`[${this.constructor.name}] avgFeeFromPeer not found`);
@@ -73,12 +73,12 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type });
     const checkId = options.data.id;
-    const data = await Utils.BTCRPC(options);
+    const data = await Utils.BCHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.error('\x1b[1m\x1b[90mbtc block number not found\x1b[0m\x1b[21m');
+    this.logger.error('\x1b[1m\x1b[90mbc block number not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -88,12 +88,12 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, blockHash });
     const checkId = options.data.id;
-    const data = await Utils.BTCRPC(options);
+    const data = await Utils.BCHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.error('\x1b[1m\x1b[90mbtc block data not found\x1b[0m\x1b[21m');
+    this.logger.error('\x1b[1m\x1b[90mbc block data not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -103,12 +103,12 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, block });
     const checkId = options.data.id;
-    const data = await Utils.BTCRPC(options);
+    const data = await Utils.BCHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
     }
-    this.logger.error('\x1b[1m\x1b[90mbtc block hash not found\x1b[0m\x1b[21m');
+    this.logger.error('\x1b[1m\x1b[90mbc block hash not found\x1b[0m\x1b[21m');
     return Promise.reject();
   }
 
@@ -118,7 +118,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, block });
     const checkId = options.data.id;
-    const data = await Utils.BTCRPC(options);
+    const data = await Utils.BCHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) return Promise.reject();
       return Promise.resolve(data.result);
@@ -133,7 +133,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, txid });
     const checkId = options.data.id;
-    const data = await Utils.BTCRPC(options);
+    const data = await Utils.BCHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
         this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
@@ -241,7 +241,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
 
   async oneCycle() {
     try {
-      if (this.isSyncing) return Promise.resolve('BtcCrawlerManagerBase is sycning');
+      if (this.isSyncing) return Promise.resolve('BchCrawlerManagerBase is sycning');
       this.isSyncing = true;
       // step
       // 1. blockNumberFromDB
@@ -294,7 +294,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       const options = dvalue.clone(this.options);
       options.data = this.constructor.cmd({ type });
       const checkId = options.data.id;
-      const data = await Utils.BTCRPC(options);
+      const data = await Utils.BCHRPC(options);
       if (data instanceof Object) {
         if (data.id !== checkId) {
           this.logger.error(`[${this.constructor.name}] pendingTransactionFromPeer fail`);
@@ -467,7 +467,7 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
       for (const txid of newTxids) {
         try {
           const tx = await this.getTransactionByTxidFromPeer(txid);
-          const { destination_addresses, txExist, uxtoUpdate } = await BtcParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
+          const { destination_addresses, txExist, uxtoUpdate } = await BchParserBase.parseTx.call(this, tx, this.currencyInfo, tx.timestamp);
 
           // find db account address
           for (const txout of destination_addresses) {
@@ -703,4 +703,4 @@ class BtcCrawlerManagerBase extends CrawlerManagerBase {
   }
 }
 
-module.exports = BtcCrawlerManagerBase;
+module.exports = BchCrawlerManagerBase;

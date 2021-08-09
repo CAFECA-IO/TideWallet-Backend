@@ -6,7 +6,8 @@ title = "TideWallet-Backend"
 domain = "https://service.tidewallet.io"
 folder = "TideWallet-Backend"
 static = "./public/"
-token_secret_expire_time = 31536000 # 365 * 24 * 60 * 60 (expires in 365 day)
+token_expire_time = 86400 # 24 * 60 * 60 (expires in 24hr)
+token_secret_expire_time = 604800 # 7 * 24 * 60 * 60 (expires in 7 day)
 logLevel = 'info'
 user_id = 'ec6d68b5-fcee-4d36-810a-7a257554896e'
 extendPublicKey = ''
@@ -22,7 +23,7 @@ port = 8545
 path = "/"
 
 [blockchain.ethereum_ropsten]
-blockchain_id = "8000025B"
+blockchain_id = "F000003C"
 protocol = "http:"
 hostname = "127.0.0.1"
 port = 8545
@@ -45,13 +46,31 @@ user = ''
 password = ''
 
 [blockchain.bitcoin_testnet]
-blockchain_id = "80000001"
+blockchain_id = "F0000000"
 protocol = "http:"
 hostname = "127.0.0.1"
 port = 18332
 path = "/"
 user = ''
 password = ''
+
+[blockchain.bitcoin_cash_mainnet]
+blockchain_id = "80000091"
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 443
+path = "/"
+user = ""
+password = ""
+
+[blockchain.bitcoin_cash_testnet]
+blockchain_id = "F0000091"
+protocol = "http:"
+hostname = "127.0.0.1"
+port = 443
+path = "/"
+user = ""
+password = ""
 
 [blockchain.titan]
 blockchain_id = "80001F51"
@@ -74,6 +93,7 @@ rate = true
 ethereum = 15000
 cafeca = 15000
 bitcoin = 450000
+bitcoin_cash = 450000
 titan = 1500
 fee = 3600000
 pending = 15000
@@ -107,6 +127,36 @@ pending = 15000
     [database.bitcoin_testnet.dialectOptions]
     connectTimeout = 3000
     [database.bitcoin_testnet.pool]
+    max = 10
+
+  [database.bitcoin_cash_mainnet]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.bitcoin_cash_mainnet.dialectOptions]
+    connectTimeout = 3000
+    [database.bitcoin_cash_mainnet.pool]
+    max = 10
+    
+  [database.bitcoin_cash_testnet]
+  protocol = "postgres"
+  host = "postgres"
+  port = ""
+  user = ""
+  password = ""
+  dbName = ""
+  logging = false
+  autoReconnect = true
+  ormEnable = true
+    [database.bitcoin_cash_testnet.dialectOptions]
+    connectTimeout = 3000
+    [database.bitcoin_cash_testnet.pool]
     max = 10
     
   [database.ethereum_mainnet]
@@ -222,5 +272,5 @@ pathname = [
   "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets",
 
   # tmp
-  "post | /api/v1/test | Bot.User.test",
+  "get | /api/v1/fcm/logs | Bot.Blockchain.FcmLogs",
 ]

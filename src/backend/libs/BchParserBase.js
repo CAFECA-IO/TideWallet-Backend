@@ -5,7 +5,7 @@ const ParserBase = require('./ParserBase');
 const Utils = require('./Utils');
 const HDWallet = require('./HDWallet');
 
-class BtcParserBase extends ParserBase {
+class BchParserBase extends ParserBase {
   constructor(blockchainId, config, database, logger) {
     super(blockchainId, config, database, logger);
 
@@ -32,7 +32,7 @@ class BtcParserBase extends ParserBase {
       const unParsedTx = job;
       const transaction = JSON.parse(unParsedTx.transaction);
       // await this.parseTx(transaction, unParsedTx.timestamp);
-      const destination_addresses = await BtcParserBase.parseTx.call(this, transaction, this.currencyInfo, unParsedTx.timestamp);
+      const destination_addresses = await BchParserBase.parseTx.call(this, transaction, this.currencyInfo, unParsedTx.timestamp);
 
       job.success = true;
       job.updateBalanceAccounts = this.updateBalanceAccounts;
@@ -50,7 +50,7 @@ class BtcParserBase extends ParserBase {
     const options = dvalue.clone(this.options);
     options.data = this.constructor.cmd({ type, block });
     const checkId = options.data.id;
-    const data = await Utils.BTCRPC(options);
+    const data = await Utils.BCHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
         this.logger.error(`[${this.constructor.name}] blockHeightByBlockHashFromPeer not found`);
@@ -77,7 +77,7 @@ class BtcParserBase extends ParserBase {
       id: dvalue.randomID(),
     };
     const checkId = options.data.id;
-    const data = await Utils.BTCRPC(options);
+    const data = await Utils.BCHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
         this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
@@ -91,7 +91,7 @@ class BtcParserBase extends ParserBase {
     return Promise.reject(data.error);
   }
 
-  static async parseBTCTxAmounts(tx) {
+  static async parseBCHTxAmounts(tx) {
     let from = new BigNumber(0);
     let to = new BigNumber(0);
     const source_addresses = [];
@@ -107,15 +107,15 @@ class BtcParserBase extends ParserBase {
       for (const inputData of cycleVin) {
         // if coinbase, continue
         if (inputData.txid) {
-          arr.push(BtcParserBase.getTransactionByTxidFromPeer.call(this, inputData.txid));
+          arr.push(BchParserBase.getTransactionByTxidFromPeer.call(this, inputData.txid));
           vins.push(inputData);
         }
       }
       const result = await Promise.all(arr).catch((error) => Promise.reject(error));
-      if (!Array.isArray(result)) { throw new Error(`parseBTCTxAmounts something wrong ${result}`); }
+      if (!Array.isArray(result)) { throw new Error(`parseBCHTxAmounts something wrong ${result}`); }
       txInfos = txInfos.concat(result);
     }
-    if (txInfos.length !== vins.length) { throw new Error('parseBTCTxAmounts something wrong'); }
+    if (txInfos.length !== vins.length) { throw new Error('parseBCHTxAmounts something wrong'); }
     for (let i = 0; i < vins.length; i++) {
       const inputData = vins[i];
       const txInfo = txInfos[i];
@@ -183,7 +183,7 @@ class BtcParserBase extends ParserBase {
     this.logger.debug(`[${this.constructor.name}] parseTx(${tx.txid})`);
     const {
       fee, to, source_addresses, destination_addresses: destination_addresses_const, note,
-    } = await BtcParserBase.parseBTCTxAmounts.call(this, tx);
+    } = await BchParserBase.parseBCHTxAmounts.call(this, tx);
 
     const destination_addresses = destination_addresses_const;
 
@@ -494,4 +494,4 @@ class BtcParserBase extends ParserBase {
   }
 }
 
-module.exports = BtcParserBase;
+module.exports = BchParserBase;

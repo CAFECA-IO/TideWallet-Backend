@@ -421,13 +421,17 @@ class Explore extends Bot {
       for (let i = 0; i < findBlockchain.length; i++) {
         switch (findBlockchain[i].blockchain_id) {
           case '8000003C':
-          case '8000025B':
+          case 'F000003C':
           case '80000CFC':
             tpsItems.push(Utils.getETHTps(findBlockchain[i].blockchain_id, findBlockchain[i].block));
             break;
           case '80000000':
-          case '80000001':
+          case 'F0000000':
             tpsItems.push(Utils.getBTCTps(findBlockchain[i].blockchain_id, findBlockchain[i].block));
+            break;
+          case '80000091':
+          case 'F0000091': // ++ TODO change bch testnet blocId by Emily 2021.05.24
+            tpsItems.push(Utils.getBCHTps(findBlockchain[i].blockchain_id, findBlockchain[i].block));
             break;
           default:
             break;
@@ -496,12 +500,14 @@ class Explore extends Bot {
           let _balance = '0';
           switch (addressItem.Account.blockchain_id) {
             case '8000003C':
-            case '8000025B':
+            case 'F000003C':
             case '80000CFC':
               _balance = await Utils.ethGetBalanceByAddress(addressItem.Account.blockchain_id, address, 18);
               break;
             case '80000000':
-            case '80000001':
+            case 'F0000000':
+            case '80000091':
+            case 'F0000091':
             // eslint-disable-next-line no-case-declarations
               const findAccountCurrency = await this.accountCurrencyModel.findOne({
                 where: { account_id: addressItem.account_id },
@@ -553,12 +559,12 @@ class Explore extends Bot {
         let _balance = '0';
         switch (addressItemBlockchainID) {
           case '8000003C':
-          case '8000025B':
+          case 'F000003C':
           case '80000CFC':
             _balance = await Utils.ethGetBalanceByAddress(addressItemBlockchainID, address, 18);
             break;
           case '80000000':
-          case '80000001':
+          case 'F0000000':
             // TODO: not support btc now
             break;
           default:

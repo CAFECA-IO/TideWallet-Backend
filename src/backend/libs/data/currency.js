@@ -67,21 +67,23 @@ module.exports = {
       icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/eth.png',
     },
   ],
-  bitcoin_mainnet: [{
-    currency_id: '5b1ea92e584bf50020130612',
-    blockchain_id: '80000000',
-    name: 'Bitcoin',
-    symbol: 'BTC',
-    type: 1,
-    description: 'BTC description',
-    publish: true,
-    decimals: 8,
-    icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/btc.png',
-  }],
+  bitcoin_mainnet: [
+    {
+      currency_id: '5b1ea92e584bf50020130612',
+      blockchain_id: '80000000',
+      name: 'Bitcoin',
+      symbol: 'BTC',
+      type: 1,
+      description: 'BTC description',
+      publish: true,
+      decimals: 8,
+      icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/btc.png',
+    },
+  ],
   bitcoin_testnet: [
     {
       currency_id: '8e1ea17f-38f5-42ab-a24b-82bf8abc851b',
-      blockchain_id: '80000001',
+      blockchain_id: 'F0000000',
       name: 'Bitcoin Testnet',
       symbol: 'BTC',
       type: 1,
@@ -89,6 +91,32 @@ module.exports = {
       publish: false,
       decimals: 8,
       icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/btc.png',
+    },
+  ],
+  bitcoin_cash_mainnet: [
+    {
+      currency_id: '5b1ea92e584bf5002013061c',
+      blockchain_id: '80000091',
+      name: 'Bitcoin Cash',
+      symbol: 'BCH',
+      type: 1,
+      description: 'BCH description',
+      publish: true,
+      decimals: 8,
+      icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/bch.png',
+    },
+  ],
+  bitcoin_cash_testnet: [
+    {
+      currency_id: '8e1ea17f-cd56-42ab-a24b-82bf8abc851b',
+      blockchain_id: 'F0000091',
+      name: 'Bitcoin Cash Testnet',
+      symbol: 'BCH',
+      type: 1,
+      description: 'Bitcoin Cash Testnet description',
+      publish: false,
+      decimals: 8,
+      icon: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/bch.png',
     },
   ],
   ethereum_mainnet: [
@@ -172,7 +200,7 @@ module.exports = {
   ethereum_ropsten: [
     {
       currency_id: '3ab0ffc4-8cd3-4832-ab31-9d99d2691cee',
-      blockchain_id: '8000025B',
+      blockchain_id: 'F000003C',
       name: 'Ethereum Ropsten',
       symbol: 'ETH',
       type: 1,

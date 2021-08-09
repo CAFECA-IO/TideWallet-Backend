@@ -137,51 +137,7 @@ class User extends Bot {
       });
 
       for (let i = 0; i < accounts.length; i++) {
-        const DBName = Utils.blockchainIDToDBName(accounts[i].blockchain_id);
-        const _db = this.database.db[DBName];
-
-        const insertAccount = await _db.Account.create({
-          account_id: uuidv4(),
-          user_id: insertUser.user_id,
-          blockchain_id: accounts[i].blockchain_id,
-          purpose: 3324,
-          curve_type: 0,
-          extend_public_key,
-          regist_block_num: accounts[i].Blockchain.block,
-        });
-
-        await _db.AccountCurrency.create({
-          accountCurrency_id: uuidv4(),
-          account_id: insertAccount.account_id,
-          currency_id: accounts[i].currency_id,
-          balance: '0',
-          number_of_external_key: '0',
-          number_of_internal_key: '0',
-        });
-
-        const coinType = accounts[i].Blockchain.coin_type;
-        const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id });
-
-        await _db.AccountAddress.create({
-          accountAddress_id: uuidv4(),
-          account_id: insertAccount.account_id,
-          chain_index: 0,
-          key_index: 0,
-          public_key: wallet.publicKey,
-          address: wallet.address,
-        });
-
-        if (accounts[i].blockchain_id === '80000000' || accounts[i].blockchain_id === '80000001') {
-          const changeWallet = hdWallet.getWalletInfo({ coinType, blockchainID: accounts[i].Blockchain.blockchain_id, change: 1 });
-          await _db.AccountAddress.create({
-            accountAddress_id: uuidv4(),
-            account_id: insertAccount.account_id,
-            chain_index: 1,
-            key_index: 0,
-            public_key: changeWallet.publicKey,
-            address: changeWallet.address,
-          });
-        }
+        await Utils.newAccount(accounts[i], insertUser.user_id, extend_public_key, hdWallet);
       }
       await this.defaultDBInstance.Device.create({
         device_id: uuidv4(),
@@ -192,7 +148,7 @@ class User extends Bot {
         app_uuid,
       });
 
-      await this.fcm.registAccountFCMToken(insertUser.user_id, fcm_token);
+      if (fcm_token) await this.fcm.registAccountFCMToken(insertUser.user_id, fcm_token);
 
       const payload = await Utils.generateToken({ userID: insertUser.user_id });
       return new ResponseFormat({ message: 'User Regist', payload });

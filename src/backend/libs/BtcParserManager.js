@@ -4,7 +4,7 @@ class BtcParserManager extends BtcParserManagerBase {
   constructor(config, database, logger) {
     super('80000000', config, database, logger);
 
-    this.options = config.blockchain.bitcoin_testnet;
+    this.options = config.blockchain.bitcoin_mainnet;
   }
 
   async init() {

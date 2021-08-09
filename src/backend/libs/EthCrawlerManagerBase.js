@@ -456,7 +456,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                   where: { account_id: findAddressTransactions.account_id },
                 });
 
-                console.log('fcm tx new!!!!!!!!!!', JSON.stringify({
+                this.logger.fcm('fcm tx new!!!!!!!!!!', JSON.stringify({
                   title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,
                   body: JSON.stringify({
                     blockchainId: this.bcid,

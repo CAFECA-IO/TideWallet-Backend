@@ -40,109 +40,79 @@ class Account extends Bot {
       if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
       const tokenInfo = await Utils.verifyToken(token);
 
-      // find Token is exist
-      let findTokenItem = await this.DBOperator.findOne({
-        tableName: 'Currency',
-        options: {
-          where: {
-            type: 2, contract,
-          },
-        },
-      });
       const DBName = Utils.blockchainIDToDBName(blockchain_id);
       const _db = this.database.db[DBName];
 
+      // find Token is exist
+      let findTokenItem = await _db.Currency.findOne({
+        where: {
+          type: 2, contract,
+        },
+      });
+
       if (!findTokenItem) {
-        // TODO: has same logic
-        // use contract check Token is exist
-        findTokenItem = await this.DBOperator.findOne({
-          tableName: 'Currency',
-          options: {
-            where: {
-              type: 2, contract,
-            },
-          },
-        });
-        if (findTokenItem) {
-          // check account token is exist
-          const findUserAccountData = await _db.Account.findOne({
-            where: {
-              user_id: tokenInfo.userID, blockchain_id,
-            },
-          });
+        // if not found token in DB, parse token contract info from blockchain
 
-          if (!findUserAccountData) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
-          // check account currency
-          const findUserAccountToken = await _db.AccountCurrency.findOne({
-            where: {
-              account_id: findUserAccountData.account_id, currency_id: findTokenItem.currency_id,
-            },
-          });
-          if (findUserAccountToken) return new ResponseFormat({ message: 'account token exist', code: Codes.ACCOUNT_TOKEN_EXIST });
-        } else {
-          // if not found token in DB, parse token contract info from blockchain
-
-          let options = '';
-          switch (blockchain_id) {
-            case '8000003C':
-              options = this.config.blockchain.ethereum_mainnet;
-              break;
-            case '8000025B':
-              options = this.config.blockchain.ethereum_ropsten;
-              break;
-            case '80000CFC':
-              options = this.config.blockchain.cafeca;
-              break;
-            default:
-              return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
-          }
-
-          const tokenInfoFromPeer = await Promise.all([
-            Utils.getTokenNameFromPeer(options, contract),
-            Utils.getTokenSymbolFromPeer(options, contract),
-            Utils.getTokenDecimalFromPeer(options, contract),
-            Utils.getTokenTotalSupplyFromPeer(options, contract),
-          ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
-          if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
-
-          let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
-          try {
-            const checkIcon = await ecrequest.get({
-              protocol: 'https:',
-              hostname: 'cdn.jsdelivr.net',
-              port: '',
-              path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
-              timeout: 1000,
-            });
-            if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
-          } catch (e) {
-            icon = `${this.config.base.domain}/icon/ERC20.png`;
-          }
-
-          let total_supply = tokenInfoFromPeer[3];
-          try {
-            total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
-              groupSeparator: ',', groupSize: 3,
-            });
-            // eslint-disable-next-line no-empty
-          } catch (e) {
-          }
-
-          const newCurrencyID = uuidv4();
-          if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
-          findTokenItem = await _db.Currency.create({
-            currency_id: newCurrencyID,
-            blockchain_id,
-            name: tokenInfoFromPeer[0],
-            symbol: tokenInfoFromPeer[1],
-            type: 2,
-            publish: false,
-            decimals: tokenInfoFromPeer[2],
-            total_supply,
-            contract,
-            icon,
-          });
+        let options = '';
+        switch (blockchain_id) {
+          case '8000003C':
+            options = this.config.blockchain.ethereum_mainnet;
+            break;
+          case 'F000003C':
+            options = this.config.blockchain.ethereum_ropsten;
+            break;
+          case '80000CFC':
+            options = this.config.blockchain.cafeca;
+            break;
+          default:
+            return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
         }
+
+        const tokenInfoFromPeer = await Promise.all([
+          Utils.getTokenNameFromPeer(options, contract),
+          Utils.getTokenSymbolFromPeer(options, contract),
+          Utils.getTokenDecimalFromPeer(options, contract),
+          Utils.getTokenTotalSupplyFromPeer(options, contract),
+        ]).catch((error) => new ResponseFormat({ message: `rpc error(${error})`, code: Codes.RPC_ERROR }));
+        if (tokenInfoFromPeer.code === Codes.RPC_ERROR) return tokenInfoFromPeer;
+
+        let icon = `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`;
+        try {
+          const checkIcon = await ecrequest.get({
+            protocol: 'https:',
+            hostname: 'cdn.jsdelivr.net',
+            port: '',
+            path: `/gh/atomiclabs/cryptocurrency-icons@9ab8d6934b83a4aa8ae5e8711609a70ca0ab1b2b/32/icon/${tokenInfoFromPeer[1].toLocaleLowerCase()}.png`,
+            timeout: 1000,
+          });
+          if (checkIcon.data.toString().indexOf('Couldn\'t find') !== -1) throw Error('Couldn\'t find');
+        } catch (e) {
+          icon = `${this.config.base.domain}/icon/ERC20.png`;
+        }
+
+        let total_supply = tokenInfoFromPeer[3];
+        try {
+          total_supply = new BigNumber(tokenInfoFromPeer[3]).dividedBy(new BigNumber(10 ** tokenInfoFromPeer[2])).toFixed({
+            groupSeparator: ',', groupSize: 3,
+          });
+          // eslint-disable-next-line no-empty
+        } catch (e) {
+        }
+
+        const newCurrencyID = uuidv4();
+        if (!Array.isArray(tokenInfoFromPeer) || !tokenInfoFromPeer[0] || !tokenInfoFromPeer[1] || !(tokenInfoFromPeer[2] >= 0) || !tokenInfoFromPeer[3]) return new ResponseFormat({ message: 'contract not found', code: Codes.CONTRACT_CONT_FOUND });
+        findTokenItem = await _db.Currency.create({
+          currency_id: newCurrencyID,
+          blockchain_id,
+          name: tokenInfoFromPeer[0],
+          symbol: tokenInfoFromPeer[1],
+          type: 2,
+          publish: false,
+          decimals: tokenInfoFromPeer[2],
+          total_supply,
+          contract,
+          icon,
+        });
       }
       // check account token is exist
       const findUserAccountData = await _db.Account.findOne({
@@ -182,12 +152,57 @@ class Account extends Bot {
     }
   }
 
+  async _addNewAccountForOldUser(userID) {
+    try {
+      const findAccounts = await this.DBOperator.findAll({
+        tableName: 'Account',
+        options: {
+          where: {
+            user_id: userID,
+          },
+        },
+      });
+      const extendPublicKey = findAccounts[0].extend_public_key;
+      const findAllChainCoin = await this.DBOperator.findAll({
+        tableName: 'Currency',
+        options: {
+          where: { type: 1 },
+          include: [
+            {
+              _model: 'Blockchain',
+              attributes: ['blockchain_id', 'block', 'coin_type'],
+            },
+          ],
+        },
+      });
+
+      if (findAllChainCoin.length !== findAccounts.length) {
+        const hdWallet = new HDWallet({ extendPublicKey });
+
+        // find chain id that user not own
+        for (const chainCoinDetail of findAllChainCoin) {
+          const { blockchain_id } = chainCoinDetail;
+          const res = findAccounts.find((account) => account.blockchain_id === blockchain_id);
+          if (!res) {
+            // create account
+            // code from user regist
+            await Utils.newAccount(chainCoinDetail, userID, extendPublicKey, hdWallet);
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.error('_addNewAccountForOldUser', error);
+    }
+  }
+
   async AccountList({ token }) {
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
     const tokenInfo = await Utils.verifyToken(token);
     const payload = [];
 
     try {
+      await this._addNewAccountForOldUser(tokenInfo.userID);
+
       const findAccounts = await this.DBOperator.findAll({
         tableName: 'Account',
         options: {
@@ -224,7 +239,7 @@ class Account extends Bot {
           });
           if (findCurrency) {
             const { publish = false, decimals } = findCurrency;
-            if (account.blockchain_id === '8000025B' || account.blockchain_id === '8000003C' || account.blockchain_id === '80000CFC' || account.blockchain_id === '80001F51') {
+            if (account.blockchain_id === 'F000003C' || account.blockchain_id === '8000003C' || account.blockchain_id === '80000CFC' || account.blockchain_id === '80001F51') {
             // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
               const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: account.blockchain_id } });
               if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
@@ -333,81 +348,84 @@ class Account extends Bot {
       });
       for (let j = 0; j < findAccountCurrencies.length; j++) {
         const accountCurrency = findAccountCurrencies[j];
+        // TODO: for sql
         const findCurrency = await _db.Currency.findOne({
           where: {
             currency_id: accountCurrency.currency_id,
             [this.Sequelize.Op.or]: [{ type: 1 }, { type: 2 }],
           },
         });
-
-        let { balance = '0' } = accountCurrency;
-        if (findAccount.blockchain_id === '8000025B' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
-          // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
-          const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
-          if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
-            const findAddress = await _db.AccountAddress.findOne({
-              where: { account_id: accountCurrency.Account.account_id },
-              attributes: ['address'],
-            });
-            if (findAddress) {
-              if (findCurrency.type === 2) {
-                balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
+        if (findCurrency) {
+          let { balance = '0' } = accountCurrency;
+          if (findAccount.blockchain_id === 'F000003C' || findAccount.blockchain_id === '8000003C' || findAccount.blockchain_id === '80000CFC' || findAccount.blockchain_id === '80001F51') {
+            // if ETH symbol && balance_sync_block < findBlockHeight, request RPC get balance
+            const findBlockHeight = await _db.Blockchain.findOne({ where: { blockchain_id: findAccount.blockchain_id } });
+            if (Number(accountCurrency.balance_sync_block) < Number(findBlockHeight.block)) {
+              const findAddress = await _db.AccountAddress.findOne({
+                where: { account_id: accountCurrency.Account.account_id },
+                attributes: ['address'],
+              });
+              if (findAddress) {
+                if (findCurrency.type === 2) {
+                  balance = await Utils.getERC20Token(findAccount.blockchain_id, findAddress.address, findCurrency.contract, findCurrency.decimals);
+                } else {
+                  balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, findCurrency.decimals);
+                }
+                await _db.AccountCurrency.update(
+                  { balance, balance_sync_block: findBlockHeight.block },
+                  { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
+                );
               } else {
-                balance = await Utils.ethGetBalanceByAddress(findAccount.blockchain_id, findAddress.address, findCurrency.decimals);
+                balance = accountCurrency.balance;
               }
-              await _db.AccountCurrency.update(
-                { balance, balance_sync_block: findBlockHeight.block },
-                { where: { accountCurrency_id: accountCurrency.accountCurrency_id } },
-              );
-            } else {
-              balance = accountCurrency.balance;
             }
-          }
-        } else {
-          const findAllAddress = await _db.AccountAddress.findAll({
-            where: { account_id: findAccount.account_id },
-            attributes: ['accountAddress_id'],
-          });
-          balance = new BigNumber(0);
-          for (const addressItem of findAllAddress) {
-            const findUTXOByAddress = await _db.UTXO.findAll({
-              where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
-              attributes: ['amount'],
+          } else {
+            const findAllAddress = await _db.AccountAddress.findAll({
+              where: { account_id: findAccount.account_id },
+              attributes: ['accountAddress_id'],
             });
+            balance = new BigNumber(0);
+            for (const addressItem of findAllAddress) {
+              const findUTXOByAddress = await _db.UTXO.findAll({
+                where: { accountAddress_id: addressItem.accountAddress_id, to_tx: { [this.Sequelize.Op.is]: null } },
+                attributes: ['amount'],
+              });
 
-            for (const utxoItem of findUTXOByAddress) {
-              balance = balance.plus(new BigNumber(utxoItem.amount));
+              for (const utxoItem of findUTXOByAddress) {
+                balance = balance.plus(new BigNumber(utxoItem.amount));
+              }
             }
+            balance = Utils.dividedByDecimal(balance, findCurrency.decimals);
           }
-          balance = Utils.dividedByDecimal(balance, findCurrency.decimals);
-        }
 
-        if (findCurrency && findCurrency.type === 1) {
-          payload.blockchain_id = findAccount.blockchain_id;
-          payload.currency_id = accountCurrency.currency_id;
-          payload.account_id = accountCurrency.accountCurrency_id;
-          payload.purpose = findAccount.purpose;
-          payload.account_index = '0';
-          payload.curve_type = findAccount.curve_type;
-          payload.number_of_external_key = findAccount.number_of_external_key;
-          payload.number_of_internal_key = findAccount.number_of_internal_key;
-          payload.balance = balance;
-          payload.symbol = findCurrency.symbol;
-          payload.icon = findCurrency.icon;
-        } else if (findCurrency && findCurrency.type === 2) {
-          tokens.push({
-            account_token_id: accountCurrency.accountCurrency_id,
-            token_id: findCurrency.currency_id,
-            blockchain_id: findAccount.blockchain_id,
-            name: findCurrency.name,
-            symbol: findCurrency.symbol,
-            type: findCurrency.type,
-            publish: findCurrency.publish,
-            decimals: findCurrency.decimals,
-            total_supply: findCurrency.total_supply,
-            contract: findCurrency.contract,
-            balance,
-          });
+          if (findCurrency && findCurrency.type === 1) {
+            payload.blockchain_id = findAccount.blockchain_id;
+            payload.currency_id = accountCurrency.currency_id;
+            payload.account_id = accountCurrency.accountCurrency_id;
+            payload.purpose = findAccount.purpose;
+            payload.account_index = '0';
+            payload.curve_type = findAccount.curve_type;
+            payload.number_of_external_key = accountCurrency.number_of_external_key;
+            payload.number_of_internal_key = accountCurrency.number_of_internal_key;
+            payload.balance = balance;
+            payload.symbol = findCurrency.symbol;
+            payload.icon = findCurrency.icon;
+          } else if (findCurrency && findCurrency.type === 2) {
+            tokens.push({
+              account_token_id: accountCurrency.accountCurrency_id,
+              token_id: findCurrency.currency_id,
+              blockchain_id: findAccount.blockchain_id,
+              name: findCurrency.name,
+              symbol: findCurrency.symbol,
+              icon: findCurrency.icon,
+              type: findCurrency.type,
+              publish: findCurrency.publish,
+              decimals: findCurrency.decimals,
+              total_supply: findCurrency.total_supply,
+              contract: findCurrency.contract,
+              balance,
+            });
+          }
         }
       }
       payload.tokens = tokens;
@@ -452,7 +470,7 @@ class Account extends Bot {
         options: {
           where: {
             account_id: findAccountCurrency.Account.account_id,
-            chain_index: 0,
+            change_index: 0,
             key_index: findAccountCurrency.number_of_external_key,
           },
         },
@@ -478,7 +496,7 @@ class Account extends Bot {
         await _db.AccountAddress.create({
           accountAddress_id: uuidv4(),
           account_id: findAccountCurrency.Account.account_id,
-          chain_index: 0,
+          change_index: 0,
           key_index: 0,
           public_key: wallet.publicKey,
           address: wallet.address,
@@ -532,12 +550,14 @@ class Account extends Bot {
       const findBlockInfo = Utils.blockchainIDToBlockInfo(findAccountCurrency.Account.blockchain_id);
       if (!findBlockInfo) return new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
-      let chain_index = 0;
-      // only BTC has change address
+      let change_index = 0;
+      // only BTC Base has change address
       switch (findAccountCurrency.Account.blockchain_id) {
         case '80000000':
-        case '80000001':
-          chain_index = 1;
+        case 'F0000000':
+        case '80000091':
+        case 'F0000091':
+          change_index = 1;
           break;
         default:
           break;
@@ -548,7 +568,7 @@ class Account extends Bot {
         options: {
           where: {
             account_id: findAccountCurrency.Account.account_id,
-            chain_index,
+            change_index,
             key_index: findAccountCurrency.number_of_internal_key,
           },
         },
@@ -560,10 +580,10 @@ class Account extends Bot {
       if (!findChangeAddress) {
         const { coin_type: coinType } = findBlockInfo;
         const wallet = hdWallet.getWalletInfo({
-          change: chain_index,
+          change: change_index,
           index: findAccountCurrency.number_of_internal_key,
           coinType,
-          blockchainID: findAccountCurrency.Account.Blockchain.blockchain_id,
+          blockchainID: findAccountCurrency.Account.blockchain_id,
         });
 
         const DBName = Utils.blockchainIDToDBName(findAccountCurrency.Account.blockchain_id);
@@ -571,7 +591,7 @@ class Account extends Bot {
         await _db.AccountAddress.create({
           accountAddress_id: uuidv4(),
           account_id: findAccountCurrency.Account.account_id,
-          chain_index: 1,
+          change_index: 1,
           key_index: 0,
           public_key: wallet.publicKey,
           address: wallet.address,
@@ -596,7 +616,7 @@ class Account extends Bot {
   }
 
   async _findAccountTXs({
-    findAccountCurrency, txs, chain_index, key_index, timestamp, limit, meta,
+    findAccountCurrency, txs, change_index, key_index, timestamp, limit, meta, startID, isGetOlder,
   }) {
     // find blockchain info
     const findBlockchainInfo = await this.DBOperator.findOne({
@@ -613,19 +633,37 @@ class Account extends Bot {
       where: { currency_id: findAccountCurrency.currency_id },
     });
 
+    const findChainCurrency = await this.DBOperator.findOne({
+      tableName: 'Currency',
+      options: {
+        where: { type: 1, blockchain_id: findAccountCurrency.Account.blockchain_id },
+      },
+    });
+
     const isToken = findCurrency.type === 2;
     const findAccountAddress = await _db.AccountAddress.findOne({
-      where: { account_id: findAccountCurrency.account_id, chain_index, key_index },
+      where: { account_id: findAccountCurrency.account_id, change_index, key_index },
     });
     // find all tx by address
     if (findAccountAddress) {
       if (isToken) {
-        const findTxByAddress = await _db.AddressTokenTransaction.findAll({
-          where: {
+        let where = {
+          currency_id: findAccountCurrency.currency_id,
+          accountAddress_id: findAccountAddress.accountAddress_id,
+        };
+        let order = [['addressTokenTransaction_id', 'DESC']];
+        if (startID) {
+          where = {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
-          },
-          // limit: Number(limit) + 1,
+            addressTokenTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lt]: startID } : { [this.Sequelize.Op.gt]: startID },
+          };
+          order = isGetOlder === 'true' ? [['addressTokenTransaction_id', 'DESC']] : [['addressTokenTransaction_id', 'ASC']];
+        }
+        const findTxByAddress = await _db.AddressTokenTransaction.findAll({
+          where,
+          limit: Number(limit),
+          order,
           include: [
             {
               model: _db.TokenTransaction,
@@ -656,9 +694,10 @@ class Account extends Bot {
               ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.gas_price, findCurrency.decimals)
               : null;
             const fee = txInfo.TokenTransaction.Transaction.fee
-              ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.fee, findCurrency.decimals)
+              ? Utils.dividedByDecimal(txInfo.TokenTransaction.Transaction.fee, findChainCurrency.decimals)
               : null;
             txs.push({
+              id: txInfo.addressTokenTransaction_id,
               txid: txInfo.TokenTransaction.Transaction.txid,
               // eslint-disable-next-line no-nested-ternary
               status: (isToken) ? (txInfo.TokenTransaction.result ? 'success' : 'failed') : 'success',
@@ -677,12 +716,23 @@ class Account extends Bot {
           }
         }
       } else {
-        const findTxByAddress = await _db.AddressTransaction.findAll({
-          where: {
+        let where = {
+          currency_id: findAccountCurrency.currency_id,
+          accountAddress_id: findAccountAddress.accountAddress_id,
+        };
+        let order = [['addressTransaction_id', 'DESC']];
+        if (startID) {
+          where = {
             currency_id: findAccountCurrency.currency_id,
             accountAddress_id: findAccountAddress.accountAddress_id,
-          },
-          limit: Number(limit) + 1,
+            addressTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lt]: startID } : { [this.Sequelize.Op.gt]: startID },
+          };
+          order = isGetOlder === 'true' ? [['addressTransaction_id', 'DESC']] : [['addressTransaction_id', 'ASC']];
+        }
+        const findTxByAddress = await _db.AddressTransaction.findAll({
+          where,
+          limit: Number(limit),
+          order,
           include: [
             {
               model: _db.Transaction,
@@ -707,10 +757,11 @@ class Account extends Bot {
               ? Utils.dividedByDecimal(txInfo.Transaction.gas_price, findCurrency.decimals)
               : null;
             const fee = txInfo.Transaction.fee
-              ? Utils.dividedByDecimal(txInfo.Transaction.fee, findCurrency.decimals)
+              ? Utils.dividedByDecimal(txInfo.Transaction.fee, findChainCurrency.decimals)
               : null;
 
             txs.push({
+              id: txInfo.addressTransaction_id,
               txid: txInfo.Transaction.txid,
               // eslint-disable-next-line no-nested-ternary
               status: (isToken) ? findTxByAddress.result ? 'success' : 'failed' : 'success',
@@ -770,7 +821,9 @@ class Account extends Bot {
   async ListTransactions({ params, token, query }) {
     // account_id -> accountCurrency_id
     const { account_id } = params;
-    const { timestamp = Math.floor(Date.now() / 1000), limit = 20 } = query;
+    const {
+      timestamp = Math.floor(Date.now() / 1000), limit = 20, startID, isGetOlder = 'false',
+    } = query;
 
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
     const tokenInfo = await Utils.verifyToken(token);
@@ -804,14 +857,14 @@ class Account extends Bot {
       for (let i = 0; i <= number_of_external_key; i++) {
         // find all address
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, chain_index: 0, key_index: i, timestamp, limit, meta,
+          findAccountCurrency, txs: result, change_index: 0, key_index: i, timestamp, limit, meta, startID, isGetOlder,
         });
       }
 
       // find internal address txs
       for (let i = 0; i <= number_of_internal_key; i++) {
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, chain_index: 1, key_index: i, timestamp, limit, meta,
+          findAccountCurrency, txs: result, change_index: 1, key_index: i, timestamp, limit, meta, startID, isGetOlder,
         });
       }
 
@@ -819,11 +872,12 @@ class Account extends Bot {
       const items = this._mergeInternalTxs({ txs: result });
 
       // sort by timestamps
-      items.sort((a, b) => b.timestamp - a.timestamp);
+      items.sort((a, b) => b.timestamp - a.timestamp >= 0);
 
-      if (items.length > limit) {
+      if (items.length > Number(limit)) {
         meta.hasNext = true;
-        meta.timestamp = items[limit].timestamp;
+        meta.timestamp = items[Number(limit)].timestamp;
+        items.splice(Number(limit));
       }
 
       return new ResponseFormat({
@@ -864,9 +918,19 @@ class Account extends Bot {
       });
 
       if (findTX) {
+        const findChainCurrency = await this.DBOperator.findOne({
+          tableName: 'Currency',
+          options: {
+            where: { type: 1, blockchain_id: findTX.Currency.Blockchain.blockchain_id },
+          },
+        });
+
         const amount = Utils.dividedByDecimal(findTX.amount, findTX.Currency.decimals);
         const gas_price = findTX.gas_price
           ? Utils.dividedByDecimal(findTX.gas_price, findTX.Currency.decimals)
+          : null;
+        const fee = findTX.fee
+          ? Utils.dividedByDecimal(findTX.fee, findChainCurrency.decimals)
           : null;
         return new ResponseFormat({
           message: 'Get Transaction Detail',
@@ -881,7 +945,7 @@ class Account extends Bot {
             timestamp: findTX.timestamp,
             source_addresses: Utils.formatAddressArray(findTX.source_addresses),
             destination_addresses: Utils.formatAddressArray(findTX.destination_addresses),
-            fee: findTX.fee,
+            fee,
             gas_price,
             gas_used: findTX.gas_used,
           },
@@ -910,14 +974,14 @@ class Account extends Bot {
   }
 
   async _findAccountUTXO({
-    findAccountCurrency, payload, chain_index, key_index,
+    findAccountCurrency, payload, change_index, key_index,
   }) {
     // find blockchain info
     const DBName = Utils.blockchainIDToDBName(findAccountCurrency.Account.blockchain_id);
     const _db = this.database.db[DBName];
 
     // find AccountAddress
-    const findAccountAddress = await _db.AccountAddress.findOne({ where: { account_id: findAccountCurrency.Account.account_id, chain_index, key_index } });
+    const findAccountAddress = await _db.AccountAddress.findOne({ where: { account_id: findAccountCurrency.Account.account_id, change_index, key_index } });
     if (!findAccountAddress) return new ResponseFormat({ message: 'account not found(address not found)', code: Codes.ACCOUNT_NOT_FOUND });
 
     // find all UTXO
@@ -941,7 +1005,7 @@ class Account extends Bot {
         amount: utxo.amount,
         script: utxo.script,
         timestamp: utxo.on_block_timestamp,
-        chain_index,
+        change_index,
         key_index,
         address: utxo.AccountAddress.address,
       });
@@ -981,14 +1045,14 @@ class Account extends Bot {
       for (let i = 0; i <= number_of_external_key; i++) {
         // find all address
         await this._findAccountUTXO({
-          findAccountCurrency, payload, chain_index: 0, key_index: i,
+          findAccountCurrency, payload, change_index: 0, key_index: i,
         });
       }
 
       // find internal address txs
       for (let i = 0; i <= number_of_internal_key; i++) {
         await this._findAccountUTXO({
-          findAccountCurrency, payload, chain_index: 1, key_index: i,
+          findAccountCurrency, payload, change_index: 1, key_index: i,
         });
       }
 
