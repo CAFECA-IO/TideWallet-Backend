@@ -78,7 +78,7 @@ docker run -d \
   -p 15672:15672 \
   -e RABBITMQ_DEFAULT_USER=user \
   -e RABBITMQ_DEFAULT_PASS=password \
-  rabbitmq:3-management
+  rabbitmq:3.8-management
 ```
 
 ## Install TideWallet Backend Parser
@@ -120,7 +120,36 @@ createdb cafeca -U postgres
 createdb titan -U postgres
 ```
 
-4. 對外連線設定
+4. 設定權限
+
+- 切換到postgres rule
+```shell
+sudo su - postgres
+```
+
+- 切換至psql
+```shell
+psql
+```
+
+設定super user 密碼
+```
+\password postgres
+```
+
+繼承權獻給user tidewallet
+```
+grant all privileges on database bitcoin_mainnet to tidewallet;
+grant all privileges on database bitcoin_testnet to tidewallet;
+grant all privileges on database bitcoin_cash_mainnet to tidewallet;
+grant all privileges on database bitcoin_cash_testnet to tidewallet;
+grant all privileges on database ethereum_mainnet to tidewallet;
+grant all privileges on database ethereum_ropsten to tidewallet;
+grant all privileges on database cafeca to tidewallet;
+grant all privileges on database titan to tidewallet;
+```
+
+5. 對外連線設定
 
 - 切換到postgres rule
 ```shell
@@ -156,7 +185,7 @@ listen_addresses = '*'
 max_connections = 600
 ```
 
-5. 重開postgres
+6. 重開postgres
 ```shell
 sudo /etc/init.d/postgresql restart
 ```
@@ -260,12 +289,19 @@ source ~/.bashrc
 nvm install v10.16.3
 nvm alias default v10.16.3
 ```
+給node開 80 port權限
+
+```
+//$NODE_LOCATION 可以用 which node 查詢
+
+sudo setcap 'cap_net_bind_service=+ep' $NODE_LOCATION
+```
 
 ### Docker
 
 ```
 sudo apt update
-sudo apt  install docker.io
+sudo apt install docker.io
 ```
 
 ### DB 安裝（docker）
@@ -323,7 +359,7 @@ sudo docker run -d \
 -p 15672:15672 \
 -e RABBITMQ_DEFAULT_USER=tidewallet \
 -e RABBITMQ_DEFAULT_PASS=aw8YrUZZMAd4ehdu \
-rabbitmq:3-management
+rabbitmq:3.8-management
 ```
 
 ### 設定設定檔
