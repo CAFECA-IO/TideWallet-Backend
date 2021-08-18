@@ -91,6 +91,8 @@ module.exports = env;
       // AddressTransaction
       db[dbConfig.dbName].AddressTransaction.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
       db[dbConfig.dbName].Currency.hasMany(db[dbConfig.dbName].AddressTransaction, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].AddressTransaction.belongsTo(db[dbConfig.dbName].AccountAddress, { foreignKey: 'accountAddress_id' });
+      db[dbConfig.dbName].AccountAddress.hasMany(db[dbConfig.dbName].AddressTransaction, { foreignKey: 'accountAddress_id' });
       db[dbConfig.dbName].AddressTransaction.belongsTo(db[dbConfig.dbName].Transaction, { foreignKey: 'transaction_id' });
       db[dbConfig.dbName].Transaction.hasMany(db[dbConfig.dbName].AddressTransaction, { foreignKey: 'transaction_id' });
 
@@ -103,6 +105,8 @@ module.exports = env;
       // AddressTokenTransaction
       db[dbConfig.dbName].AddressTokenTransaction.belongsTo(db[dbConfig.dbName].Currency, { foreignKey: 'currency_id' });
       db[dbConfig.dbName].Currency.hasMany(db[dbConfig.dbName].AddressTokenTransaction, { foreignKey: 'currency_id' });
+      db[dbConfig.dbName].AddressTokenTransaction.belongsTo(db[dbConfig.dbName].AccountAddress, { foreignKey: 'accountAddress_id' });
+      db[dbConfig.dbName].AccountAddress.hasMany(db[dbConfig.dbName].AddressTokenTransaction, { foreignKey: 'accountAddress_id' });
       db[dbConfig.dbName].AddressTokenTransaction.belongsTo(db[dbConfig.dbName].TokenTransaction, { foreignKey: 'tokenTransaction_id' });
       db[dbConfig.dbName].TokenTransaction.hasMany(db[dbConfig.dbName].AddressTokenTransaction, { foreignKey: 'tokenTransaction_id' });
 

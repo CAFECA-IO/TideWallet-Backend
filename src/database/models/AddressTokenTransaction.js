@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('AddressTokenTransac
     type: DataTypes.STRING,
     allowNull: false,
   },
+  // FK
   accountAddress_id: {
     type: DataTypes.STRING,
     allowNull: false,
