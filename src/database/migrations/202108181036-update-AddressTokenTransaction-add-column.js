@@ -2,7 +2,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     try {
       await queryInterface.addColumn(
-        'AddressTransaction',
+        'AddressTokenTransaction',
         'address',
         {
           type: Sequelize.STRING,
@@ -12,12 +12,12 @@ module.exports = {
       return Promise.resolve();
     } catch (e) {
       console.log(e);
-      return Promise.reject(e);
+      return Promise.resolve(e);
     }
   },
   async down(queryInterface, Sequelize) {
     try {
-      await queryInterface.removeColumn('AddressTransaction', 'address');
+      await queryInterface.removeColumn('AddressTokenTransaction', 'address');
       return Promise.resolve();
     } catch (e) {
       console.log(e);

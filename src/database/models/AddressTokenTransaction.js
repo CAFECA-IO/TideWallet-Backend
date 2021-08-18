@@ -11,7 +11,6 @@ module.exports = (sequelize, DataTypes) => sequelize.define('AddressTokenTransac
     type: DataTypes.STRING,
     allowNull: false,
   },
-  // FK
   accountAddress_id: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -29,10 +28,17 @@ module.exports = (sequelize, DataTypes) => sequelize.define('AddressTokenTransac
     type: DataTypes.SMALLINT,
     allowNull: false,
   },
+  address: {
+    type: DataTypes.STRING,
+  },
 }, {
   timestamps: false,
   tableName: 'AddressTokenTransaction',
   charset: 'utf8',
   collate: 'utf8_unicode_ci',
-  indexes: [{ fields: ['currency_id'] }],
+  indexes: [
+    { fields: ['currency_id'] },
+    { fields: ['currency_id', 'address'] },
+    { fields: ['currency_id', 'accountAddress_id'] },
+  ],
 });

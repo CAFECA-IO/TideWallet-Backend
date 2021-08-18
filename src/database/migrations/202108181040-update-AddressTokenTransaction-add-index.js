@@ -2,15 +2,15 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     try {
       await queryInterface.addIndex(
-        'AddressTransaction',
-        ['address'],
+        'AddressTokenTransaction',
+        ['currency_id', 'address'],
         {
           unique: false,
         },
       );
       await queryInterface.addIndex(
-        'AddressTransaction',
-        ['accountAddress_id'],
+        'AddressTokenTransaction',
+        ['currency_id', 'accountAddress_id'],
         {
           unique: false,
         },
@@ -18,14 +18,13 @@ module.exports = {
       return Promise.resolve();
     } catch (e) {
       console.log(e);
-      return Promise.reject(e);
-      // return Promise.resolve(e);
+      return Promise.resolve(e);
     }
   },
   async down(queryInterface, Sequelize) {
     try {
-      await queryInterface.removeIndex('AddressTransaction', ['address']);
-      await queryInterface.removeIndex('AddressTransaction', ['accountAddress_id']);
+      await queryInterface.removeIndex('AddressTokenTransaction', ['currency_id', 'address']);
+      await queryInterface.removeIndex('AddressTokenTransaction', ['currency_id', 'accountAddress_id']);
       return Promise.resolve();
     } catch (e) {
       console.log(e);

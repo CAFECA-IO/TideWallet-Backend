@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('AddressTransaction'
   collate: 'utf8_unicode_ci',
   indexes: [
     { fields: ['currency_id'] },
-    { fields: ['address'] },
-    { fields: ['accountAddress_id'] },
+    { fields: ['currency_id', 'address'] },
+    { fields: ['currency_id', 'accountAddress_id'] },
   ],
 });
