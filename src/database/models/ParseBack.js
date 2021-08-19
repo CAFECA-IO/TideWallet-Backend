@@ -11,12 +11,15 @@ module.exports = (sequelize, DataTypes) => sequelize.define('ParseBack', {
     allowNull: false,
   },
   block: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.BIGINT,
   },
   done: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false,
+  },
+  start: {
+    type: DataTypes.INTEGER,
   },
   retry: {
     type: DataTypes.INTEGER,
