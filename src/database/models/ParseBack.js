@@ -31,5 +31,6 @@ module.exports = (sequelize, DataTypes) => sequelize.define('ParseBack', {
   collate: 'utf8_unicode_ci',
   indexes: [
     { fields: ['block'] },
+    { fields: ['done', 'start'] },
   ],
 });
