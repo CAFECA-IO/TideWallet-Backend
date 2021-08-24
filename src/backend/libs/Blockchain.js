@@ -55,6 +55,7 @@ class Blockchain extends Bot {
         await this.initCurrency();
         await this.initFiatCurrencyRate();
         await this.initTokenList();
+        await this.initDefaultAccount();
         if (!this.isCrawler()) {
           await this.initBackendHDWallet();
         }
@@ -91,6 +92,68 @@ class Blockchain extends Bot {
       await this.database.db[networkName].Blockchain.findOrCreate({
         where: { blockchain_id: network.blockchain_id },
         defaults: network,
+      });
+    }
+  }
+
+  async initDefaultAccount() {
+    const networks = Object.keys(blockchainNetworks);
+    for (const networkName of networks) {
+      const network = { ...blockchainNetworks[networkName] };
+
+      const [insertAccount] = await this.database.db[networkName].Account.findOrCreate({
+        where: {
+          account_id: '00000000-0000-0000-0000-000000000000',
+          user_id: '00000000-0000-0000-0000-000000000000',
+          blockchain_id: network.blockchain_id,
+          purpose: 3324,
+          curve_type: 0,
+          extend_public_key: '0x0',
+          regist_block_num: 0,
+        },
+        default: {
+          account_id: '00000000-0000-0000-0000-000000000000',
+          user_id: '00000000-0000-0000-0000-000000000000',
+          blockchain_id: network.blockchain_id,
+          purpose: 3324,
+          curve_type: 0,
+          extend_public_key: '0x0',
+          regist_block_num: 0,
+        },
+      });
+      const curr = currency[networkName].find((c) => c.type === 1);
+
+      await this.database.db[networkName].AccountCurrency.findOrCreate({
+        where: {
+          accountCurrency_id: '00000000-0000-0000-0000-000000000000',
+          account_id: insertAccount.account_id,
+          currency_id: curr.currency_id,
+        },
+        defaults: {
+          accountCurrency_id: '00000000-0000-0000-0000-000000000000',
+          account_id: insertAccount.account_id,
+          currency_id: curr.currency_id,
+          balance: '0',
+          number_of_external_key: '0',
+          number_of_internal_key: '0',
+        },
+      });
+
+      await this.database.db[networkName].AccountAddress.findOrCreate({
+        where: {
+          accountAddress_id: '00000000-0000-0000-0000-000000000000',
+          account_id: insertAccount.account_id,
+          public_key: '',
+          address: '',
+        },
+        default: {
+          accountAddress_id: '00000000-0000-0000-0000-000000000000',
+          account_id: insertAccount.account_id,
+          change_index: 0,
+          key_index: 0,
+          public_key: '',
+          address: '',
+        },
       });
     }
   }
