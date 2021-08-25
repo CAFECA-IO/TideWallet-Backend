@@ -1495,7 +1495,7 @@ class Utils {
       regist_block_num: currency.Blockchain.block,
     });
 
-    await _db.AccountCurrency.create({
+    const insertAccountCurrency = await _db.AccountCurrency.create({
       accountCurrency_id: uuidv4(),
       account_id: insertAccount.account_id,
       currency_id: currency.currency_id,
@@ -1526,6 +1526,55 @@ class Utils {
         public_key: changeWallet.publicKey,
         address: changeWallet.address,
       });
+    }
+
+    return insertAccountCurrency;
+  }
+
+  static async matchAddressTransaction(currency, accountCurrency, hdWallet) {
+    const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
+    const _db = this.database.db[DBName];
+
+    if (Utils.isBtcLike(currency.blockchain_id)) {
+      let nullCounter = 0;
+      let keyIndex = 0;
+      const coinType = currency.Blockchain.coin_type;
+      const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: currency.Blockchain.blockchain_id });
+      // find and update external address
+      while (nullCounter < 5) {
+        const accountAddress = await _db.AccountAddress.findOne({
+          where: {
+            accountCurrency_id: accountCurrency.accountCurrency_id,
+            changeIndex: 0,
+            keyIndex,
+          },
+        });
+        if (accountAddress) {
+          const addressTransactions = _db.addressTransaction.findAll({
+            where: {
+              address: accountAddress.address,
+            },
+          });
+          if (!Array.isArray(addressTransactions)) throw new Error('something wrong.');
+          if (addressTransactions.length > 0) {
+            for (const addressTransaction of addressTransactions) {
+              await _db.addressTransaction.update({
+                accountCurrency_id: accountCurrency.accountCurrency_id,
+              }, {
+                where: {
+                  addressTransaction_id: addressTransaction.addressTransaction_id,
+                },
+              });
+            }
+            nullCounter = 0;
+          } else {
+            nullCounter += 1;
+          }
+        } else {
+          nullCounter += 1;
+        }
+        keyIndex += 1;
+      }
     }
   }
 

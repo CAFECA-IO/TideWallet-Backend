@@ -123,7 +123,7 @@ class User extends Bot {
 
       const hdWallet = new HDWallet({ extendPublicKey: extend_public_key });
 
-      const accounts = await this.DBOperator.findAll({
+      const currencies = await this.DBOperator.findAll({
         tableName: 'Currency',
         options: {
           where: { type: 1 },
@@ -136,8 +136,9 @@ class User extends Bot {
         },
       });
 
-      for (let i = 0; i < accounts.length; i++) {
-        await Utils.newAccount(accounts[i], insertUser.user_id, extend_public_key, hdWallet);
+      for (let i = 0; i < currencies.length; i++) {
+        const accountCurrency = await Utils.newAccount(currencies[i], insertUser.user_id, extend_public_key, hdWallet);
+        Utils.matchAddressTransaction(currencies[i], accountCurrency);
       }
       await this.defaultDBInstance.Device.create({
         device_id: uuidv4(),
