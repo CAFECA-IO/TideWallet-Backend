@@ -1537,7 +1537,7 @@ class Utils {
 
     if (Utils.isBtcLike(currency.blockchain_id)) {
       let nullCounter = 0;
-      let keyIndex = 0;
+      let keyIndex = accountCurrency.number_of_internal_key;
       const coinType = currency.Blockchain.coin_type;
       const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: currency.Blockchain.blockchain_id });
       // find and update external address
