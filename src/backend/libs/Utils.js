@@ -1655,32 +1655,28 @@ class Utils {
         });
       }
     } else {
-      console.log('eth like!!!');
       const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: currency.Blockchain.blockchain_id });
       const findAccountAddress = await _db.AccountAddress.findOne({
         where: {
           address: wallet.address,
         },
       });
-      const r = await _db.AddressTransaction.update({
+      await _db.AddressTransaction.update({
         accountAddress_id: findAccountAddress.accountAddress_id,
       },
       {
-        logging: console.log,
         returning: true,
         where: {
           address: wallet.address,
         },
       });
-      console.log('r!!!', r);
-      const rt = await _db.AddressTokenTransaction.update({
+      await _db.AddressTokenTransaction.update({
         accountAddress_id: findAccountAddress.accountAddress_id,
       }, {
         where: {
           address: wallet.address,
         },
       });
-      console.log('rt!!!', rt);
     }
   }
 
