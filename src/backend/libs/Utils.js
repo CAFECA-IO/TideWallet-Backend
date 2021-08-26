@@ -1534,47 +1534,132 @@ class Utils {
   static async matchAddressTransaction(currency, accountCurrency, hdWallet) {
     const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
     const _db = this.database.db[DBName];
+    const coinType = currency.Blockchain.coin_type;
 
     if (Utils.isBtcLike(currency.blockchain_id)) {
       let nullCounter = 0;
-      let keyIndex = accountCurrency.number_of_internal_key;
-      const coinType = currency.Blockchain.coin_type;
-      const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: currency.Blockchain.blockchain_id });
+      let keyIndex = accountCurrency.number_of_external_key;
+      let firstNullIndex = -1;
       // find and update external address
       while (nullCounter < 5) {
-        const accountAddress = await _db.AccountAddress.findOne({
+        const wallet = hdWallet.getWalletInfo({
+          coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: keyIndex,
+        });
+        const updateResult = await _db.addressTransaction.update({
+          accountCurrency_id: accountCurrency.accountCurrency_id,
+        }, {
           where: {
-            accountCurrency_id: accountCurrency.accountCurrency_id,
-            changeIndex: 0,
-            keyIndex,
+            address: wallet.address,
           },
         });
-        if (accountAddress) {
-          const addressTransactions = _db.addressTransaction.findAll({
-            where: {
-              address: accountAddress.address,
-            },
-          });
-          if (!Array.isArray(addressTransactions)) throw new Error('something wrong.');
-          if (addressTransactions.length > 0) {
-            for (const addressTransaction of addressTransactions) {
-              await _db.addressTransaction.update({
-                accountCurrency_id: accountCurrency.accountCurrency_id,
-              }, {
-                where: {
-                  addressTransaction_id: addressTransaction.addressTransaction_id,
-                },
-              });
-            }
-            nullCounter = 0;
-          } else {
-            nullCounter += 1;
+        if (!Array.isArray(updateResult)) return new Error('something wrong.');
+        if (updateResult[0] > 0) {
+          // if this address transaction not null, add to account address
+          for (let i = firstNullIndex; i > 0 && i <= keyIndex; i++) {
+            const _hdw = hdWallet.getWalletInfo({
+              coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: i,
+            });
+            await _db.AccountAddress.create({
+              accountAddress_id: uuidv4(),
+              account_id: accountCurrency.account_id,
+              change_index: 0,
+              key_index: i,
+              public_key: _hdw.publicKey,
+              address: _hdw.address,
+            });
           }
+          nullCounter = 0;
+          firstNullIndex = -1;
         } else {
+          if (firstNullIndex < 0) { firstNullIndex = keyIndex; }
           nullCounter += 1;
         }
         keyIndex += 1;
       }
+      // add first not null address to account address
+      if (firstNullIndex > 0) {
+        const _hdw = hdWallet.getWalletInfo({
+          coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: firstNullIndex,
+        });
+        await _db.AccountAddress.create({
+          accountAddress_id: uuidv4(),
+          account_id: accountCurrency.account_id,
+          change_index: 0,
+          key_index: firstNullIndex,
+          public_key: _hdw.publicKey,
+          address: _hdw.address,
+        });
+      }
+
+      // find and update internal address
+      keyIndex = accountCurrency.number_of_internal_key;
+      nullCounter = 0;
+      firstNullIndex = -1;
+      while (nullCounter < 5) {
+        const wallet = hdWallet.getWalletInfo({
+          coinType, blockchainID: currency.Blockchain.blockchain_id, change: 1, index: keyIndex,
+        });
+        const updateResult = await _db.AddressTransaction.update({
+          accountCurrency_id: accountCurrency.accountCurrency_id,
+        }, {
+          where: {
+            address: wallet.address,
+          },
+        });
+        if (!Array.isArray(updateResult)) return new Error('something wrong.');
+        if (updateResult[0] > 0) {
+          // if this address transaction not null, add to account address
+          for (let i = firstNullIndex; i > 0 && i <= keyIndex; i++) {
+            const _hdw = hdWallet.getWalletInfo({
+              coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: i,
+            });
+            await _db.AccountAddress.create({
+              accountAddress_id: uuidv4(),
+              account_id: accountCurrency.account_id,
+              change_index: 0,
+              key_index: i,
+              public_key: _hdw.publicKey,
+              address: _hdw.address,
+            });
+          }
+          nullCounter = 0;
+          firstNullIndex = -1;
+        } else {
+          if (firstNullIndex < 0) { firstNullIndex = keyIndex; }
+          nullCounter += 1;
+        }
+        keyIndex += 1;
+      }
+      // add first not null address to account address
+      if (firstNullIndex > 0) {
+        const _hdw = hdWallet.getWalletInfo({
+          coinType, blockchainID: currency.Blockchain.blockchain_id, change: 1, index: firstNullIndex,
+        });
+        await _db.AccountAddress.create({
+          accountAddress_id: uuidv4(),
+          account_id: accountCurrency.account_id,
+          change_index: 0,
+          key_index: firstNullIndex,
+          public_key: _hdw.publicKey,
+          address: _hdw.address,
+        });
+      }
+    } else {
+      const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: currency.Blockchain.blockchain_id });
+      await _db.AddressTransaction.update({
+        accountCurrency_id: accountCurrency.accountCurrency_id,
+      }, {
+        where: {
+          address: wallet.address,
+        },
+      });
+      await _db.AddressTokenTransaction.update({
+        accountCurrency_id: accountCurrency.accountCurrency_id,
+      }, {
+        where: {
+          address: wallet.address,
+        },
+      });
     }
   }
 
