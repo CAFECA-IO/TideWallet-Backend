@@ -1545,27 +1545,32 @@ class Utils {
         const wallet = hdWallet.getWalletInfo({
           coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: keyIndex,
         });
-        const updateResult = await _db.addressTransaction.update({
-          accountCurrency_id: accountCurrency.accountCurrency_id,
-        }, {
+        const accountAddressCount = await _db.AccountAddress.count({
           where: {
             address: wallet.address,
           },
         });
-        if (!Array.isArray(updateResult)) return new Error('something wrong.');
-        if (updateResult[0] > 0) {
+        if (!Number.isInteger(accountAddressCount)) return new Error('something wrong.');
+        if (accountAddressCount > 0) {
           // if this address transaction not null, add to account address
           for (let i = firstNullIndex; i > 0 && i <= keyIndex; i++) {
             const _hdw = hdWallet.getWalletInfo({
               coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: i,
             });
-            await _db.AccountAddress.create({
+            const at = await _db.AccountAddress.create({
               accountAddress_id: uuidv4(),
               account_id: accountCurrency.account_id,
               change_index: 0,
               key_index: i,
               public_key: _hdw.publicKey,
               address: _hdw.address,
+            });
+            await _db.addressTransaction.update({
+              accountAddress_id: at.accountAddress_id,
+            }, {
+              where: {
+                address: _hdw.address,
+              },
             });
           }
           nullCounter = 0;
@@ -1592,34 +1597,39 @@ class Utils {
       }
 
       // find and update internal address
-      keyIndex = accountCurrency.number_of_internal_key;
+      keyIndex = 0;
       nullCounter = 0;
       firstNullIndex = -1;
       while (nullCounter < 5) {
         const wallet = hdWallet.getWalletInfo({
           coinType, blockchainID: currency.Blockchain.blockchain_id, change: 1, index: keyIndex,
         });
-        const updateResult = await _db.AddressTransaction.update({
-          accountCurrency_id: accountCurrency.accountCurrency_id,
-        }, {
+        const accountAddressCount = await _db.AccountAddress.count({
           where: {
             address: wallet.address,
           },
         });
-        if (!Array.isArray(updateResult)) return new Error('something wrong.');
-        if (updateResult[0] > 0) {
+        if (!Number.isInteger(accountAddressCount)) return new Error('something wrong.');
+        if (accountAddressCount > 0) {
           // if this address transaction not null, add to account address
           for (let i = firstNullIndex; i > 0 && i <= keyIndex; i++) {
             const _hdw = hdWallet.getWalletInfo({
               coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: i,
             });
-            await _db.AccountAddress.create({
+            const at = await _db.AccountAddress.create({
               accountAddress_id: uuidv4(),
               account_id: accountCurrency.account_id,
               change_index: 0,
               key_index: i,
               public_key: _hdw.publicKey,
               address: _hdw.address,
+            });
+            await _db.AddressTransaction.update({
+              accountAddress_id: at.accountAddress_id,
+            }, {
+              where: {
+                address: _hdw.address,
+              },
             });
           }
           nullCounter = 0;
@@ -1645,21 +1655,32 @@ class Utils {
         });
       }
     } else {
+      console.log('eth like!!!');
       const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: currency.Blockchain.blockchain_id });
-      await _db.AddressTransaction.update({
-        accountCurrency_id: accountCurrency.accountCurrency_id,
+      const findAccountAddress = await _db.AccountAddress.findOne({
+        where: {
+          address: wallet.address,
+        },
+      });
+      const r = await _db.AddressTransaction.update({
+        accountAddress_id: findAccountAddress.accountAddress_id,
+      },
+      {
+        logging: console.log,
+        returning: true,
+        where: {
+          address: wallet.address,
+        },
+      });
+      console.log('r!!!', r);
+      const rt = await _db.AddressTokenTransaction.update({
+        accountAddress_id: findAccountAddress.accountAddress_id,
       }, {
         where: {
           address: wallet.address,
         },
       });
-      await _db.AddressTokenTransaction.update({
-        accountCurrency_id: accountCurrency.accountCurrency_id,
-      }, {
-        where: {
-          address: wallet.address,
-        },
-      });
+      console.log('rt!!!', rt);
     }
   }
 
