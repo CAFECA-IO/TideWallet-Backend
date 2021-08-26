@@ -186,8 +186,8 @@ class Account extends Bot {
           if (!res) {
             // create account
             // code from user regist
-            const accountCurrency = await Utils.newAccount(chainCoinDetail, userID, extendPublicKey, hdWallet);
-            await Utils.matchAddressTransaction(chainCoinDetail, accountCurrency, hdWallet);
+            const accountId = await Utils.newAccount(chainCoinDetail, userID, extendPublicKey, hdWallet);
+            await Utils.matchAddressTransaction(chainCoinDetail, accountId, hdWallet);
           }
         }
       }

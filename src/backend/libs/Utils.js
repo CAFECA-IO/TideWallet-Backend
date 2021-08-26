@@ -1495,7 +1495,7 @@ class Utils {
       regist_block_num: currency.Blockchain.block,
     });
 
-    const insertAccountCurrency = await _db.AccountCurrency.create({
+    await _db.AccountCurrency.create({
       accountCurrency_id: uuidv4(),
       account_id: insertAccount.account_id,
       currency_id: currency.currency_id,
@@ -1528,17 +1528,17 @@ class Utils {
       });
     }
 
-    return insertAccountCurrency;
+    return insertAccount.account_id;
   }
 
-  static async matchAddressTransaction(currency, accountCurrency, hdWallet) {
+  static async matchAddressTransaction(currency, accountId, hdWallet) {
     const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
     const _db = this.database.db[DBName];
     const coinType = currency.Blockchain.coin_type;
 
     if (Utils.isBtcLike(currency.blockchain_id)) {
       let nullCounter = 0;
-      let keyIndex = accountCurrency.number_of_external_key;
+      let keyIndex = 0;
       let firstNullIndex = -1;
       // find and update external address
       while (nullCounter < 5) {
@@ -1559,7 +1559,7 @@ class Utils {
             });
             const at = await _db.AccountAddress.create({
               accountAddress_id: uuidv4(),
-              account_id: accountCurrency.account_id,
+              account_id: accountId,
               change_index: 0,
               key_index: i,
               public_key: _hdw.publicKey,
@@ -1588,7 +1588,7 @@ class Utils {
         });
         await _db.AccountAddress.create({
           accountAddress_id: uuidv4(),
-          account_id: accountCurrency.account_id,
+          account_id: accountId,
           change_index: 0,
           key_index: firstNullIndex,
           public_key: _hdw.publicKey,
@@ -1618,7 +1618,7 @@ class Utils {
             });
             const at = await _db.AccountAddress.create({
               accountAddress_id: uuidv4(),
-              account_id: accountCurrency.account_id,
+              account_id: accountId,
               change_index: 0,
               key_index: i,
               public_key: _hdw.publicKey,
@@ -1647,7 +1647,7 @@ class Utils {
         });
         await _db.AccountAddress.create({
           accountAddress_id: uuidv4(),
-          account_id: accountCurrency.account_id,
+          account_id: accountId,
           change_index: 0,
           key_index: firstNullIndex,
           public_key: _hdw.publicKey,
