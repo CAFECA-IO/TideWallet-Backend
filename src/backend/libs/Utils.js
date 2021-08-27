@@ -1680,6 +1680,131 @@ class Utils {
     }
   }
 
+  static async getTransactionByTxidFromPeer(blockchainId, txid) {
+    this.logger.debug(`getTransactionByTxidFromPeer(${blockchainId}, ${txid})`);
+
+    const blockchainConfig = Utils.getBlockchainConfig(blockchainId);
+    const option = { ...blockchainConfig };
+
+    let peerResult = {};
+    switch (blockchainId) {
+      case '8000003C':
+      case 'F000003C':
+      case '80000CFC':
+      case '80001F51':
+        option.data = {
+          jsonrpc: '2.0',
+          method: 'eth_getTransactionByHash',
+          params: [txid],
+          id: dvalue.randomID(),
+        };
+        peerResult = await Utils.ETHRPC(option);
+        break;
+      case '80000000':
+      case 'F0000000':
+        option.data = {
+          jsonrpc: '1.0',
+          method: 'getrawtransaction',
+          params: [txid, true],
+          id: dvalue.randomID(),
+        };
+        peerResult = await Utils.BTCRPC(option);
+        break;
+      case '80000091':
+      case 'F0000091':
+        option.data = {
+          jsonrpc: '1.0',
+          method: 'getrawtransaction',
+          params: [txid, true],
+          id: dvalue.randomID(),
+        };
+        peerResult = await Utils.BCHRPC(option);
+        break;
+      default:
+        break;
+    }
+    const checkId = option.data.id;
+    if (peerResult instanceof Object) {
+      if (peerResult.id !== checkId) {
+        this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
+        return Promise.reject();
+      }
+      if (peerResult.result) {
+        return Promise.resolve(peerResult.result);
+      }
+    }
+    this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
+    return Promise.reject(peerResult.error);
+  }
+
+  static async matchUtxo(currency, accountId) {
+    if (Utils.isBtcLike(currency.blockchain_id)) {
+      const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
+      const blockchainConfig = Utils.getBlockchainConfig(currency.blockchain_id);
+      const _db = this.database.db[DBName];
+      const findAccountAddress = await _db.AccountAddress.findAll({
+        where: { account_id: accountId },
+        attribute: ['accountAddress_id', 'address'],
+        order: ['change_index', 'key_index'],
+        include: [{
+          model: _db.AddressTransaction,
+          attribute: ['transaction_id', 'amount', 'direction'],
+          order: ['direction'],
+        }],
+      });
+
+      if (findAccountAddress.length > 0) {
+        for (const accountAddress of findAccountAddress) {
+          for (const addressTransaction of accountAddress.AddressTransaction) {
+            const attribute = ['transaction_id', 'txid'];
+            if (addressTransaction.direction === 1) {
+              attribute.push('destination_addresses');
+            } else {
+              attribute.push('source_addresses');
+            }
+            const findTx = await _db.transactionCount.findOne({
+              where: { transaction_id: addressTransaction.transaction_id },
+              attribute,
+            });
+
+            // get transaction detail from peer cause somthing didn't save in transaction table
+            const peerTx = await Utils.getTransactionByTxidFromPeer(currency.blockchain_id, findTx.txid);
+            if (addressTransaction.direction === 1) {
+              const outputData = peerTx.vout.find(
+                (txOut) => txOut.scriptPubKey.address.find(
+                  (addr) => addr === findAccountAddress.address,
+                ),
+              );
+              const objDA = Object.parse(findTx.destination_addresses);
+              const { amount } = objDA[outputData.n];
+              // create if utxo not exist
+              await _db.UTXO.findOrCreate({
+                where: {
+                  txid: findTx.txid,
+                  vout: outputData.n,
+                },
+                defaults: {
+                  utxo_id: uuidv4(),
+                  currency_id: currency.currency_id,
+                  accountAddress_id: findAccountAddress.accountAddress_id,
+                  transaction_id: findTx.transaction_id,
+                  txid: findTx.txid,
+                  vout: outputData.n,
+                  type: outputData.scriptPubKey.type,
+                  amount,
+                  script: outputData.scriptPubKey.hex,
+                  locktime: peerTx.locktime,
+                },
+              });
+            } else {
+              // mark used
+            }
+          }
+        }
+      }
+    }
+  }
+
   static isBtcLike(blockchainID) {
     return (
       blockchainID === '80000000'
