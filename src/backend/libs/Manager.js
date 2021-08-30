@@ -140,43 +140,44 @@ class Manager extends Bot {
   }
 
   syncCryptoRate() {
-    const BTCObj = {
-      asset_id: '5b1ea92e584bf50020130612', symbol: 'BTC', dbOp: 'bitcoin_mainnet',
-    };
-    const BCHObj = {
-      asset_id: '5b1ea92e584bf5002013061c', symbol: 'BCH', dbOp: 'bitcoin_cash_mainnet',
-    };
-    const ETHObj = {
-      asset_id: '5b755dacd5dd99000b3d92b2', symbol: 'ETH', dbOp: 'ethereum_mainnet',
-    };
-    const USDID = '5b1ea92e584bf50020130615';
+    this.logger.log('temp not sync crypto rate until not sync from crypto api');
+    // const BTCObj = {
+    //   asset_id: '5b1ea92e584bf50020130612', symbol: 'BTC', dbOp: 'bitcoin_mainnet',
+    // };
+    // const BCHObj = {
+    //   asset_id: '5b1ea92e584bf5002013061c', symbol: 'BCH', dbOp: 'bitcoin_cash_mainnet',
+    // };
+    // const ETHObj = {
+    //   asset_id: '5b755dacd5dd99000b3d92b2', symbol: 'ETH', dbOp: 'ethereum_mainnet',
+    // };
+    // const USDID = '5b1ea92e584bf50020130615';
 
-    for (const crypto of [BTCObj, BCHObj, ETHObj]) {
-      const opt = {
-        protocol: 'https:',
-        port: '',
-        hostname: 'api.cryptoapis.io',
-        path: `/v1/exchange-rates/${crypto.asset_id}/${USDID}`,
-        headers: {
-          'X-API-Key': this.config.cryptoapis.key,
-          'Content-Type': 'application/json',
-        },
-      };
+    // for (const crypto of [BTCObj, BCHObj, ETHObj]) {
+    //   const opt = {
+    //     protocol: 'https:',
+    //     port: '',
+    //     hostname: 'api.cryptoapis.io',
+    //     path: `/v1/exchange-rates/${crypto.asset_id}/${USDID}`,
+    //     headers: {
+    //       'X-API-Key': this.config.cryptoapis.key,
+    //       'Content-Type': 'application/json',
+    //     },
+    //   };
 
-      // eslint-disable-next-line no-loop-func
-      ecrequest
-        .get(opt)
-        .then(async (rs) => {
-          const { payload } = JSON.parse(rs.data.toString());
-          await this.database.db[crypto.dbOp].Currency.update(
-            { exchange_rate: payload.weightedAveragePrice },
-            { where: { currency_id: crypto.asset_id } },
-          );
-        })
-        .catch((e) => {
-          this.logger.error('syncCryptoRate error:', e);
-        });
-    }
+    //   // eslint-disable-next-line no-loop-func
+    //   ecrequest
+    //     .get(opt)
+    //     .then(async (rs) => {
+    //       const { payload } = JSON.parse(rs.data.toString());
+    //       await this.database.db[crypto.dbOp].Currency.update(
+    //         { exchange_rate: payload.weightedAveragePrice },
+    //         { where: { currency_id: crypto.asset_id } },
+    //       );
+    //     })
+    //     .catch((e) => {
+    //       this.logger.error('syncCryptoRate error:', e);
+    //     });
+    // }
   }
 
   createManager() {
