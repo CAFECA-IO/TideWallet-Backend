@@ -1680,14 +1680,14 @@ class Utils {
     }
   }
 
-  static async getTransactionByTxidFromPeer(blockchainId, txid) {
-    this.logger.debug(`getTransactionByTxidFromPeer(${blockchainId}, ${txid})`);
+  static async getTransactionByTxidFromPeer(blockchain_id, txid) {
+    this.logger.debug(`getTransactionByTxidFromPeer(${blockchain_id}, ${txid})`);
 
-    const blockchainConfig = Utils.getBlockchainConfig(blockchainId);
+    const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
     const option = { ...blockchainConfig };
 
     let peerResult = {};
-    switch (blockchainId) {
+    switch (blockchain_id) {
       case '8000003C':
       case 'F000003C':
       case '80000CFC':
@@ -1740,7 +1740,6 @@ class Utils {
   static async matchUtxo(currency, accountId) {
     if (Utils.isBtcLike(currency.blockchain_id)) {
       const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
-      const blockchainConfig = Utils.getBlockchainConfig(currency.blockchain_id);
       const _db = this.database.db[DBName];
       const findAccountAddress = await _db.AccountAddress.findAll({
         where: { account_id: accountId },
@@ -1755,27 +1754,29 @@ class Utils {
 
       if (findAccountAddress.length > 0) {
         for (const accountAddress of findAccountAddress) {
-          for (const addressTransaction of accountAddress.AddressTransaction) {
+          for (const addressTransaction of accountAddress.AddressTransactions) {
             const attribute = ['transaction_id', 'txid'];
             if (addressTransaction.direction === 1) {
               attribute.push('destination_addresses');
             } else {
               attribute.push('source_addresses');
             }
-            const findTx = await _db.transactionCount.findOne({
+            const findTx = await _db.Transaction.findOne({
               where: { transaction_id: addressTransaction.transaction_id },
               attribute,
             });
 
-            // get transaction detail from peer cause somthing didn't save in transaction table
+            // get transaction detail from peer because somthing didn't save in transaction table
             const peerTx = await Utils.getTransactionByTxidFromPeer(currency.blockchain_id, findTx.txid);
+            console.log('accountAddress.address', accountAddress.address);
             if (addressTransaction.direction === 1) {
               const outputData = peerTx.vout.find(
-                (txOut) => txOut.scriptPubKey.address.find(
-                  (addr) => addr === findAccountAddress.address,
-                ),
+                (txOut) => {
+                  console.log(txOut);
+                  return txOut.scriptPubKey.addresses.includes(accountAddress.address);
+                },
               );
-              const objDA = Object.parse(findTx.destination_addresses);
+              const objDA = JSON.parse(findTx.destination_addresses);
               const { amount } = objDA[outputData.n];
               // create if utxo not exist
               await _db.UTXO.findOrCreate({
@@ -1786,7 +1787,7 @@ class Utils {
                 defaults: {
                   utxo_id: uuidv4(),
                   currency_id: currency.currency_id,
-                  accountAddress_id: findAccountAddress.accountAddress_id,
+                  accountAddress_id: accountAddress.accountAddress_id,
                   transaction_id: findTx.transaction_id,
                   txid: findTx.txid,
                   vout: outputData.n,
@@ -1798,6 +1799,28 @@ class Utils {
               });
             } else {
               // mark used
+              const objSA = JSON.parse(findTx.source_addresses);
+              const nVin = objSA.findIndex((o) => o.addresses.includes(accountAddress.address));
+              if (nVin >= 0) {
+                const inputData = peerTx.vin[nVin];
+                const findExistUTXO = await _db.UTXO.findOne({
+                  where: {
+                    txid: inputData.txid,
+                    vout: inputData.vout,
+                  },
+                });
+                if (findExistUTXO) {
+                  await _db.UTXO.update({
+                    to_tx: findTx.transaction_id,
+                    on_block_timestamp: peerTx.blocktime,
+                  },
+                  {
+                    where: {
+                      utxo_id: findExistUTXO.utxo_id,
+                    },
+                  });
+                }
+              }
             }
           }
         }
