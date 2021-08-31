@@ -1737,93 +1737,120 @@ class Utils {
     return Promise.reject(peerResult.error);
   }
 
-  static async matchUtxo(currency, accountId) {
-    if (Utils.isBtcLike(currency.blockchain_id)) {
-      const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
-      const _db = this.database.db[DBName];
-      const findAccountAddress = await _db.AccountAddress.findAll({
-        where: { account_id: accountId },
-        attribute: ['accountAddress_id', 'address'],
-        order: ['change_index', 'key_index'],
-        include: [{
-          model: _db.AddressTransaction,
-          attribute: ['transaction_id', 'amount', 'direction'],
-          order: ['direction'],
-        }],
-      });
+  // ++ add to child process
+  static async matchUtxo(currency, accountId, retry = 0) {
+    try {
+      if (Utils.isBtcLike(currency.blockchain_id)) {
+        const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
+        const _db = this.database.db[DBName];
+        const limit = 500;
+        let offset = 0;
+        let findAccountAddress = await _db.AccountAddress.findAll({
+          where: { account_id: accountId },
+          attribute: ['accountAddress_id', 'address'],
+          order: ['change_index', 'key_index', 'accountAddress_id'],
+          include: [{
+            model: _db.AddressTransaction,
+            attribute: ['transaction_id', 'amount', 'direction'],
+            order: ['direction'],
+          }],
+          limit,
+          offset,
+        });
 
-      if (findAccountAddress.length > 0) {
-        for (const accountAddress of findAccountAddress) {
-          for (const addressTransaction of accountAddress.AddressTransactions) {
-            const attribute = ['transaction_id', 'txid'];
-            if (addressTransaction.direction === 1) {
-              attribute.push('destination_addresses');
-            } else {
-              attribute.push('source_addresses');
-            }
-            const findTx = await _db.Transaction.findOne({
-              where: { transaction_id: addressTransaction.transaction_id },
-              attribute,
-            });
-
-            // get transaction detail from peer because somthing didn't save in transaction table
-            const peerTx = await Utils.getTransactionByTxidFromPeer(currency.blockchain_id, findTx.txid);
-            console.log('accountAddress.address', accountAddress.address);
-            if (addressTransaction.direction === 1) {
-              const outputData = peerTx.vout.find(
-                (txOut) => {
-                  console.log(txOut);
-                  return txOut.scriptPubKey.addresses.includes(accountAddress.address);
-                },
-              );
-              const objDA = JSON.parse(findTx.destination_addresses);
-              const { amount } = objDA[outputData.n];
-              // create if utxo not exist
-              await _db.UTXO.findOrCreate({
-                where: {
-                  txid: findTx.txid,
-                  vout: outputData.n,
-                },
-                defaults: {
-                  utxo_id: uuidv4(),
-                  currency_id: currency.currency_id,
-                  accountAddress_id: accountAddress.accountAddress_id,
-                  transaction_id: findTx.transaction_id,
-                  txid: findTx.txid,
-                  vout: outputData.n,
-                  type: outputData.scriptPubKey.type,
-                  amount,
-                  script: outputData.scriptPubKey.hex,
-                  locktime: peerTx.locktime,
-                },
+        while (findAccountAddress.length > 0) {
+          for (const accountAddress of findAccountAddress) {
+            for (const addressTransaction of accountAddress.AddressTransactions) {
+              const attribute = ['transaction_id', 'txid'];
+              if (addressTransaction.direction === 1) {
+                attribute.push('destination_addresses');
+              } else {
+                attribute.push('source_addresses');
+              }
+              const findTx = await _db.Transaction.findOne({
+                where: { transaction_id: addressTransaction.transaction_id },
+                attribute,
               });
-            } else {
-              // mark used
-              const objSA = JSON.parse(findTx.source_addresses);
-              const nVin = objSA.findIndex((o) => o.addresses.includes(accountAddress.address));
-              if (nVin >= 0) {
-                const inputData = peerTx.vin[nVin];
-                const findExistUTXO = await _db.UTXO.findOne({
+
+              // get transaction detail from peer because somthing didn't save in transaction table
+              const peerTx = await Utils.getTransactionByTxidFromPeer(currency.blockchain_id, findTx.txid);
+              console.log('accountAddress.address', accountAddress.address);
+              if (addressTransaction.direction === 1) {
+                const outputData = peerTx.vout.find(
+                  (txOut) => {
+                    console.log(txOut);
+                    return txOut.scriptPubKey.addresses.includes(accountAddress.address);
+                  },
+                );
+                const objDA = JSON.parse(findTx.destination_addresses);
+                const { amount } = objDA[outputData.n];
+                // create if utxo not exist
+                await _db.UTXO.findOrCreate({
                   where: {
-                    txid: inputData.txid,
-                    vout: inputData.vout,
+                    txid: findTx.txid,
+                    vout: outputData.n,
+                  },
+                  defaults: {
+                    utxo_id: uuidv4(),
+                    currency_id: currency.currency_id,
+                    accountAddress_id: accountAddress.accountAddress_id,
+                    transaction_id: findTx.transaction_id,
+                    txid: findTx.txid,
+                    vout: outputData.n,
+                    type: outputData.scriptPubKey.type,
+                    amount,
+                    script: outputData.scriptPubKey.hex,
+                    locktime: peerTx.locktime,
                   },
                 });
-                if (findExistUTXO) {
-                  await _db.UTXO.update({
-                    to_tx: findTx.transaction_id,
-                    on_block_timestamp: peerTx.blocktime,
-                  },
-                  {
+              } else {
+                // mark used
+                const objSA = JSON.parse(findTx.source_addresses);
+                const nVin = objSA.findIndex((o) => o.addresses.includes(accountAddress.address));
+                if (nVin >= 0) {
+                  const inputData = peerTx.vin[nVin];
+                  const findExistUTXO = await _db.UTXO.findOne({
                     where: {
-                      utxo_id: findExistUTXO.utxo_id,
+                      txid: inputData.txid,
+                      vout: inputData.vout,
                     },
                   });
+                  if (findExistUTXO) {
+                    await _db.UTXO.update({
+                      to_tx: findTx.transaction_id,
+                      on_block_timestamp: peerTx.blocktime,
+                    },
+                    {
+                      where: {
+                        utxo_id: findExistUTXO.utxo_id,
+                      },
+                    });
+                  }
                 }
               }
             }
           }
+
+          // next round
+          offset += limit;
+          findAccountAddress = await _db.AccountAddress.findAll({
+            where: { account_id: accountId },
+            attribute: ['accountAddress_id', 'address'],
+            order: ['change_index', 'key_index', 'accountAddress_id'],
+            include: [{
+              model: _db.AddressTransaction,
+              attribute: ['transaction_id', 'amount', 'direction'],
+              order: ['direction'],
+              limit,
+              offset,
+            }],
+          });
         }
+      }
+    } catch (error) {
+      console.error(error);
+      if (retry < 3) {
+        Utils.matchUtxo(currency, accountId, retry + 1);
       }
     }
   }
