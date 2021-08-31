@@ -1740,6 +1740,7 @@ class Utils {
   // ++ add to child process
   static async matchUtxo(currency, accountId, retry = 0) {
     try {
+      console.log(`matchUtxo, currency: ${currency}, accountId: ${accountId}, retry: ${retry}`);
       if (Utils.isBtcLike(currency.blockchain_id)) {
         const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
         const _db = this.database.db[DBName];
