@@ -618,7 +618,7 @@ class Account extends Bot {
   }
 
   async _findAccountTXs({
-    findAccountCurrency, txs, change_index, key_index, timestamp, limit, meta, startID, isGetOlder,
+    findAccountCurrency, txs, change_index, key_index, timestamp, limit, meta, isGetOlder,
   }) {
     // find blockchain info
     const findBlockchainInfo = await this.DBOperator.findOne({
@@ -649,19 +649,12 @@ class Account extends Bot {
     // find all tx by address
     if (findAccountAddress) {
       if (isToken) {
-        let where = {
+        const where = {
           currency_id: findAccountCurrency.currency_id,
           accountAddress_id: findAccountAddress.accountAddress_id,
         };
-        let order = [['addressTokenTransaction_id', 'DESC']];
-        if (startID) {
-          where = {
-            currency_id: findAccountCurrency.currency_id,
-            accountAddress_id: findAccountAddress.accountAddress_id,
-            addressTokenTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lt]: startID } : { [this.Sequelize.Op.gt]: startID },
-          };
-          order = isGetOlder === 'true' ? [['addressTokenTransaction_id', 'DESC']] : [['addressTokenTransaction_id', 'ASC']];
-        }
+        const order = isGetOlder === 'true' ? [['TokenTransaction', 'Transaction', 'timestamp', 'DESC']] : [['TokenTransaction', 'Transaction', 'timestamp', 'ASC']];
+
         const findTxByAddress = await _db.AddressTokenTransaction.findAll({
           where,
           limit: Number(limit),
@@ -673,7 +666,7 @@ class Account extends Bot {
                 {
                   model: _db.Transaction,
                   where: {
-                    timestamp: { [this.Sequelize.Op.lt]: timestamp },
+                    timestamp: isGetOlder === 'true' ? { [this.Sequelize.Op.lt]: timestamp } : { [this.Sequelize.Op.gt]: timestamp },
                   },
                 },
               ],
@@ -718,19 +711,12 @@ class Account extends Bot {
           }
         }
       } else {
-        let where = {
+        const where = {
           currency_id: findAccountCurrency.currency_id,
           accountAddress_id: findAccountAddress.accountAddress_id,
         };
-        let order = [['addressTransaction_id', 'DESC']];
-        if (startID) {
-          where = {
-            currency_id: findAccountCurrency.currency_id,
-            accountAddress_id: findAccountAddress.accountAddress_id,
-            addressTransaction_id: isGetOlder === 'true' ? { [this.Sequelize.Op.lt]: startID } : { [this.Sequelize.Op.gt]: startID },
-          };
-          order = isGetOlder === 'true' ? [['addressTransaction_id', 'DESC']] : [['addressTransaction_id', 'ASC']];
-        }
+        const order = isGetOlder === 'true' ? [['Transaction', 'timestamp', 'DESC']] : [['Transaction', 'timestamp', 'ASC']];
+
         const findTxByAddress = await _db.AddressTransaction.findAll({
           where,
           limit: Number(limit),
@@ -739,7 +725,7 @@ class Account extends Bot {
             {
               model: _db.Transaction,
               where: {
-                timestamp: { [this.Sequelize.Op.lt]: timestamp },
+                timestamp: isGetOlder === 'true' ? { [this.Sequelize.Op.lt]: timestamp } : { [this.Sequelize.Op.gt]: timestamp },
               },
             },
           ],
@@ -824,7 +810,7 @@ class Account extends Bot {
     // account_id -> accountCurrency_id
     const { account_id } = params;
     const {
-      timestamp = Math.floor(Date.now() / 1000), limit = 20, startID, isGetOlder = 'false',
+      timestamp = Math.floor(Date.now() / 1000), limit = 20, isGetOlder = 'true',
     } = query;
 
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
@@ -859,14 +845,14 @@ class Account extends Bot {
       for (let i = 0; i <= number_of_external_key; i++) {
         // find all address
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, change_index: 0, key_index: i, timestamp, limit, meta, startID, isGetOlder,
+          findAccountCurrency, txs: result, change_index: 0, key_index: i, timestamp, limit, meta, isGetOlder,
         });
       }
 
       // find internal address txs
       for (let i = 0; i <= number_of_internal_key; i++) {
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, change_index: 1, key_index: i, timestamp, limit, meta, startID, isGetOlder,
+          findAccountCurrency, txs: result, change_index: 1, key_index: i, timestamp, limit, meta, isGetOlder,
         });
       }
 
