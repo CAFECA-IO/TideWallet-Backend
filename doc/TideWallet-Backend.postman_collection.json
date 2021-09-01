@@ -1722,7 +1722,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=3&startID=125&isGetOlder=true",
+							"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=20&isGetOlder=false&timestamp=1626315587",
 							"host": [
 								"{{domain}}"
 							],
@@ -1737,21 +1737,21 @@
 							"query": [
 								{
 									"key": "limit",
-									"value": "3"
-								},
-								{
-									"key": "startID",
-									"value": "125"
+									"value": "20"
 								},
 								{
 									"key": "isGetOlder",
-									"value": "true"
+									"value": "false"
+								},
+								{
+									"key": "timestamp",
+									"value": "1626315587"
 								}
 							],
 							"variable": [
 								{
 									"key": "account_id or token_account_id",
-									"value": "0f0d7360-c87e-406e-8468-18857b8a5ce2"
+									"value": "0b14cd5c-1505-4571-a430-a8e04699434c"
 								}
 							]
 						}
@@ -1769,7 +1769,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=20&startID=0&isGetOlder=true",
+									"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=20&timestamp=1612510072&isGetOlder=true",
 									"host": [
 										"{{domain}}"
 									],
@@ -1787,8 +1787,8 @@
 											"value": "20"
 										},
 										{
-											"key": "startID",
-											"value": "0"
+											"key": "timestamp",
+											"value": "1612510072"
 										},
 										{
 											"key": "isGetOlder",

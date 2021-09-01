@@ -1495,7 +1495,7 @@ class Utils {
       regist_block_num: currency.Blockchain.block,
     });
 
-    const insertAccountCurrency = await _db.AccountCurrency.create({
+    await _db.AccountCurrency.create({
       accountCurrency_id: uuidv4(),
       account_id: insertAccount.account_id,
       currency_id: currency.currency_id,
@@ -1528,52 +1528,330 @@ class Utils {
       });
     }
 
-    return insertAccountCurrency;
+    return insertAccount.account_id;
   }
 
-  static async matchAddressTransaction(currency, accountCurrency, hdWallet) {
+  static async matchAddressTransaction(currency, accountId, hdWallet) {
     const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
     const _db = this.database.db[DBName];
+    const coinType = currency.Blockchain.coin_type;
 
     if (Utils.isBtcLike(currency.blockchain_id)) {
       let nullCounter = 0;
-      let keyIndex = accountCurrency.number_of_internal_key;
-      const coinType = currency.Blockchain.coin_type;
-      const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: currency.Blockchain.blockchain_id });
+      let keyIndex = 0;
+      let firstNullIndex = -1;
       // find and update external address
       while (nullCounter < 5) {
-        const accountAddress = await _db.AccountAddress.findOne({
+        const wallet = hdWallet.getWalletInfo({
+          coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: keyIndex,
+        });
+        const accountAddressCount = await _db.AccountAddress.count({
           where: {
-            accountCurrency_id: accountCurrency.accountCurrency_id,
-            changeIndex: 0,
-            keyIndex,
+            address: wallet.address,
           },
         });
-        if (accountAddress) {
-          const addressTransactions = _db.addressTransaction.findAll({
-            where: {
-              address: accountAddress.address,
-            },
-          });
-          if (!Array.isArray(addressTransactions)) throw new Error('something wrong.');
-          if (addressTransactions.length > 0) {
-            for (const addressTransaction of addressTransactions) {
-              await _db.addressTransaction.update({
-                accountCurrency_id: accountCurrency.accountCurrency_id,
-              }, {
-                where: {
-                  addressTransaction_id: addressTransaction.addressTransaction_id,
-                },
-              });
-            }
-            nullCounter = 0;
-          } else {
-            nullCounter += 1;
+        if (!Number.isInteger(accountAddressCount)) return new Error('something wrong.');
+        if (accountAddressCount > 0) {
+          // if this address transaction not null, add to account address
+          for (let i = firstNullIndex; i > 0 && i <= keyIndex; i++) {
+            const _hdw = hdWallet.getWalletInfo({
+              coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: i,
+            });
+            const at = await _db.AccountAddress.create({
+              accountAddress_id: uuidv4(),
+              account_id: accountId,
+              change_index: 0,
+              key_index: i,
+              public_key: _hdw.publicKey,
+              address: _hdw.address,
+            });
+            await _db.addressTransaction.update({
+              accountAddress_id: at.accountAddress_id,
+            }, {
+              where: {
+                address: _hdw.address,
+              },
+            });
           }
+          nullCounter = 0;
+          firstNullIndex = -1;
         } else {
+          if (firstNullIndex < 0) { firstNullIndex = keyIndex; }
           nullCounter += 1;
         }
         keyIndex += 1;
+      }
+      // add first not null address to account address
+      if (firstNullIndex > 0) {
+        const _hdw = hdWallet.getWalletInfo({
+          coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: firstNullIndex,
+        });
+        await _db.AccountAddress.create({
+          accountAddress_id: uuidv4(),
+          account_id: accountId,
+          change_index: 0,
+          key_index: firstNullIndex,
+          public_key: _hdw.publicKey,
+          address: _hdw.address,
+        });
+      }
+
+      // find and update internal address
+      keyIndex = 0;
+      nullCounter = 0;
+      firstNullIndex = -1;
+      while (nullCounter < 5) {
+        const wallet = hdWallet.getWalletInfo({
+          coinType, blockchainID: currency.Blockchain.blockchain_id, change: 1, index: keyIndex,
+        });
+        const accountAddressCount = await _db.AccountAddress.count({
+          where: {
+            address: wallet.address,
+          },
+        });
+        if (!Number.isInteger(accountAddressCount)) return new Error('something wrong.');
+        if (accountAddressCount > 0) {
+          // if this address transaction not null, add to account address
+          for (let i = firstNullIndex; i > 0 && i <= keyIndex; i++) {
+            const _hdw = hdWallet.getWalletInfo({
+              coinType, blockchainID: currency.Blockchain.blockchain_id, change: 0, index: i,
+            });
+            const at = await _db.AccountAddress.create({
+              accountAddress_id: uuidv4(),
+              account_id: accountId,
+              change_index: 0,
+              key_index: i,
+              public_key: _hdw.publicKey,
+              address: _hdw.address,
+            });
+            await _db.AddressTransaction.update({
+              accountAddress_id: at.accountAddress_id,
+            }, {
+              where: {
+                address: _hdw.address,
+              },
+            });
+          }
+          nullCounter = 0;
+          firstNullIndex = -1;
+        } else {
+          if (firstNullIndex < 0) { firstNullIndex = keyIndex; }
+          nullCounter += 1;
+        }
+        keyIndex += 1;
+      }
+      // add first not null address to account address
+      if (firstNullIndex > 0) {
+        const _hdw = hdWallet.getWalletInfo({
+          coinType, blockchainID: currency.Blockchain.blockchain_id, change: 1, index: firstNullIndex,
+        });
+        await _db.AccountAddress.create({
+          accountAddress_id: uuidv4(),
+          account_id: accountId,
+          change_index: 0,
+          key_index: firstNullIndex,
+          public_key: _hdw.publicKey,
+          address: _hdw.address,
+        });
+      }
+    } else {
+      const wallet = hdWallet.getWalletInfo({ coinType, blockchainID: currency.Blockchain.blockchain_id });
+      const findAccountAddress = await _db.AccountAddress.findOne({
+        where: {
+          address: wallet.address,
+        },
+      });
+      await _db.AddressTransaction.update({
+        accountAddress_id: findAccountAddress.accountAddress_id,
+      },
+      {
+        returning: true,
+        where: {
+          address: wallet.address,
+        },
+      });
+      await _db.AddressTokenTransaction.update({
+        accountAddress_id: findAccountAddress.accountAddress_id,
+      }, {
+        where: {
+          address: wallet.address,
+        },
+      });
+    }
+  }
+
+  static async getTransactionByTxidFromPeer(blockchain_id, txid) {
+    this.logger.debug(`getTransactionByTxidFromPeer(${blockchain_id}, ${txid})`);
+
+    const blockchainConfig = Utils.getBlockchainConfig(blockchain_id);
+    const option = { ...blockchainConfig };
+
+    let peerResult = {};
+    switch (blockchain_id) {
+      case '8000003C':
+      case 'F000003C':
+      case '80000CFC':
+      case '80001F51':
+        option.data = {
+          jsonrpc: '2.0',
+          method: 'eth_getTransactionByHash',
+          params: [txid],
+          id: dvalue.randomID(),
+        };
+        peerResult = await Utils.ETHRPC(option);
+        break;
+      case '80000000':
+      case 'F0000000':
+        option.data = {
+          jsonrpc: '1.0',
+          method: 'getrawtransaction',
+          params: [txid, true],
+          id: dvalue.randomID(),
+        };
+        peerResult = await Utils.BTCRPC(option);
+        break;
+      case '80000091':
+      case 'F0000091':
+        option.data = {
+          jsonrpc: '1.0',
+          method: 'getrawtransaction',
+          params: [txid, true],
+          id: dvalue.randomID(),
+        };
+        peerResult = await Utils.BCHRPC(option);
+        break;
+      default:
+        break;
+    }
+    const checkId = option.data.id;
+    if (peerResult instanceof Object) {
+      if (peerResult.id !== checkId) {
+        this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
+        return Promise.reject();
+      }
+      if (peerResult.result) {
+        return Promise.resolve(peerResult.result);
+      }
+    }
+    this.logger.error(`[${this.constructor.name}] getTransactionByTxidFromPeer not found`);
+    return Promise.reject(peerResult.error);
+  }
+
+  // ++ add to child process
+  static async matchUtxo(currency, accountId, retry = 0) {
+    try {
+      console.log(`matchUtxo, currency: ${currency}, accountId: ${accountId}, retry: ${retry}`);
+      if (Utils.isBtcLike(currency.blockchain_id)) {
+        const DBName = Utils.blockchainIDToDBName(currency.blockchain_id);
+        const _db = this.database.db[DBName];
+        const limit = 500;
+        let offset = 0;
+        let findAccountAddress = await _db.AccountAddress.findAll({
+          where: { account_id: accountId },
+          attribute: ['accountAddress_id', 'address'],
+          order: ['change_index', 'key_index', 'accountAddress_id'],
+          include: [{
+            model: _db.AddressTransaction,
+            attribute: ['transaction_id', 'amount', 'direction'],
+            order: ['direction'],
+          }],
+          limit,
+          offset,
+        });
+
+        while (findAccountAddress.length > 0) {
+          for (const accountAddress of findAccountAddress) {
+            for (const addressTransaction of accountAddress.AddressTransactions) {
+              const attribute = ['transaction_id', 'txid'];
+              if (addressTransaction.direction === 1) {
+                attribute.push('destination_addresses');
+              } else {
+                attribute.push('source_addresses');
+              }
+              const findTx = await _db.Transaction.findOne({
+                where: { transaction_id: addressTransaction.transaction_id },
+                attribute,
+              });
+
+              // get transaction detail from peer because somthing didn't save in transaction table
+              const peerTx = await Utils.getTransactionByTxidFromPeer(currency.blockchain_id, findTx.txid);
+              console.log('accountAddress.address', accountAddress.address);
+              if (addressTransaction.direction === 1) {
+                const outputData = peerTx.vout.find(
+                  (txOut) => {
+                    console.log(txOut);
+                    return txOut.scriptPubKey.addresses.includes(accountAddress.address);
+                  },
+                );
+                const objDA = JSON.parse(findTx.destination_addresses);
+                const { amount } = objDA[outputData.n];
+                // create if utxo not exist
+                await _db.UTXO.findOrCreate({
+                  where: {
+                    txid: findTx.txid,
+                    vout: outputData.n,
+                  },
+                  defaults: {
+                    utxo_id: uuidv4(),
+                    currency_id: currency.currency_id,
+                    accountAddress_id: accountAddress.accountAddress_id,
+                    transaction_id: findTx.transaction_id,
+                    txid: findTx.txid,
+                    vout: outputData.n,
+                    type: outputData.scriptPubKey.type,
+                    amount,
+                    script: outputData.scriptPubKey.hex,
+                    locktime: peerTx.locktime,
+                  },
+                });
+              } else {
+                // mark used
+                const objSA = JSON.parse(findTx.source_addresses);
+                const nVin = objSA.findIndex((o) => o.addresses.includes(accountAddress.address));
+                if (nVin >= 0) {
+                  const inputData = peerTx.vin[nVin];
+                  const findExistUTXO = await _db.UTXO.findOne({
+                    where: {
+                      txid: inputData.txid,
+                      vout: inputData.vout,
+                    },
+                  });
+                  if (findExistUTXO) {
+                    await _db.UTXO.update({
+                      to_tx: findTx.transaction_id,
+                      on_block_timestamp: peerTx.blocktime,
+                    },
+                    {
+                      where: {
+                        utxo_id: findExistUTXO.utxo_id,
+                      },
+                    });
+                  }
+                }
+              }
+            }
+          }
+
+          // next round
+          offset += limit;
+          findAccountAddress = await _db.AccountAddress.findAll({
+            where: { account_id: accountId },
+            attribute: ['accountAddress_id', 'address'],
+            order: ['change_index', 'key_index', 'accountAddress_id'],
+            include: [{
+              model: _db.AddressTransaction,
+              attribute: ['transaction_id', 'amount', 'direction'],
+              order: ['direction'],
+              limit,
+              offset,
+            }],
+          });
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      if (retry < 3) {
+        Utils.matchUtxo(currency, accountId, retry + 1);
       }
     }
   }
