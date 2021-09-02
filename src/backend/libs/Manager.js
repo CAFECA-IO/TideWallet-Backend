@@ -140,44 +140,49 @@ class Manager extends Bot {
   }
 
   syncCryptoRate() {
-    this.logger.log('temp not sync crypto rate until not sync from crypto api');
-    // const BTCObj = {
-    //   asset_id: '5b1ea92e584bf50020130612', symbol: 'BTC', dbOp: 'bitcoin_mainnet',
-    // };
-    // const BCHObj = {
-    //   asset_id: '5b1ea92e584bf5002013061c', symbol: 'BCH', dbOp: 'bitcoin_cash_mainnet',
-    // };
-    // const ETHObj = {
-    //   asset_id: '5b755dacd5dd99000b3d92b2', symbol: 'ETH', dbOp: 'ethereum_mainnet',
-    // };
-    // const USDID = '5b1ea92e584bf50020130615';
+    const currencyObjs = [];
+    currencyObjs.push({
+      currency_id: '5b1ea92e584bf50020130612', symbol: 'BTC', dbOp: 'bitcoin_mainnet',
+    });
+    currencyObjs.push({
+      currency_id: '5b1ea92e584bf5002013061c', symbol: 'BCH', dbOp: 'bitcoin_cash_mainnet',
+    });
+    currencyObjs.push({
+      currency_id: '5b755dacd5dd99000b3d92b2', symbol: 'ETH', dbOp: 'ethereum_mainnet',
+    });
 
-    // for (const crypto of [BTCObj, BCHObj, ETHObj]) {
-    //   const opt = {
-    //     protocol: 'https:',
-    //     port: '',
-    //     hostname: 'api.cryptoapis.io',
-    //     path: `/v1/exchange-rates/${crypto.asset_id}/${USDID}`,
-    //     headers: {
-    //       'X-API-Key': this.config.cryptoapis.key,
-    //       'Content-Type': 'application/json',
-    //     },
-    //   };
+    const symbols = [];
+    for (const cur of currencyObjs) {
+      symbols.push(cur.symbol);
+    }
 
-    //   // eslint-disable-next-line no-loop-func
-    //   ecrequest
-    //     .get(opt)
-    //     .then(async (rs) => {
-    //       const { payload } = JSON.parse(rs.data.toString());
-    //       await this.database.db[crypto.dbOp].Currency.update(
-    //         { exchange_rate: payload.weightedAveragePrice },
-    //         { where: { currency_id: crypto.asset_id } },
-    //       );
-    //     })
-    //     .catch((e) => {
-    //       this.logger.error('syncCryptoRate error:', e);
-    //     });
-    // }
+    const opt = {
+      protocol: 'https:',
+      port: '',
+      hostname: 'pro-api.coinMarketCap.com',
+      path: `/v1/cryptocurrency/quotes/latest?convert=USD&symbol=${symbols.toString()}`,
+      headers: {
+        'X-CMC_PRO_API_KEY': this.config.coinMarketCap.key,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    // eslint-disable-next-line no-loop-func
+    ecrequest
+      .get(opt)
+      .then(async (rs) => {
+        for (const crypto of currencyObjs) {
+          // rs.data is buffer
+          const payload = JSON.parse(rs.data.toString());
+          await this.database.db[crypto.dbOp].Currency.update(
+            { exchange_rate: payload.data[crypto.symbol].quote.USD.price },
+            { where: { currency_id: crypto.currency_id } },
+          );
+        }
+      })
+      .catch((e) => {
+        this.logger.error('syncCryptoRate error:', e);
+      });
   }
 
   createManager() {
