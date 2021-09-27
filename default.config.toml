@@ -259,8 +259,8 @@ pathname = [
 
   # explore
   "get | /api/v1/explore/info | Bot.Explore.NodeInfo",
-  "get | /api/v1/explore/address/:address | Bot.Explore.AddressDetail",
-  "get | /api/v1/explore/address/:address/transactions | Bot.Explore.AddressTransactions",
+  "get | /api/v1/explore/blockchain/:blockchain_id/address/:address | Bot.Explore.AddressDetail",
+  "get | /api/v1/explore/blockchain/:blockchain_id/address/:address/transactions | Bot.Explore.AddressTransactions",
   "get | /api/v1/explore/transactions | Bot.Explore.TransactionList",
   "get | /api/v1/explore/transaction/:txid | Bot.Explore.TransactionDetail",
   "get | /api/v1/explore/Blocks | Bot.Explore.BlockList",

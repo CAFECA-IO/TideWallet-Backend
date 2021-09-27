@@ -1,3 +1,4 @@
+const { default: BigNumber } = require('bignumber.js');
 const Bot = require('./Bot');
 const Utils = require('./Utils');
 const ResponseFormat = require('./ResponseFormat');
@@ -476,107 +477,31 @@ class Explore extends Bot {
 
   async AddressDetail({ params }) {
     try {
-      const { address } = params;
-
-      const findAddress = await this.DBOperator.findOne({
-        tableName: 'AccountAddress',
-        options: {
-          where: { address },
-          attributes: ['account_id', 'address'],
-          include: [
-            {
-              _model: 'Account',
-              attributes: ['blockchain_id'],
-            },
-          ],
-        },
-      });
-
-      if (findAddress && findAddress.length > 0) {
-        const balance = [];
-        for (let i = 0; i < findAddress.length; i++) {
-          const addressItem = findAddress[i];
-
-          let _balance = '0';
-          switch (addressItem.Account.blockchain_id) {
-            case '8000003C':
-            case 'F000003C':
-            case '80000CFC':
-              _balance = await Utils.ethGetBalanceByAddress(addressItem.Account.blockchain_id, address, 18);
-              break;
-            case '80000000':
-            case 'F0000000':
-            case '80000091':
-            case 'F0000091':
-            // eslint-disable-next-line no-case-declarations
-              const findAccountCurrency = await this.accountCurrencyModel.findOne({
-                where: { account_id: addressItem.account_id },
-              });
-              if (findAccountCurrency && findAccountCurrency.balance) _balance = findAccountCurrency.balance;
-              break;
-            default:
-              break;
-          }
-          balance.push({
-            blockchainId: addressItem.Account.blockchain_id,
-            name: await this.blockchainIdToName(addressItem.Account.blockchain_id),
-            address,
-            balance: _balance,
-          });
-        }
-
-        return new ResponseFormat({ message: 'Explore Address Detail', payload: { balance } });
-      }
-
-      // TODO: refactor it, logic same as (findAddress)
-      // not in account address, find transaction table
-      const findBlockID = {};
-      const findAddressTxs = await this.DBOperator.findAll({
-        tableName: 'Transaction',
-        options: {
-          where: {
-            [this.Sequelize.Op.or]: [{ source_addresses: address }, { destination_addresses: address }],
-          },
-          attributes: ['txid'],
-          include: [
-            {
-              _model: 'Currency',
-              attributes: ['blockchain_id'],
-            },
-          ],
-        },
-      });
-      findAddressTxs.forEach((item) => {
-        if (item.Currency) findBlockID[item.Currency.blockchain_id] = true;
-      });
-
-      const blockchainList = Object.keys(findBlockID);
-
-      if (blockchainList.length === 0) return new ResponseFormat({ message: 'account not found', code: Codes.ACCOUNT_NOT_FOUND });
+      const { blockchain_id, address } = params;
 
       const balance = [];
-      for (const addressItemBlockchainID of blockchainList) {
-        let _balance = '0';
-        switch (addressItemBlockchainID) {
-          case '8000003C':
-          case 'F000003C':
-          case '80000CFC':
-            _balance = await Utils.ethGetBalanceByAddress(addressItemBlockchainID, address, 18);
-            break;
-          case '80000000':
-          case 'F0000000':
-            // TODO: not support btc now
-            break;
-          default:
-            break;
-        }
-        balance.push({
-          blockchainId: addressItemBlockchainID,
-          name: await this.blockchainIdToName(addressItemBlockchainID),
-          address,
-          balance: _balance,
-        });
+
+      let _balance = '0';
+      switch (blockchain_id) {
+        case '8000003C':
+        case 'F000003C':
+        case '80000CFC':
+          _balance = await Utils.ethGetBalanceByAddress(blockchain_id, address, 18);
+          break;
+        case '80000000':
+        case 'F0000000':
+          // TODO: not support btc now
+          _balance = await this.CalculateAmount({ params });
+          break;
+        default:
+          break;
       }
+      balance.push({
+        blockchainId: blockchain_id,
+        name: await this.blockchainIdToName(blockchain_id),
+        address,
+        balance: _balance,
+      });
 
       return new ResponseFormat({ message: 'Explore Address Detail', payload: { balance } });
     } catch (e) {
@@ -584,6 +509,40 @@ class Explore extends Bot {
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
+  }
+
+  async CalculateAmount({ params }) {
+    const { blockchain_id, address } = params;
+
+    const lowerAddr = address.toLowerCase();
+
+    const DBName = Utils.blockchainIDToDBName(blockchain_id);
+    const _db = this.database.db[DBName];
+
+    // const findAddressTxs = await _db.AddressTransaction.findAll({
+    //   where: {
+    //     // address: [this.Sequelize.fn('LOWER', this.Sequelize.col('address'), '=', lowerAddr)],
+    //   },
+    //   attributes: ['transaction_id', 'amount', 'direction', 'address'],
+    // });
+
+    const findAddressTxs = await _db.AddressTransaction.findAll({
+      where: this.Sequelize.where(this.Sequelize.fn('lower', this.Sequelize.col('address')), lowerAddr),
+    });
+
+    let balance = new BigNumber(0);
+
+    if (findAddressTxs && findAddressTxs.length > 0) {
+      for (const tx of findAddressTxs) {
+        if (tx.direction === 0) {
+          balance = balance.minus(new BigNumber(tx.amount));
+        }
+        if (tx.direction === 1) {
+          balance = balance.plus(new BigNumber(tx.amount));
+        }
+      }
+    }
+    return balance.toFixed();
   }
 
   // TODO: support multi paging
