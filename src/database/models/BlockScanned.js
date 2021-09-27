@@ -55,7 +55,7 @@ module.exports = (sequelize, DataTypes) => sequelize.define('BlockScanned', {
     type: DataTypes.STRING,
   },
   extra_data: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
   },
   uncles: {
     type: DataTypes.STRING,
