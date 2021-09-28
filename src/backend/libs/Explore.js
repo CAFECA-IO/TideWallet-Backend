@@ -550,268 +550,134 @@ class Explore extends Bot {
     return balance.toFixed();
   }
 
-  // TODO: support multi paging
+  // 順序好像怪怪的
   async AddressTransactions({ params, query }) {
     try {
-      const { address } = params;
-      const { index = 0, limit = 20 } = query;
+      const { blockchain_id, address } = params;
+      const {
+        limit = 20, isGetOlder = true, timestamp = Math.floor(Date.now() / 1000),
+      } = query;
 
-      let isServerAccount = true;
-      // STEP 1. find accountAddressModel first
-      let findAddress = await this.DBOperator.findOne({
-        tableName: 'AccountAddress',
+      // find blockchain info
+      const findBlockchainInfo = await this.DBOperator.findOne({
+        tableName: 'Blockchain',
         options: {
-          where: { address },
-          attributes: ['accountAddress_id', 'account_id', 'address'],
+          where: { blockchain_id },
         },
       });
 
-      if (!findAddress) {
-        isServerAccount = false;
-        // STEP 2. find transactionModel if accountAddressModel not found
-        findAddress = await this.DBOperator.findOne({
-          tableName: 'Transaction',
-          options: {
-            attributes: ['txid'],
-          },
-          operators: {
-            or: [{ source_addresses: address }, { destination_addresses: address }],
-          },
-        });
+      const DBName = Utils.blockchainIDToDBName(blockchain_id);
+      const _db = this.database.db[DBName];
+      const lowerAddr = address.toLowerCase();
+      const txs = [];
 
-        if (!findAddress) {
-          // STEP 3. find tokenTransactionModel if transactionModel not found
-          findAddress = await this.DBOperator.findOne({
-            tableName: 'TokenTransaction',
-            options: {
-              attributes: ['txid'],
-            },
-            operators: {
-              or: [{ source_addresses: address }, { destination_addresses: address }],
-            },
-          });
-
-          if (!findAddress) {
-            return new ResponseFormat({
-              message: 'Explore Address Transactions',
-              items: [],
-              meta: {
-                hasNext: false,
-                nextIndex: 0,
-                count: 0,
-              },
-            });
-          }
-        }
-      }
-
-      // TODO: refactor it, logic same as isServerAccount
-      if (!isServerAccount) {
-        // not account address, find by source_addresses || destination_addresses
-
-        // find transactionModel
-        const findTxs = await this.DBOperator.findAll({
-          tableName: 'Transaction',
-          options: {
-            offset: index,
-            limit,
-            include: [
-              {
-                _model: 'Currency',
-                attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
-              },
-            ],
-            order: [['transaction_id', 'DESC']],
-          },
-          operators: {
-            or: [{ source_addresses: address }, { destination_addresses: address }],
-          },
-        });
-
-        const findTokenTxs = await this.DBOperator.findAll({
-          tableName: 'TokenTransaction',
-          options: {
-            offset: index,
-            limit,
-            include: [
-              {
-                _model: 'Transaction',
-              },
-              {
-                _model: 'Currency',
-                attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
-              },
-            ],
-            order: [['tokenTransaction_id', 'DESC']],
-          },
-          operators: {
-            or: [{ source_addresses: address }, { destination_addresses: address }],
-          },
-        });
-
-        const txs = [...findTxs, ...findTokenTxs];
-        txs.sort((a, b) => b.timestamp - a.timestamp);
-
-        const items = [];
-        for (let i = 0; i < Math.min(txs.length, Number(limit) + 1); i++) {
-          const txItem = txs[i];
-          let txHash = '';
-          let block = 0;
-          let timestamp = 0;
-          let from = '';
-          let to = '';
-          let _fee = '0';
-          if (txItem.Transaction) {
-            ({
-              txid: txHash, block, timestamp, source_addresses: from, destination_addresses: to, fee: _fee,
-            } = txItem.Transaction);
-          } else {
-            ({
-              txid: txHash, block, timestamp, source_addresses: from, destination_addresses: to, fee: _fee,
-            } = txItem);
-          }
-          items.push({
-            blockchainId: txItem.Currency.blockchain_id,
-            iconUrl: Utils.formatIconUrl(txItem.Currency.icon),
-            txHash,
-            symbol: txItem.Currency.symbol,
-            block,
-            timestamp,
-            from,
-            to,
-            value: Utils.dividedByDecimal(txItem.amount, txItem.Currency.decimals),
-            fee: Utils.dividedByDecimal(_fee, txItem.Currency.decimals),
-          });
-        }
-
-        // count all amount
-        const findAllAmount = await this.DBOperator.count({
-          tableName: 'Transaction',
-          operators: {
-            or: [{ source_addresses: address }, { destination_addresses: address }],
-          },
-        }) + await this.DBOperator.count({
-          tableName: 'TokenTransaction',
-          operators: {
-            or: [{ source_addresses: address }, { destination_addresses: address }],
-          },
-        });
-
-        const meta = {
-          hasNext: false,
-          nextIndex: 0,
-          count: findAllAmount || 0,
-        };
-
-        if (items.length > Number(limit)) {
-          items.pop();
-          meta.hasNext = true;
-          meta.nextIndex = Number(index) + Number(limit);
-        }
-
-        return new ResponseFormat({ message: 'Explore Address Transactions', items, meta });
-      }
-
-      // find transaction
-      const findTxs = await this.addressTransactionModel.findAll({
-        where: { accountAddress_id: findAddress.accountAddress_id },
-        offset: index,
-        limit,
-        include: [
-          {
-            model: this.transactionModel,
-          },
-          {
-            model: this.currencyModel,
-            attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
-          },
-        ],
-        order: [['addressTransaction_id', 'DESC']],
+      const findChainCurrency = await _db.Currency.findOne({
+        where: { type: 1, blockchain_id },
       });
 
-      // find token transaction
-      const findTokenTxs = await this.addressTokenTransactionModel.findAll({
-        where: { accountAddress_id: findAddress.accountAddress_id },
-        offset: index,
-        limit,
-        include: [
-          {
-            model: this.tokenTransactionModel,
-            include: [
-              {
-                model: this.transactionModel,
-              },
-            ],
-          },
-          {
-            model: this.currencyModel,
-            attributes: ['blockchain_id', 'symbol', 'icon', 'decimals'],
-          },
-        ],
-        order: [['addressTokenTransaction_id', 'DESC']],
-      });
-
-      const txs = [...findTxs, ...findTokenTxs];
-      txs.sort((a, b) => b.Transaction.timestamp - a.Transaction.timestamp);
-
-      const items = [];
-      for (let i = 0; i < Math.min(txs.length, Number(limit) + 1); i++) {
-        const txItem = txs[i];
-        let txHash = '';
-        let block = 0;
-        let timestamp = 0;
-        let from = '';
-        let to = '';
-        let _fee = '0';
-        if (txItem.TokenTransaction) {
-          ({
-            txid: txHash, block, timestamp, source_addresses: from, destination_addresses: to, fee: _fee,
-          } = txItem.TokenTransaction.Transaction);
-        } else {
-          ({
-            txid: txHash, block, timestamp, source_addresses: from, destination_addresses: to, fee: _fee,
-          } = txItem.Transaction);
-        }
-        items.push({
-          blockchainId: txItem.Currency.blockchain_id,
-          iconUrl: Utils.formatIconUrl(txItem.Currency.icon),
-          txHash,
-          symbol: txItem.Currency.symbol,
-          block,
-          timestamp,
-          from,
-          to,
-          value: Utils.dividedByDecimal(txItem.amount, txItem.Currency.decimals),
-          fee: Utils.dividedByDecimal(_fee, txItem.Currency.decimals),
-        });
-      }
-
-      // count all amount
-      const findAllAmount = await this.addressTransactionModel.count({
-        where: { accountAddress_id: findAddress.accountAddress_id },
-      }) + await this.addressTokenTransactionModel.count({
-        where: { accountAddress_id: findAddress.accountAddress_id },
-      });
-
-      const meta = {
-        hasNext: false,
-        nextIndex: 0,
-        count: findAllAmount || 0,
+      const where = {
+        currency_id: findChainCurrency.currency_id,
+        // address: lowerAddr,
+        address,
       };
+      const order = isGetOlder === 'true' ? [['Transaction', 'timestamp', 'DESC']] : [['Transaction', 'timestamp', 'ASC']];
 
-      if (items.length > Number(limit)) {
-        items.pop();
-        meta.hasNext = true;
-        meta.nextIndex = Number(index) + Number(limit);
+      const findTxByAddress = await _db.AddressTransaction.findAll({
+        where,
+        limit: Number(limit),
+        order,
+        include: [
+          {
+            model: _db.Transaction,
+            where: {
+              timestamp: isGetOlder === 'true' ? { [this.Sequelize.Op.lt]: timestamp } : { [this.Sequelize.Op.gt]: timestamp },
+            },
+          },
+        ],
+      });
+
+      if (findTxByAddress) {
+        for (let j = 0; j < findTxByAddress.length; j++) {
+          const txInfo = findTxByAddress[j];
+          const amount = Utils.dividedByDecimal(txInfo.amount, findChainCurrency.decimals);
+          const gas_price = txInfo.Transaction.gas_price
+            ? Utils.dividedByDecimal(txInfo.Transaction.gas_price, findChainCurrency.decimals)
+            : null;
+          const fee = txInfo.Transaction.fee
+            ? Utils.dividedByDecimal(txInfo.Transaction.fee, findChainCurrency.decimals)
+            : null;
+
+          txs.push({
+            id: txInfo.addressTransaction_id,
+            txid: txInfo.Transaction.txid,
+            status: findTxByAddress.result ? 'success' : 'failed',
+            amount,
+            symbol: findChainCurrency.symbol, // "unit"
+            direction: txInfo.direction === 0 ? 'send' : 'receive',
+            confirmations: findBlockchainInfo.block - txInfo.Transaction.block + 1,
+            timestamp: txInfo.Transaction.timestamp,
+            source_addresses: Utils.formatAddressArray(txInfo.Transaction.source_addresses),
+            destination_addresses: Utils.formatAddressArray(txInfo.Transaction.destination_addresses),
+            fee,
+            gas_price,
+            gas_used: txInfo.Transaction.gas_used,
+            note: txInfo.Transaction.note,
+          });
+        }
+        const items = this._mergeInternalTxs({ txs });
+
+        // sort by timestamps
+        items.sort((a, b) => b.timestamp - a.timestamp >= 0);
+
+        return new ResponseFormat({
+          message: 'Explore Address Transactions',
+          // items,
+          // meta,
+          payload: items,
+        });
       }
-
-      return new ResponseFormat({ message: 'Explore Address Transactions', items, meta });
+      return new ResponseFormat({ message: 'Address not found', code: Codes.ADDRESS_NOT_FOUND });
     } catch (e) {
       console.log('e:', e); // -- no console.log
       this.logger.error('NodeInfo e:', e);
       if (e.code) return e;
       return new ResponseFormat({ message: `DB Error(${e.message})`, code: Codes.DB_ERROR });
     }
+  }
+
+  _mergeInternalTxs({ txs }) {
+    const tmpTxs = {};
+    txs.forEach((tx) => {
+      if (!tmpTxs[tx.txid]) {
+        const amount = (tx.direction === 'send') ? new BigNumber(tx.amount) : new BigNumber(0).minus(new BigNumber(tx.amount));
+        tmpTxs[tx.txid] = { tx, amount, same: 0 };
+      } else {
+        let { amount } = tmpTxs[tx.txid];
+        if (tx.direction === 'send') {
+          amount = amount.plus(new BigNumber(tx.amount));
+        } else {
+          amount = amount.minus(new BigNumber(tx.amount));
+        }
+
+        tmpTxs[tx.txid].amount = amount;
+        tmpTxs[tx.txid].direction = 'send';
+        tmpTxs[tx.txid].same = 1;
+      }
+    });
+
+    const result = [];
+    Object.keys(tmpTxs).forEach((key) => {
+      if (tmpTxs[key].same) {
+        tmpTxs[key].tx.amount = tmpTxs[key].amount.abs().minus(new BigNumber(tmpTxs[key].tx.fee)).toFixed();
+      } else {
+        tmpTxs[key].tx.amount = tmpTxs[key].amount.abs().toFixed();
+      }
+      // fix for null from address
+      if (!tmpTxs[key].tx.source_addresses)tmpTxs[key].tx.source_addresses = '2N4iKXLjajWZHJhz9pYdhr6jHbzKThvm8D4';
+      result.push(tmpTxs[key].tx);
+    });
+
+    return result;
   }
 
   async Search({ params }) {
