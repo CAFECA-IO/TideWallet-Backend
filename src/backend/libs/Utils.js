@@ -1358,6 +1358,42 @@ class Utils {
     }
   }
 
+  static async getContractCodeFromPeer(options, address) {
+    try {
+      options.data = {
+        jsonrpc: '2.0',
+        method: 'eth_getCode',
+        params: [
+          address,
+          'latest',
+        ],
+        id: dvalue.randomID(),
+      };
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error('getContractCodeFromPeer fail');
+          return null;
+        }
+        if (data.result) {
+          return Promise.resolve(data.result);
+        }
+      }
+      this.logger.error(
+        `getContractCodeFromPeer(${address}) fail, ${JSON.stringify(
+          data.error,
+        )}`,
+      );
+      return null;
+    } catch (error) {
+      this.logger.error(
+        `getContractCodeFromPeer(${address}) error: ${error}`,
+      );
+      return null;
+    }
+  }
+
   static async ethGetBlockByNumber(option, blockHeight) {
     option.data = {
       jsonrpc: '2.0',
