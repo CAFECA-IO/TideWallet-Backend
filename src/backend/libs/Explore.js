@@ -529,7 +529,8 @@ class Explore extends Bot {
         // 下面這段吃不到index
         // address: [this.Sequelize.fn('LOWER', this.Sequelize.col('address')), lowerAddr],
         // 要改db與parser，存的內容要tolower，或把欄位改成citext
-        address: lowerAddr,
+        // address: lowerAddr,
+        address,
       },
       // logging: console.log,
       attributes: ['transaction_id', 'amount', 'direction', 'address'],
