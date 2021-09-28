@@ -1121,41 +1121,6 @@ class Blockchain extends Bot {
       });
 
       if (findTokenItem) {
-        // todo: save contract code into db
-        let options = '';
-        switch (blockchain_id) {
-          case '8000003C':
-            options = this.config.blockchain.ethereum_mainnet;
-            break;
-          case 'F000003C':
-            options = this.config.blockchain.ethereum_ropsten;
-            break;
-          case '80000CFC':
-            options = this.config.blockchain.cafeca;
-            break;
-          default:
-            return new ResponseFormat({
-              message: 'blockchain has not token',
-              code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN,
-            });
-        }
-        let contractCode;
-        try {
-          contractCode = await Utils.getContractCodeFromPeer(options, contract);
-        } catch (error) {
-          return new ResponseFormat({
-            message: `rpc error(${error})`,
-            code: Codes.RPC_ERROR,
-          });
-        }
-
-        if (!contractCode) {
-          return new ResponseFormat({
-            message: 'contract not found',
-            code: Codes.CONTRACT_CONT_FOUND,
-          });
-        }
-
         return new ResponseFormat({
           message: 'Get Token Info',
           payload: {
@@ -1167,7 +1132,6 @@ class Blockchain extends Bot {
             description: findTokenItem.description,
             imageUrl:
               findTokenItem.icon || `${this.config.base.domain}/icon/ERC20.png`,
-            contract_code: contractCode,
           },
         });
       }
@@ -1195,7 +1159,6 @@ class Blockchain extends Bot {
         Utils.getTokenSymbolFromPeer(options, contract),
         Utils.getTokenDecimalFromPeer(options, contract),
         Utils.getTokenTotalSupplyFromPeer(options, contract),
-        Utils.getContractCodeFromPeer(options, contract),
       ]).catch(
         (error) => new ResponseFormat({
           message: `rpc error(${error})`,
@@ -1225,7 +1188,6 @@ class Blockchain extends Bot {
         || !tokenInfoFromPeer[1]
         || !(tokenInfoFromPeer[2] >= 0)
         || !tokenInfoFromPeer[3]
-        || !tokenInfoFromPeer[4]
       ) {
         return new ResponseFormat({
           message: 'contract not found',
@@ -1266,7 +1228,6 @@ class Blockchain extends Bot {
           total_supply,
           description: '',
           imageUrl: icon,
-          contract_code: tokenInfoFromPeer[4],
         },
       });
     } catch (e) {

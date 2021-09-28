@@ -680,6 +680,49 @@ class Explore extends Bot {
     return result;
   }
 
+  async ContractCode({ params }) {
+    const { blockchain_id, contract } = params;
+    let options = '';
+    switch (blockchain_id) {
+      case '8000003C':
+        options = this.config.blockchain.ethereum_mainnet;
+        break;
+      case 'F000003C':
+        options = this.config.blockchain.ethereum_ropsten;
+        break;
+      case '80000CFC':
+        options = this.config.blockchain.cafeca;
+        break;
+      default:
+        return new ResponseFormat({
+          message: 'blockchain has not token',
+          code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN,
+        });
+    }
+    let contractCode;
+    try {
+      contractCode = await Utils.getContractCodeFromPeer(options, contract);
+    } catch (error) {
+      return new ResponseFormat({
+        message: `rpc error(${error})`,
+        code: Codes.RPC_ERROR,
+      });
+    }
+
+    if (!contractCode) {
+      return new ResponseFormat({
+        message: 'contract not found',
+        code: Codes.CONTRACT_CONT_FOUND,
+      });
+    }
+    return new ResponseFormat({
+      message: '',
+      payload: {
+        contract_code: contractCode,
+      },
+    });
+  }
+
   async Search({ params }) {
     try {
       const { search_string } = params;

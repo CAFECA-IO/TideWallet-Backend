@@ -267,6 +267,7 @@ pathname = [
   "get | /api/v1/explore/blockchain/:blockchain_id/block/:block_id | Bot.Explore.BlockDetail",
   "get | /api/v1/explore/blockchain/:blockchain_id/block/:block_id/transactions | Bot.Explore.BlockTransactions",
   "post | /api/v1/explore/search/:search_string | Bot.Explore.Search",
+  "get | /api/v1/explore/blockchain/:blockchain_id/contract/:contract | Bot.Explore.ContractCode",
 
   # system
   "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets",
