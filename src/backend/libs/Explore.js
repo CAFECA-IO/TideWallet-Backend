@@ -519,15 +519,20 @@ class Explore extends Bot {
     const DBName = Utils.blockchainIDToDBName(blockchain_id);
     const _db = this.database.db[DBName];
 
-    // const findAddressTxs = await _db.AddressTransaction.findAll({
-    //   where: {
-    //     // address: [this.Sequelize.fn('LOWER', this.Sequelize.col('address'), '=', lowerAddr)],
-    //   },
-    //   attributes: ['transaction_id', 'amount', 'direction', 'address'],
-    // });
+    const findChainCurrency = await _db.Currency.findOne({
+      where: { type: 1, blockchain_id },
+    });
 
     const findAddressTxs = await _db.AddressTransaction.findAll({
-      where: this.Sequelize.where(this.Sequelize.fn('lower', this.Sequelize.col('address')), lowerAddr),
+      where: {
+        currency_id: findChainCurrency.currency_id,
+        // 下面這段吃不到index
+        // address: [this.Sequelize.fn('LOWER', this.Sequelize.col('address')), lowerAddr],
+        // 要改db與parser，存的內容要tolower，或把欄位改成citext
+        address: lowerAddr,
+      },
+      // logging: console.log,
+      attributes: ['transaction_id', 'amount', 'direction', 'address'],
     });
 
     let balance = new BigNumber(0);
