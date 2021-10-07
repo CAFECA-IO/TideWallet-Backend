@@ -668,6 +668,8 @@ class Account extends Bot {
                   },
                 },
               ],
+              // this where let orm use inner join
+              where: {},
             },
           ],
         });
