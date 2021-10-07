@@ -581,12 +581,10 @@ class Explore extends Bot {
         // address: lowerAddr,
         address,
       };
-      const order = isGetOlder === 'true' ? [['Transaction', 'timestamp', 'DESC']] : [['Transaction', 'timestamp', 'ASC']];
 
       const findTxByAddress = await _db.AddressTransaction.findAll({
         where,
         limit: Number(limit),
-        order,
         include: [
           {
             model: _db.Transaction,
