@@ -1247,20 +1247,34 @@ class Blockchain extends Bot {
       params: [],
       id: dvalue.randomID(),
     };
-    const data = await Utils.ETHRPC(option);
-    if (!data.result && data === false) {
+    try {
+      const data = await Utils.ETHRPC(option);
+      if (!data.result && data === false) {
+        return new ResponseFormat({
+          message: 'rpc error(blockchain down)',
+          code: Codes.RPC_ERROR,
+        });
+      }
+      if (!data.result) {
+        if (data.error) {
+          return new ResponseFormat({
+            message: `rpc error(${data.error.message})`,
+            code: Codes.RPC_ERROR,
+          });
+        }
+        return new ResponseFormat({
+          message: `rpc error(unknown error, data: ${data})`,
+          code: Codes.RPC_ERROR,
+        });
+      }
+      return new BigNumber(data.result).toNumber();
+    } catch (error) {
+      this.logger.error('ethBlockHeight e: ', error);
       return new ResponseFormat({
-        message: 'rpc error(blockchain down)',
+        message: `rpc error(${error})`,
         code: Codes.RPC_ERROR,
       });
     }
-    if (!data.result) {
-      return new ResponseFormat({
-        message: `rpc error(${data.error.message})`,
-        code: Codes.RPC_ERROR,
-      });
-    }
-    return new BigNumber(data.result).toNumber();
   }
 
   async btcBlockHeight(blockchain_id) {
@@ -1274,20 +1288,34 @@ class Blockchain extends Bot {
       id: dvalue.randomID(),
     };
 
-    const data = await Utils.BTCRPC(option);
-    if (!data.result && data === false) {
+    try {
+      const data = await Utils.BTCRPC(option);
+      if (!data.result && data === false) {
+        return new ResponseFormat({
+          message: 'rpc error(blockchain down)',
+          code: Codes.RPC_ERROR,
+        });
+      }
+      if (!data.result) {
+        if (data.error) {
+          return new ResponseFormat({
+            message: `rpc error(${data.error.message})`,
+            code: Codes.RPC_ERROR,
+          });
+        }
+        return new ResponseFormat({
+          message: `rpc error(unknown error, data: ${data})`,
+          code: Codes.RPC_ERROR,
+        });
+      }
+      return new BigNumber(data.result).toNumber();
+    } catch (error) {
+      this.logger.error('btcBlockHeight e: ', error);
       return new ResponseFormat({
-        message: 'rpc error(blockchain down)',
+        message: `rpc error(${error})`,
         code: Codes.RPC_ERROR,
       });
     }
-    if (!data.result) {
-      return new ResponseFormat({
-        message: `rpc error(${data.error.message})`,
-        code: Codes.RPC_ERROR,
-      });
-    }
-    return new BigNumber(data.result).toNumber();
   }
 
   async bchBlockHeight(blockchain_id) {
@@ -1301,20 +1329,34 @@ class Blockchain extends Bot {
       id: dvalue.randomID(),
     };
 
-    const data = await Utils.BCHRPC(option);
-    if (!data.result && data === false) {
+    try {
+      const data = await Utils.BCHRPC(option);
+      if (!data.result && data === false) {
+        return new ResponseFormat({
+          message: 'rpc error(blockchain down)',
+          code: Codes.RPC_ERROR,
+        });
+      }
+      if (!data.result) {
+        if (data.error) {
+          return new ResponseFormat({
+            message: `rpc error(${data.error.message})`,
+            code: Codes.RPC_ERROR,
+          });
+        }
+        return new ResponseFormat({
+          message: `rpc error(unknown error, data: ${data})`,
+          code: Codes.RPC_ERROR,
+        });
+      }
+      return new BigNumber(data.result).toNumber();
+    } catch (error) {
+      this.logger.error('btcBlockHeight e: ', error);
       return new ResponseFormat({
-        message: 'rpc error(blockchain down)',
+        message: `rpc error(${error})`,
         code: Codes.RPC_ERROR,
       });
     }
-    if (!data.result) {
-      return new ResponseFormat({
-        message: `rpc error(${data.error.message})`,
-        code: Codes.RPC_ERROR,
-      });
-    }
-    return new BigNumber(data.result).toNumber();
   }
 
   async findBlockScannedHeight(blockchain_id) {
