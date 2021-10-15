@@ -858,7 +858,7 @@ class Account extends Bot {
       const items = this._mergeInternalTxs({ txs: result });
 
       // sort by timestamps
-      items.sort((a, b) => b.timestamp - a.timestamp >= 0);
+      items.sort((a, b) => b.timestamp - a.timestamp);
 
       if (items.length > Number(limit)) {
         meta.hasNext = true;
