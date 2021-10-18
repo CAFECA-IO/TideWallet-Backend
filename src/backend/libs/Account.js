@@ -653,10 +653,12 @@ class Account extends Bot {
           currency_id: findAccountCurrency.currency_id,
           accountAddress_id: findAccountAddress.accountAddress_id,
         };
+        const order = isGetOlder === 'true' ? [['TokenTransaction', 'Transaction', 'timestamp', 'DESC']] : [['TokenTransaction', 'Transaction', 'timestamp', 'ASC']];
 
         const findTxByAddress = await _db.AddressTokenTransaction.findAll({
           where,
           limit: Number(limit),
+          order,
           include: [
             {
               model: _db.TokenTransaction,
@@ -715,10 +717,12 @@ class Account extends Bot {
           currency_id: findAccountCurrency.currency_id,
           accountAddress_id: findAccountAddress.accountAddress_id,
         };
+        const order = isGetOlder === 'true' ? [['Transaction', 'timestamp', 'DESC']] : [['Transaction', 'timestamp', 'ASC']];
 
         const findTxByAddress = await _db.AddressTransaction.findAll({
           where,
           limit: Number(limit),
+          order,
           include: [
             {
               model: _db.Transaction,
