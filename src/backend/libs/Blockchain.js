@@ -567,7 +567,7 @@ class Blockchain extends Bot {
           option.data = {
             jsonrpc: '2.0',
             method: 'eth_getTransactionCount',
-            params: [address, 'latest'],
+            params: [address, 'pending'],
             id: dvalue.randomID(),
           };
           const data = await Utils.ETHRPC(option);
