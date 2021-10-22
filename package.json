@@ -78,5 +78,5 @@
     "deleteDB": "sh tool/scripts/deleteDB.sh",
     "undoDB": "sh tool/scripts/undoDB.sh"
   },
-  "version": "1.1.2"
+  "version": "1.1.3"
 }
