@@ -271,6 +271,7 @@ pathname = [
 
   # system
   "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets",
+  "get | /api/v1/system/bridge/address/:account_id/receive | Bot.Account.BridgeAccountReceive",
 
   # tmp
   "get | /api/v1/fcm/logs | Bot.Blockchain.FcmLogs",

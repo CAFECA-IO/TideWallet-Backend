@@ -357,7 +357,7 @@ class Utils {
             new Date() - start
           }ms`,
         );
-        throw e;
+        return e;
       });
   }
 
