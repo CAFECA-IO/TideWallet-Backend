@@ -9,6 +9,68 @@
 			"name": "app",
 			"item": [
 				{
+					"name": "0. Oath Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{domain}}/api/v1/user/id",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user",
+								"id"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "0. Oath Register",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": \"your_third_party_id\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/api/v1/user/id",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"user",
+										"id"
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": null,
+							"cookie": [],
+							"body": "{\n    \"powerby\": \"TideWallet API 1.1.3\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"User App ID\",\n    \"payload\": {\n        \"user_id\": \"your_user_id\",\n        \"user_secret\": \"your_user_secret\"\n    }\n}"
+						}
+					]
+				},
+				{
 					"name": "1. List Supported Blockchains",
 					"request": {
 						"method": "GET",
@@ -434,7 +496,7 @@
 							"variable": [
 								{
 									"key": "blockchain_id",
-									"value": "8000003C"
+									"value": "80001F51"
 								}
 							]
 						}
@@ -649,7 +711,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"wallet_name\": \"TideWallet3\",\n    \"extend_public_key\": \"xpub6CYxexXGcK4c8L8yxMyvRmwsdfScJAo8DKKSqmZ5yzLL9MVBwSBX5tqC9VB8N3osR2BmajXm19oJitGMHu2Jc46yrCey1Lg3ZvSMy1sqdQm\",\n    \"install_id\": \"83da67\",\n    \"app_uuid\": \"114bc570\"\n}",
+							"raw": "{\n    \"wallet_name\": \"TideWallet3\",\n    //\"extend_public_key\": \"xpub6CYxexXGcK4c8L8yxMyvRmwsdfScJAo8DKKSqmZ5yzLL9MVBwSBX5tqC9VB8N3osR2BmajXm19oJitGMHu2Jc46yrCey1Lg3ZvSMy1sqdQm\",\n    \"extend_public_key\": \"xpub6D619xfa9MSYNT7Qous9tnbcRDinaT1gDoi56dTFT1at8D68WJBjSZKHKKfHxALETsf83WcdUVnrVhQB4fBWVusYFRXr6K7HavGBmzRdB3z\",\n    \"install_id\": \"83da67\",\n    \"app_uuid\": \"114bc570\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1722,7 +1784,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=20&isGetOlder=false&timestamp=1626315587",
+							"raw": "{{domain}}/api/v1/wallet/account/txs/:account_id or token_account_id?limit=2&isGetOlder=true&timestamp=1626315587",
 							"host": [
 								"{{domain}}"
 							],
@@ -1737,11 +1799,11 @@
 							"query": [
 								{
 									"key": "limit",
-									"value": "20"
+									"value": "2"
 								},
 								{
 									"key": "isGetOlder",
-									"value": "false"
+									"value": "true"
 								},
 								{
 									"key": "timestamp",
@@ -3018,29 +3080,430 @@
 							"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"User Regist\",\n    \"payload\": {\n        \"items\": [\n            {\n                \"transaction_id\": \"8608\",\n                \"currency_id\": \"8e1ea17f-38f5-42ab-a24b-82bf8abc851b\",\n                \"txid\": \"518cc7317ff4fdd2786bff1762aea0c304f572a3ab5c5289aa2ff555d853b3aa\",\n                \"timestamp\": 1616062982,\n                \"source_addresses\": \"[{\\\"addresses\\\":[\\\"2NDbY9zc7kUPGsrPtuYi1aforjujLDztNXj\\\"],\\\"amount\\\":\\\"42000000\\\"}]\",\n                \"destination_addresses\": \"[{\\\"addresses\\\":[\\\"tb1qdcj2gvu8zh3mgrl07fy6c9u8ny433x9pd0223j\\\"],\\\"amount\\\":\\\"1000000\\\"},{\\\"addresses\\\":[\\\"tb1qalj8lpn7udqm02yrr2lanw6qgteuwem0v9ny9z\\\"],\\\"amount\\\":\\\"40999836\\\"}]\",\n                \"amount\": \"41999836\",\n                \"block\": 1940716,\n                \"currency_name\": \"Bitcoin Testnet\"\n            },\n            {\n                \"transaction_id\": \"8607\",\n                \"currency_id\": \"8e1ea17f-38f5-42ab-a24b-82bf8abc851b\",\n                \"txid\": \"a5aeafbeb91d838442ab79dd2bfa5dba77c109ee96be0e8c246582d42240eebe\",\n                \"timestamp\": 1616062982,\n                \"source_addresses\": \"[{\\\"addresses\\\":[\\\"2MsMBWxrBfHbnu5m8F8319cdYGkpx4WAi43\\\"],\\\"amount\\\":\\\"39799359\\\"}]\",\n                \"destination_addresses\": \"[{\\\"addresses\\\":[\\\"2NGYGptF45nD7ZnxeiX8raSeTUZZUwJyQUt\\\"],\\\"amount\\\":\\\"38799191\\\"},{\\\"addresses\\\":[\\\"myi6zvob72QkwfVCj7SNu8xqNBk5vJboks\\\"],\\\"amount\\\":\\\"1000000\\\"}]\",\n                \"amount\": \"39799191\",\n                \"block\": 1940716,\n                \"currency_name\": \"Bitcoin Testnet\"\n            }\n        ],\n        \"meta\": {\n            \"hasNext\": true,\n            \"nextIndex\": 3,\n            \"count\": 1293\n        }\n    }\n}"
 						}
 					]
+				},
+				{
+					"name": "2. address detail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/explore/blockchain/:blockchain_id/address/:address",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"explore",
+								"blockchain",
+								":blockchain_id",
+								"address",
+								":address"
+							],
+							"variable": [
+								{
+									"key": "blockchain_id",
+									"value": "F0000000"
+								},
+								{
+									"key": "address",
+									"value": "mkanqL7vZVHSDoGgML7cdKxYJdtduJvNzc"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "2. address detail",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/api/v1/explore/blockchain/:blockchain_id/address/:address",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"explore",
+										"blockchain",
+										":blockchain_id",
+										"address",
+										":address"
+									],
+									"variable": [
+										{
+											"key": "blockchain_id",
+											"value": "F0000000"
+										},
+										{
+											"key": "address",
+											"value": "mkanqL7vZVHSDoGgML7cdKxYJdtduJvNzc"
+										}
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": null,
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "3. address transaction",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/explore/blockchain/:blockchain_id/address/:address/transactions?limit=20&isGetOlder=true",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"explore",
+								"blockchain",
+								":blockchain_id",
+								"address",
+								":address",
+								"transactions"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "isGetOlder",
+									"value": "true"
+								},
+								{
+									"key": "timestamp",
+									"value": null,
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "blockchain_id",
+									"value": "F000003C"
+								},
+								{
+									"key": "address",
+									"value": "n2y2wtGArwKRuzrunHJ24A15odPcRYwB7V"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "3. address transaction",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/api/v1/explore/blockchain/:blockchain_id/address/:address/transactions?limit=20&isGetOlder=true",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"explore",
+										"blockchain",
+										":blockchain_id",
+										"address",
+										":address",
+										"transactions"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "20"
+										},
+										{
+											"key": "isGetOlder",
+											"value": "true"
+										},
+										{
+											"key": "timestamp",
+											"value": null,
+											"disabled": true
+										}
+									],
+									"variable": [
+										{
+											"key": "blockchain_id",
+											"value": "F000003C"
+										},
+										{
+											"key": "address",
+											"value": "n2y2wtGArwKRuzrunHJ24A15odPcRYwB7V"
+										}
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": null,
+							"cookie": [],
+							"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"List Transactions\",\n    \"payload\": [\n        {\n            \"txid\": \"4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b\",\n            \"status\": \"success\",\n            \"amount\": \"0.00986735\",\n            \"symbol\": \"BTC\",\n            \"direction\": \"send\",\n            \"confirmations\": 1944,\n            \"timestamp\": 1612510071,\n            \"source_addresses\": \"[1wHoLpp5SGxLhQtmecBWJKS7wMKpFtTdM,1HFe8Eezn8x8rRLzujwDw6FF86RowGxRgz,1wHoLpp5SGxLhQtmecBWJKS7wMKpFtTdM]\",\n            \"destination_addresses\": \"1Jy1L1XyFXDUnXU78yTzHbr4BUPVedyEMW\",\n            \"fee\": \"0.00012548\",\n            \"gas_price\": null,\n            \"gas_used\": null\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "4. Get Contract Code",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/explore/blockchain/:blockchain_id/contract/:contract",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"explore",
+								"blockchain",
+								":blockchain_id",
+								"contract",
+								":contract"
+							],
+							"variable": [
+								{
+									"key": "blockchain_id",
+									"value": "F000003C"
+								},
+								{
+									"key": "contract",
+									"value": "0xc778417e063141139fce010982780140aa0cd5ab"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "4. Get Contract Code",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/api/v1/explore/blockchain/:blockchain_id/contract/:contract",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"explore",
+										"blockchain",
+										":blockchain_id",
+										"contract",
+										":contract"
+									],
+									"variable": [
+										{
+											"key": "blockchain_id",
+											"value": "F000003C"
+										},
+										{
+											"key": "contract",
+											"value": "0xc778417e063141139fce010982780140aa0cd5ab"
+										}
+									]
+								}
+							},
+							"_postman_previewlanguage": "json",
+							"header": null,
+							"cookie": [],
+							"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Contract code\",\n    \"payload\": [\n        \"0x\"\n    ]\n}"
+						}
+					]
 				}
 			]
 		},
 		{
-			"name": "get blockchains height",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{domain}}/api/v1/blockchains/height/metrics",
-					"host": [
-						"{{domain}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"blockchains",
-						"height",
-						"metrics"
+			"name": "system",
+			"item": [
+				{
+					"name": "get blockchains height",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/api/v1/blockchains/height/metrics",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"blockchains",
+								"height",
+								"metrics"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "get blockchains height",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/api/v1/blockchains/height/metrics",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"blockchains",
+										"height",
+										"metrics"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": "BTC_MAINNET_BLOCKHEIGHT 707692\nBTC_MAINNET_DB_BLOCKHEIGHT 692412\nBTC_MAINNET_BLOCKSCANNED_BLOCKHEIGHT 692411\nBTC_MAINNET_UNCRAWLERBLOCK 15280\nBTC_MAINNET_UNPARSEBLOCK 15281\n\nBTC_TESTNET_BLOCKHEIGHT 2101926\nBTC_TESTNET_DB_BLOCKHEIGHT 2036038\nBTC_TESTNET_BLOCKSCANNED_BLOCKHEIGHT 2036038\nBTC_TESTNET_UNCRAWLERBLOCK 65888\nBTC_TESTNET_UNPARSEBLOCK 65888\n\nBCH_MAINNET_BLOCKHEIGHT 712111\nBCH_MAINNET_DB_BLOCKHEIGHT 689169\nBCH_MAINNET_BLOCKSCANNED_BLOCKHEIGHT 689169\nBCH_MAINNET_UNCRAWLERBLOCK 22942\nBCH_MAINNET_UNPARSEBLOCK 22942\n\nBCH_TESTNET_BLOCKHEIGHT 1472136\nBCH_TESTNET_DB_BLOCKHEIGHT 0\nBCH_TESTNET_BLOCKSCANNED_BLOCKHEIGHT 0\nBCH_TESTNET_UNCRAWLERBLOCK 1472136\nBCH_TESTNET_UNPARSEBLOCK 1472136\n\nETH_MAINNET_BLOCKHEIGHT 13530438\nETH_MAINNET_DB_BLOCKHEIGHT 0\nETH_MAINNET_BLOCKSCANNED_BLOCKHEIGHT 12457150\nETH_MAINNET_UNCRAWLERBLOCK 13530438\nETH_MAINNET_UNPARSEBLOCK 1073288\n\nETH_TESTNET_BLOCKHEIGHT [object Object]\nETH_TESTNET_DB_BLOCKHEIGHT 11320198\nETH_TESTNET_BLOCKSCANNED_BLOCKHEIGHT 11314881\nETH_TESTNET_UNCRAWLERBLOCK NaN\nETH_TESTNET_UNPARSEBLOCK NaN\n\nTTN_BLOCKHEIGHT 5242006\nTTN_DB_BLOCKHEIGHT 5125711\nTTN_BLOCKSCANNED_BLOCKHEIGHT 5125711\nTTN_UNCRAWLERBLOCK 116295\nTTN_UNPARSEBLOCK 116295\n"
+						}
+					]
+				},
+				{
+					"name": "2. Get Bridge Receive Address",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{domain}}/api/v1/system/bridge/address/:account_id/receive",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"system",
+								"bridge",
+								"address",
+								":account_id",
+								"receive"
+							],
+							"variable": [
+								{
+									"key": "account_id",
+									"value": "fb572f4f-db29-4dc1-9f9c-796ba8b3ecb2"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "2. Get Bridge Receive Address",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "token",
+										"value": "{{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{domain}}/api/v1/system/bridge/address/:account_id/receive",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"system",
+										"bridge",
+										"address",
+										":account_id",
+										"receive"
+									],
+									"variable": [
+										{
+											"key": "account_id",
+											"value": "fb572f4f-db29-4dc1-9f9c-796ba8b3ecb2"
+										},
+										{
+											"value": "7c04dd7f-8f00-4e05-b681-0b334a30ce0d",
+											"key": "account_id or token_account_id"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Tue, 02 Feb 2021 09:49:40 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "CF-Cache-Status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "cf-request-id",
+									"value": "0803bee4a9000019551125f000000001"
+								},
+								{
+									"key": "Expect-CT",
+									"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
+								},
+								{
+									"key": "Report-To",
+									"value": "{\"group\":\"cf-nel\",\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report?s=aX69K9ajxCTXl9uQJkuKsE53MpDHJRxW1j55mIKeqNWuB67uSkwFlvH4Ws8sxT8VNtlCN2tBYnp66A6NUq98IX7ybhq9CYt1J38TdG0uIl%2BIxnCACu4%3D\"}],\"max_age\":604800}"
+								},
+								{
+									"key": "NEL",
+									"value": "{\"report_to\":\"cf-nel\",\"max_age\":604800}"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "61b300e779c41955-HKG"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"powerby\": \"TideWallet API 1.0.0\",\n    \"success\": true,\n    \"code\": \"00000000\",\n    \"message\": \"Get Receive Address\",\n    \"payload\": {\n        \"address\": \"tb1qqsj8enwmhrzz9vwx34fhvm4nnhelh56qafp38k\",\n        \"key_index\": 5\n    }\n}"
+						}
 					]
 				}
-			},
-			"response": []
+			]
 		}
 	]
 }
