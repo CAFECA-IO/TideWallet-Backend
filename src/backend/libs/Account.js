@@ -531,6 +531,7 @@ class Account extends Bot {
     const tokenInfo = await Utils.verifyToken(token);
 
     try {
+      // ++ TODO: add transaction isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE
       const findAccountCurrency = await this.DBOperator.findOne({
         tableName: 'AccountCurrency',
         options: {
