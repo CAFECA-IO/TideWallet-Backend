@@ -1,4 +1,7 @@
 {
+  "name": "TideWallet-Backend",
+  "description": "Backend API Service and Blockchain Crawler for TideWallet",
+  "version": "1.2.0",
   "author": {
     "name": "boltchain.io Ltd."
   },
@@ -52,7 +55,6 @@
     "zlib": "^1.0.5"
   },
   "deprecated": false,
-  "description": "Backend API Service and Blockchain Crawler for TideWallet",
   "devDependencies": {
     "@babel/core": "^7.3.3",
     "babel-plugin-transform-decorators-legacy": "^1.3.5",
@@ -66,7 +68,6 @@
   ],
   "license": "GPL-3.0 ",
   "main": "bin/main.js",
-  "name": "TideWallet-Backend",
   "repository": {
     "type": "git",
     "url": "git+https://github.com:BOLT-Protocol/TideWallet-Backend.git"
@@ -77,6 +78,5 @@
     "migrateDB": "sh tool/scripts/migrateDB.sh",
     "deleteDB": "sh tool/scripts/deleteDB.sh",
     "undoDB": "sh tool/scripts/undoDB.sh"
-  },
-  "version": "1.1.3"
+  }
 }
