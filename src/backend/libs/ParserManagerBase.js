@@ -116,6 +116,7 @@ class ParserManagerBase {
   createJobTimer() {
     if (!this.jobTimer) {
       return setTimeout(async () => {
+        this.logger.debug(`[${this.constructor.name}] job timeout, done this job.`);
         await this.queueChannel.purgeQueue(this.jobQueue);
         await this.queueChannel.purgeQueue(this.jobCallback);
         await this.doJobDone();

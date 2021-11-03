@@ -441,7 +441,7 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
               });
               const timestamp = findBlockTimestamp || Math.floor(Date.now() / 1000);
 
-              const findAddressTransactions = await this.accountAddressModel.findOne({
+              const findAccountAddress = await this.accountAddressModel.findOne({
                 where: { address: destination_addresses },
                 include: [
                   {
@@ -451,9 +451,9 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                 ],
               });
 
-              if (findAddressTransactions) {
+              if (findAccountAddress) {
                 const findAccountCurrency = await this.accountCurrencyModel.findOne({
-                  where: { account_id: findAddressTransactions.account_id },
+                  where: { account_id: findAccountAddress.account_id },
                 });
 
                 this.logger.fcm('fcm tx new!!!!!!!!!!', JSON.stringify({
@@ -478,14 +478,14 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                       gas_used: null,
                       note: tx.input,
                       balance: this.currencyInfo.type === 1
-                        ? await Utils.ethGetBalanceByAddress(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.decimals)
-                        : await Utils.getERC20Token(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.contract, this.currencyInfo.decimals),
+                        ? await Utils.ethGetBalanceByAddress(findAccountAddress.Account.blockchain_id, findAccountAddress.address, this.currencyInfo.decimals)
+                        : await Utils.getERC20Token(findAccountAddress.Account.blockchain_id, findAccountAddress.address, this.currencyInfo.contract, this.currencyInfo.decimals),
                     },
                   }),
                   click_action: 'FLUTTER_NOTIFICATION_CLICK',
                 })); // -- no console.log
 
-                await this.fcm.messageToUserTopic(findAddressTransactions.Account.user_id, {
+                await this.fcm.messageToUserTopic(findAccountAddress.Account.user_id, {
                   title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,
                 }, {
                   title: `receive ${bnAmount.dividedBy(10 ** this.currencyInfo.decimals).toFixed()} ${this.currencyInfo.symbol}`,
@@ -509,8 +509,8 @@ class EthCrawlerManagerBase extends CrawlerManagerBase {
                       gas_used: null,
                       note: tx.input,
                       balance: this.currencyInfo.type === 1
-                        ? await Utils.ethGetBalanceByAddress(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.decimals)
-                        : await Utils.getERC20Token(findAddressTransactions.Account.blockchain_id, findAddressTransactions.address, this.currencyInfo.contract, this.currencyInfo.decimals),
+                        ? await Utils.ethGetBalanceByAddress(findAccountAddress.Account.blockchain_id, findAccountAddress.address, this.currencyInfo.decimals)
+                        : await Utils.getERC20Token(findAccountAddress.Account.blockchain_id, findAccountAddress.address, this.currencyInfo.contract, this.currencyInfo.decimals),
                     },
                   }),
                   click_action: 'FLUTTER_NOTIFICATION_CLICK',

@@ -110,7 +110,10 @@ Utils.readConfig({ filePath: cfg })
       Utils.initialAll(argv)
         .then((options) => Utils.initialBots(options))
         .then((Bots) => Utils.startBots({ Bots }))
-        .catch((e) => { console.trace(e); });
+        .catch((e) => {
+          console.trace(e);
+          process.exit(1);
+        });
     }
   })
   .catch(console.trace);
