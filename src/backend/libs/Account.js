@@ -555,7 +555,7 @@ class Account extends Bot {
       if (!findBlockInfo) return new ResponseFormat({ message: 'blockchain id not found', code: Codes.BLOCKCHAIN_ID_NOT_FOUND });
 
       const hdWallet = new HDWallet({ extendPublicKey: findAccountCurrency.Account.extend_public_key });
-      let { address } = {};
+
       let keyIndex = findAccountCurrency.number_of_external_key;
 
       const findReceiveAddress = await this.DBOperator.findOne({
@@ -568,7 +568,7 @@ class Account extends Bot {
           },
         },
       });
-      address = findReceiveAddress.address || {};
+      let address = findReceiveAddress.address || {};
       if (!findReceiveAddress) {
         const { coin_type: coinType } = findBlockInfo;
         const wallet = hdWallet.getWalletInfo({
