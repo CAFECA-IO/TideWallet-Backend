@@ -732,7 +732,7 @@ class Account extends Bot {
   }
 
   async _findAccountTXs({
-    findAccountCurrency, txs, change_index, key_index, timestamp, limit, meta, isGetOlder,
+    findAccountCurrency, txs, change_index, key_index, timestamp, limit, meta, isGetOlder, isExternal,
   }) {
     // find blockchain info
     const findBlockchainInfo = await this.DBOperator.findOne({
@@ -823,6 +823,7 @@ class Account extends Bot {
               gas_price,
               gas_used: txInfo.TokenTransaction.Transaction.gas_used,
               note: txInfo.TokenTransaction.Transaction.note,
+              owner: isExternal ? txInfo.address : null,
             });
           }
         }
@@ -880,6 +881,7 @@ class Account extends Bot {
               gas_price,
               gas_used: txInfo.Transaction.gas_used,
               note: txInfo.Transaction.note,
+              owner: isExternal ? txInfo.address : null,
             });
           }
         }
@@ -961,14 +963,14 @@ class Account extends Bot {
       for (let i = 0; i <= number_of_external_key; i++) {
         // find all address
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, change_index: 0, key_index: i, timestamp, limit, meta, isGetOlder,
+          findAccountCurrency, txs: result, change_index: 0, key_index: i, timestamp, limit, meta, isGetOlder, isExternal: true,
         });
       }
 
       // find internal address txs
       for (let i = 0; i <= number_of_internal_key; i++) {
         await this._findAccountTXs({
-          findAccountCurrency, txs: result, change_index: 1, key_index: i, timestamp, limit, meta, isGetOlder,
+          findAccountCurrency, txs: result, change_index: 1, key_index: i, timestamp, limit, meta, isGetOlder, isExternal: false,
         });
       }
 
