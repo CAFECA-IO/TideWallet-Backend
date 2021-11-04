@@ -524,8 +524,8 @@ class Account extends Bot {
   // only used for bridge
   async BridgeAccountReceive({ params, token }) {
     // account_id -> accountCurrency_id
-    const { account_id } = params;
-    if (!Utils.validateString(account_id)) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
+    const { account_id: accountCurrency_id } = params;
+    if (!Utils.validateString(accountCurrency_id)) return new ResponseFormat({ message: 'invalid input', code: Codes.INVALID_INPUT });
 
     if (!token) return new ResponseFormat({ message: 'invalid token', code: Codes.INVALID_ACCESS_TOKEN });
     const tokenInfo = await Utils.verifyToken(token);
@@ -536,7 +536,7 @@ class Account extends Bot {
         tableName: 'AccountCurrency',
         options: {
           where: {
-            accountCurrency_id: account_id,
+            accountCurrency_id,
           },
           include: [
             {
@@ -557,8 +557,44 @@ class Account extends Bot {
       const hdWallet = new HDWallet({ extendPublicKey: findAccountCurrency.Account.extend_public_key });
       let { address } = {};
       let keyIndex = findAccountCurrency.number_of_external_key;
+
+      const findReceiveAddress = await this.DBOperator.findOne({
+        tableName: 'AccountAddress',
+        options: {
+          where: {
+            account_id: findAccountCurrency.Account.account_id,
+            change_index: 0,
+            key_index: findAccountCurrency.number_of_external_key,
+          },
+        },
+      });
+      address = findReceiveAddress.address || {};
+      if (!findReceiveAddress) {
+        const { coin_type: coinType } = findBlockInfo;
+        const wallet = hdWallet.getWalletInfo({
+          change: 0,
+          index: findAccountCurrency.number_of_external_key,
+          coinType,
+          blockchainID: findAccountCurrency.Account.blockchain_id,
+        });
+
+        const DBName = Utils.blockchainIDToDBName(findAccountCurrency.Account.blockchain_id);
+        const _db = this.database.db[DBName];
+        await _db.AccountAddress.create({
+          accountAddress_id: uuidv4(),
+          account_id: findAccountCurrency.Account.account_id,
+          change_index: 0,
+          key_index: 0,
+          public_key: wallet.publicKey,
+          address: wallet.address,
+        });
+
+        address = wallet.address;
+        keyIndex = 0;
+      }
+
       if (Utils.isBtcLike(findAccountCurrency.Account.blockchain_id)) {
-        // btc like, save and return external key index + 1
+        // btc like, save external key index + 1
         keyIndex = findAccountCurrency.number_of_external_key + 1;
         const { coin_type: coinType } = findBlockInfo;
         const wallet = hdWallet.getWalletInfo({
@@ -583,43 +619,6 @@ class Account extends Bot {
           { number_of_external_key: keyIndex },
           { where: { accountCurrency_id: findAccountCurrency.accountCurrency_id } },
         );
-
-        address = wallet.address;
-      } else {
-        // eth like, return db address
-        const findReceiveAddress = await this.DBOperator.findOne({
-          tableName: 'AccountAddress',
-          options: {
-            where: {
-              account_id: findAccountCurrency.Account.account_id,
-              change_index: 0,
-              key_index: findAccountCurrency.number_of_external_key,
-            },
-          },
-        });
-        address = findReceiveAddress.address || {};
-        if (!findReceiveAddress) {
-          const { coin_type: coinType } = findBlockInfo;
-          const wallet = hdWallet.getWalletInfo({
-            change: 0,
-            index: findAccountCurrency.number_of_external_key,
-            coinType,
-            blockchainID: findAccountCurrency.Account.blockchain_id,
-          });
-
-          const DBName = Utils.blockchainIDToDBName(findAccountCurrency.Account.blockchain_id);
-          const _db = this.database.db[DBName];
-          await _db.AccountAddress.create({
-            accountAddress_id: uuidv4(),
-            account_id: findAccountCurrency.Account.account_id,
-            change_index: 0,
-            key_index: 0,
-            public_key: wallet.publicKey,
-            address: wallet.address,
-          });
-
-          address = wallet.address;
-        }
       }
       return new ResponseFormat({
         message: 'Get Receive Address',
