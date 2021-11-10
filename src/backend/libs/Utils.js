@@ -1394,6 +1394,45 @@ class Utils {
     }
   }
 
+  static async callContract(options, address, encodeData) {
+    try {
+      options.data = {
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [
+          {
+            to: address,
+            data: encodeData,
+          },
+          'latest',
+        ],
+        id: dvalue.randomID(),
+      };
+      const checkId = options.data.id;
+      const data = await Utils.ETHRPC(options);
+      if (data instanceof Object) {
+        if (data.id !== checkId) {
+          this.logger.error('callContract fail');
+          return null;
+        }
+        if (data.result) {
+          return Promise.resolve(data.result);
+        }
+      }
+      this.logger.error(
+        `callContract(${address}) fail, ${JSON.stringify(
+          data.error,
+        )}`,
+      );
+      return null;
+    } catch (error) {
+      this.logger.error(
+        `callContract(${address}) error: ${error}`,
+      );
+      return null;
+    }
+  }
+
   static async ethGetBlockByNumber(option, blockHeight) {
     option.data = {
       jsonrpc: '2.0',
