@@ -65,7 +65,7 @@ class Account extends Bot {
             options = this.config.blockchain.cafeca;
             break;
           default:
-            return new ResponseFormat({ message: 'blockchain has not token', code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN });
+            return new ResponseFormat({ message: 'blockchain has no token', code: Codes.BLOCKCHAIN_HAS_NO_TOKEN });
         }
 
         const tokenInfoFromPeer = await Promise.all([
