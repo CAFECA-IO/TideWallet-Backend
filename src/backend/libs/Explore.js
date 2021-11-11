@@ -694,8 +694,8 @@ class Explore extends Bot {
         break;
       default:
         return new ResponseFormat({
-          message: 'blockchain has not token',
-          code: Codes.BLOCKCHAIN_HAS_NOT_TOKEN,
+          message: 'blockchain has no token',
+          code: Codes.BLOCKCHAIN_HAS_NO_TOKEN,
         });
     }
     let contractCode;
@@ -718,6 +718,50 @@ class Explore extends Bot {
       message: '',
       payload: {
         contract_code: contractCode,
+      },
+    });
+  }
+
+  async CallContract({ params, body }) {
+    const { blockchain_id, contract } = params;
+    const { data } = body;
+    let options = '';
+    switch (blockchain_id) {
+      case '8000003C':
+        options = this.config.blockchain.ethereum_mainnet;
+        break;
+      case 'F000003C':
+        options = this.config.blockchain.ethereum_ropsten;
+        break;
+      case '80000CFC':
+        options = this.config.blockchain.cafeca;
+        break;
+      default:
+        return new ResponseFormat({
+          message: 'blockchain has no token',
+          code: Codes.BLOCKCHAIN_HAS_NO_TOKEN,
+        });
+    }
+    let res;
+    try {
+      res = await Utils.callContract(options, contract, data);
+    } catch (error) {
+      return new ResponseFormat({
+        message: `rpc error(${error})`,
+        code: Codes.RPC_ERROR,
+      });
+    }
+
+    if (!res) {
+      return new ResponseFormat({
+        message: 'contract not found',
+        code: Codes.CONTRACT_CONT_FOUND,
+      });
+    }
+    return new ResponseFormat({
+      message: '',
+      payload: {
+        result: res,
       },
     });
   }
