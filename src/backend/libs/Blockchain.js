@@ -539,6 +539,7 @@ class Blockchain extends Bot {
               to: toAddress,
               data: signatureData,
             },
+            'pending',
           ],
           id: dvalue.randomID(),
         };
