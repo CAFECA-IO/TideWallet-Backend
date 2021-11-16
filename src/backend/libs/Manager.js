@@ -30,7 +30,7 @@ class Manager extends Bot {
     this.name = 'Manager';
     this._crawlerManagers = [];
     this.rateSyncInterval = 86400000;
-    this.cryptoRateSyncInterval = 3600000;
+    this.cryptoRateSyncInterval = 20 * 60 * 1000;
   }
 
   init({
