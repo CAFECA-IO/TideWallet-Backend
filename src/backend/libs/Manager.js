@@ -29,8 +29,8 @@ class Manager extends Bot {
     super();
     this.name = 'Manager';
     this._crawlerManagers = [];
-    this.rateSyncInterval = 86400000;
-    this.cryptoRateSyncInterval = 20 * 60 * 1000;
+    this.fiatRateSyncInterval = this.config.syncInterval.fiatRate;
+    this.cryptoRateSyncInterval = this.config.syncInterval.cryptoRate;
   }
 
   init({
@@ -59,7 +59,7 @@ class Manager extends Bot {
         if (this.config.syncSwitch.rate) {
           setInterval(() => {
             this.syncRate();
-          }, this.rateSyncInterval);
+          }, this.fiatRateSyncInterval);
           this.syncRate();
         }
         return this;
