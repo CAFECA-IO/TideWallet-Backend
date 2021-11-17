@@ -140,25 +140,18 @@ class ParserBase {
     }
   }
 
-  async setAddressTransaction(accountAddress_id, transaction_id, amount, direction) {
+  async setAddressTransaction(accountAddress_id, transaction_id, amount, direction, address) {
     this.logger.debug(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction})`);
     try {
-      const result = await this.addressTransactionModel.findOrCreate({
-        where: {
-          currency_id: this.currencyInfo.currency_id,
-          accountAddress_id,
-          transaction_id,
-          amount,
-          direction,
-        },
-        defaults: {
-          currency_id: this.currencyInfo.currency_id,
-          accountAddress_id,
-          transaction_id,
-          amount,
-          direction,
-        },
+      const result = await this.addressTransactionModel.create({
+        currency_id: this.currencyInfo.currency_id,
+        accountAddress_id,
+        transaction_id,
+        amount,
+        direction,
+        address,
       });
+
       return result;
     } catch (error) {
       this.logger.error(`[${this.constructor.name}] setAddressTransaction(${accountAddress_id}, ${transaction_id}, ${direction}) error: ${error}`);

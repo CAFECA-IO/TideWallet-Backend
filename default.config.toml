@@ -97,6 +97,8 @@ bitcoin_cash = 450000
 titan = 1500
 fee = 3600000
 pending = 15000
+fiatRate = 86400000
+cryptoRate = 1200000
 
 [database]
   [database.bitcoin_mainnet]
