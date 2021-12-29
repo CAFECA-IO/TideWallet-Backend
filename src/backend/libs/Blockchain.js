@@ -1428,56 +1428,85 @@ class Blockchain extends Bot {
         ttnBlockHeight,
       ] = BlockHeightsFromPeer;
 
+      const t1 = Date.now();
       const _dbBtcMainnetBlockHeight = findBlockchain.find(
         (item) => item.blockchain_id === '80000000',
       );
       const dbBtcMainnetBlockHeight = _dbBtcMainnetBlockHeight
         ? _dbBtcMainnetBlockHeight.block
         : 0;
+      const t2 = Date.now();
+      this.logger.debug(`dbBtcMainnetBlockHeight used ${(t2 - t1) / 1000} sec.`);
       const _dbBtcTestnetBlockHeight = findBlockchain.find(
         (item) => item.blockchain_id === 'F0000000',
       );
       const dbBtcTestnetBlockHeight = _dbBtcTestnetBlockHeight
         ? _dbBtcTestnetBlockHeight.block
         : 0;
+      const t3 = Date.now();
+      this.logger.debug(`dbBtcTestnetBlockHeight used ${(t3 - t2) / 1000} sec.`);
       const _dbBchMainnetBlockHeight = findBlockchain.find(
         (item) => item.blockchain_id === '80000091',
       );
       const dbBchMainnetBlockHeight = _dbBchMainnetBlockHeight
         ? _dbBchMainnetBlockHeight.block
         : 0;
+      const t4 = Date.now();
+      this.logger.debug(`dbBchMainnetBlockHeight used ${(t4 - t3) / 1000} sec.`);
       const _dbBchTestnetBlockHeight = findBlockchain.find(
         (item) => item.blockchain_id === 'F0000091',
       ); // ++ TODO change bch testnet blocId by Emily 2021.05.24
       const dbBchTestnetBlockHeight = _dbBchTestnetBlockHeight
         ? _dbBchTestnetBlockHeight.block
         : 0;
+      const t5 = Date.now();
+      this.logger.debug(`dbBchTestnetBlockHeight used ${(t5 - t4) / 1000} sec.`);
       const _dbEthMainnetBlockHeight = findBlockchain.find(
         (item) => item.blockchain_id === '8000003C',
       );
       const dbEthMainnetBlockHeight = _dbEthMainnetBlockHeight
         ? _dbEthMainnetBlockHeight.block
         : 0;
+      const t6 = Date.now();
+      this.logger.debug(`dbEthMainnetBlockHeight used ${(t6 - t5) / 1000} sec.`);
       const _dbEthTestnetBlockHeight = findBlockchain.find(
         (item) => item.blockchain_id === 'F000003C',
       );
       const dbEthTestnetBlockHeight = _dbEthTestnetBlockHeight
         ? _dbEthTestnetBlockHeight.block
         : 0;
+      const t7 = Date.now();
+      this.logger.debug(`dbEthTestnetBlockHeight used ${(t7 - t6) / 1000} sec.`);
       const _dbTTNBlockHeight = findBlockchain.find(
         (item) => item.blockchain_id === '80001F51',
       );
       const dbTTNBlockHeight = _dbTTNBlockHeight ? _dbTTNBlockHeight.block : 0;
+      const t8 = Date.now();
+      this.logger.debug(`dbTTNBlockHeight used ${(t8 - t7) / 1000} sec.`);
 
       const btcMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000000');
+      const t9 = Date.now();
+      this.logger.debug(`btcMainnetBlockScannedBlockHeight used ${(t9 - t8) / 1000} sec.`);
       const btcTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('F0000000');
+      const t10 = Date.now();
+      this.logger.debug(`btcTestnetBlockScannedBlockHeight used ${(t10 - t9) / 1000} sec.`);
       const bchMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('80000091');
+      const t11 = Date.now();
+      this.logger.debug(`bchMainnetBlockScannedBlockHeight used ${(t11 - t10) / 1000} sec.`);
       const bchTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('F0000091'); // ++ TODO change bch testnet blocId by Emily 2021.05.24
+      const t12 = Date.now();
+      this.logger.debug(`bchTestnetBlockScannedBlockHeight used ${(t12 - t11) / 1000} sec.`);
       const ethMainnetBlockScannedBlockHeight = await this.findBlockScannedHeight('8000003C');
+      const t13 = Date.now();
+      this.logger.debug(`ethMainnetBlockScannedBlockHeight used ${(t13 - t12) / 1000} sec.`);
       const ethTestnetBlockScannedBlockHeight = await this.findBlockScannedHeight('F000003C');
+      const t14 = Date.now();
+      this.logger.debug(`ethTestnetBlockScannedBlockHeight used ${(t14 - t13) / 1000} sec.`);
       const ttnBlockScannedBlockHeight = await this.findBlockScannedHeight(
         '80001F51',
       );
+      const t15 = Date.now();
+      this.logger.debug(`ttnBlockScannedBlockHeight used ${(t15 - t14) / 1000} sec.`);
 
       this.cacheBlockchainInfo = {
         timestamp: Math.floor(Date.now() / 1000),
