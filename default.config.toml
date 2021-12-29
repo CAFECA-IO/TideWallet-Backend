@@ -276,6 +276,9 @@ pathname = [
   "get | /api/v1/system/wallet | Bot.Blockchain.ServerWallets",
   "get | /api/v1/system/bridge/address/:account_id/receive | Bot.Account.BridgeAccountReceive",
 
+  # api key
+  "post | /api/v1/enterprise/apiKey | Bot.Enterprise.apiKey",
+
   # tmp
   "get | /api/v1/fcm/logs | Bot.Blockchain.FcmLogs",
 ]
