@@ -7,7 +7,7 @@ Backend API Service and Blockchain Crawler for TideWallet
 
 ## API doc
 
-[postman](https://github.com/BOLT-Protocol/TideWallet-Backend/blob/master/doc)
+[postman](https://github.com/CAFECA-IO/TideWallet-Backend/blob/master/doc)
 
 
 ## Init FCM
@@ -96,7 +96,7 @@ docker run -d \
 ```
 
 ## Install TideWallet Backend Parser
-[TideWallet-Backend-Parser](https://github.com/BOLT-Protocol/TideWallet-Backend-Parser.git)
+[TideWallet-Backend-Parser](https://github.com/CAFECA-IO/TideWallet-Backend-Parser.git)
 
 ## Initial TideWallet Backend
 

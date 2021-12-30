@@ -9,7 +9,7 @@
     "mermer": "bin/main.js"
   },
   "bugs": {
-    "url": "https://github.com/BOLT-Protocol/TideWallet-Backend/issues"
+    "url": "https://github.com/CAFECA-IO/TideWallet-Backend/issues"
   },
   "bundleDependencies": false,
   "dependencies": {
@@ -70,7 +70,7 @@
   "main": "bin/main.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com:BOLT-Protocol/TideWallet-Backend.git"
+    "url": "git+https://github.com:CAFECA-IO/TideWallet-Backend.git"
   },
   "scripts": {
     "start": "bin/main.js",
