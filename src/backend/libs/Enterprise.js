@@ -35,7 +35,7 @@ class Enterprise extends Bot {
         code: Code.INVALID_INPUT,
       });
     }
-    const apiKey = Utils.base64Encode(Utils.sha256(Utils.sha256(`${name}_${project}`)).toString('hex'));
+    const apiKey = Utils.base64Encode(Utils.sha256(Utils.sha256(`${name}_${project}`)).toString('hex')).slice(0, 32);
     return new ResponseFormat({
       message: 'Regist Api Key',
       payload: {
